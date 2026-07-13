@@ -1,0 +1,2450 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#E9E7F8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="타바타코치">
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%235B51E8"/><text x="50" y="68" font-size="52" text-anchor="middle">💪</text></svg>'>
+<link rel="apple-touch-icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%235B51E8"/><text x="50" y="68" font-size="52" text-anchor="middle">💪</text></svg>'>
+<link rel="manifest" href='data:application/manifest+json,{"name":"타바타 AI 코치","short_name":"타바타코치","display":"standalone","orientation":"portrait","background_color":"%23E9E7F8","theme_color":"%235B51E8","start_url":"."}'>
+<title>타바타 AI 코치 PRO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#E9E7F8; --panel:#FFFFFF; --panel2:#FFFFFF; --panel3:#F3F1FD;
+    --ink:#2B3160; --muted:#8A8FB5;
+    --primary:#5B51E8; --primary2:#8B80F9; --gold:#D3960A;
+    --work:#FF9F1C; --rest:#2EC4B6; --line:#E4E1F5;
+    --bad:#F45B69; --good:#3CBB75; --purple:#7C6FF0;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{background:var(--bg); color:var(--ink); font-family:"Barlow","Noto Sans KR",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; display:flex; flex-direction:column; align-items:center;}
+  .num{font-family:"Barlow Condensed",sans-serif; font-variant-numeric:tabular-nums;}
+  header{width:100%; max-width:1040px; padding:18px 20px 4px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  header h1{font-family:"Barlow Condensed"; font-weight:700; font-size:26px; letter-spacing:.5px; margin:0; text-transform:uppercase;}
+  header .tag{color:var(--muted); font-size:13px;}
+  .profile{margin-left:auto; display:flex; align-items:center; gap:10px; background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:6px 14px 6px 8px;}
+  .avatar{font-size:26px; line-height:1;}
+  .profile .pv{font-family:"Barlow Condensed"; font-weight:700; font-size:18px; color:var(--primary);}
+  .profile .pl{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;}
+
+  nav{width:100%; max-width:1040px; padding:8px 20px 0; display:flex; gap:6px; flex-wrap:wrap;}
+  nav button{background:var(--panel); color:var(--muted); border:1px solid var(--line); border-bottom:0;
+    border-radius:10px 10px 0 0; padding:10px 18px; font-family:"Barlow Condensed"; font-size:18px; font-weight:600; cursor:pointer;}
+  nav button.on{background:var(--primary); color:#fff; border-color:var(--primary);}
+  .wrap{width:100%; max-width:1040px; padding:0 20px 50px;}
+  .page{display:none; background:var(--panel2); border:1px solid var(--line); border-radius:0 16px 16px 16px; padding:18px; box-shadow:0 8px 24px rgba(91,81,232,.08);}
+  .page.on{display:block;}
+
+  /* forms */
+  .row{display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; margin-bottom:14px;}
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field label{font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--muted);}
+  select,input{background:var(--panel3); color:var(--ink); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-family:inherit; font-size:16px;}
+  input[type=number]{width:92px} input[type=text]{width:140px}
+  .btn{cursor:pointer; border:0; border-radius:12px; font-family:"Barlow Condensed"; font-weight:700; text-transform:uppercase; letter-spacing:1px; font-size:19px; padding:11px 26px;}
+  .btn-go{background:var(--primary); color:#fff;} .btn-teal{background:var(--primary2); color:#fff;}
+  .btn-stop{background:var(--panel3); color:var(--ink); box-shadow:inset 0 0 0 1px var(--line);}
+  .btn-sm{font-size:15px; padding:7px 14px;}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  h3{font-family:"Barlow Condensed"; font-size:22px; margin:4px 0 10px; letter-spacing:.5px;}
+  .hint{color:var(--muted); font-size:13px; line-height:1.6;}
+
+  /* sequence builder */
+  .seqlist{display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 12px;}
+  .chip{display:flex; align-items:center; gap:8px; background:var(--panel3); border:1px solid var(--line); border-radius:10px; padding:8px 10px;}
+  .chip .ord{font-family:"Barlow Condensed"; font-weight:700; color:var(--primary); font-size:17px;}
+  .chip button{background:none; border:0; color:var(--muted); cursor:pointer; font-size:15px; padding:0 2px;}
+  .presets{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;}
+
+  /* stage */
+  .stage{position:relative; width:100%; aspect-ratio:4/3; background:#05070f; border-radius:16px; overflow:hidden; border:1px solid var(--line); margin-top:8px;}
+  body.fs-lock{overflow:hidden;}
+  .step-tag{display:inline-block; font-family:"Barlow Condensed"; font-weight:700; font-size:16px;
+    letter-spacing:.5px; color:#fff; background:var(--primary); padding:5px 14px; border-radius:999px;}
+  .step-box{background:var(--panel3); border:1px solid var(--line); border-radius:12px; padding:12px; margin-top:8px;}
+  #levelupOverlay{position:fixed; inset:0; z-index:10000; display:none; align-items:center; justify-content:center;
+    background:rgba(43,49,96,.55); backdrop-filter:blur(4px); opacity:0; transition:opacity .35s;}
+  #levelupOverlay.show{opacity:1;}
+  #levelupOverlay .lu-card{background:#fff; border-radius:24px; padding:34px 44px; text-align:center;
+    box-shadow:0 20px 60px rgba(91,81,232,.35); transform:scale(.6); transition:transform .45s cubic-bezier(.34,1.56,.64,1);}
+  #levelupOverlay.show .lu-card{transform:scale(1);}
+  .lu-title{font-family:"Barlow Condensed"; font-weight:700; font-size:30px; letter-spacing:1px;
+    background:linear-gradient(90deg,var(--primary),var(--work)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .lu-emoji{font-size:96px; line-height:1.1; margin:6px 0; animation:luBounce 1s ease-in-out infinite;}
+  @keyframes luBounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-10px) scale(1.06)}}
+  .lu-name{font-family:"Barlow Condensed"; font-weight:700; font-size:34px; color:var(--primary);}
+  .lu-sub{color:var(--muted); font-size:15px; margin-top:4px;}
+  #confetti{position:absolute; inset:0; overflow:hidden; pointer-events:none;}
+  #confetti span{position:absolute; top:-16px; border-radius:2px; opacity:.9; animation:confFall linear forwards;}
+  @keyframes confFall{to{transform:translateY(105vh) rotate(720deg); opacity:.4}}
+  .hr-cam-wrap{position:relative; width:100%; max-width:280px; margin:0 auto; aspect-ratio:4/3;
+    border-radius:14px; overflow:hidden; background:#1a0505;}
+  .hr-cam{width:100%; height:100%; object-fit:cover;}
+  .hr-cam-ring{position:absolute; inset:0; border:3px solid rgba(244,91,105,.6); border-radius:14px;
+    box-shadow:inset 0 0 40px rgba(244,91,105,.4); pointer-events:none; animation:hrpulse 1s ease-in-out infinite;}
+  @keyframes hrpulse{0%,100%{opacity:.5}50%{opacity:1}}
+  .hr-cam-hint{position:absolute; bottom:8px; left:0; right:0; text-align:center; color:#fff;
+    font-size:13px; font-weight:600; text-shadow:0 1px 4px rgba(0,0,0,.8); pointer-events:none;}
+  .stage.fullscreen{position:fixed; inset:0; width:100vw; height:100dvh; aspect-ratio:auto;
+    border-radius:0; border:0; margin:0; z-index:9999;}
+  .stage.fullscreen video, .stage.fullscreen canvas.ov{object-fit:cover;}
+  .exit-fs{position:absolute; top:14px; right:14px; z-index:20; display:none;
+    background:rgba(0,0,0,.5); color:#fff; border:0; border-radius:10px; padding:8px 14px;
+    font-family:"Barlow Condensed",sans-serif; font-weight:700; font-size:16px; cursor:pointer;}
+  .stage.fullscreen .exit-fs{display:block;}
+  video,canvas.ov{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1);}
+  .hud{position:absolute; inset:0; pointer-events:none; display:flex; flex-direction:column; justify-content:space-between; padding:14px;}
+  .hud .top{display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;}
+  .pill{font-family:"Barlow Condensed"; font-weight:700; text-transform:uppercase; letter-spacing:1px; font-size:18px; padding:5px 14px; border-radius:999px; background:rgba(0,0,0,.5); backdrop-filter:blur(4px);}
+  .p-work{color:var(--work); box-shadow:inset 0 0 0 2px var(--work);}
+  .p-rest{color:var(--rest); box-shadow:inset 0 0 0 2px var(--rest);}
+  .p-ex{color:var(--ink);}
+  .timer{align-self:center; text-align:center;}
+  .timer .big{font-family:"Barlow Condensed"; font-weight:700; font-size:min(24vw,180px); line-height:.9;}
+  .timer.work .big{color:var(--work); text-shadow:0 0 40px rgba(255,176,32,.35);}
+  .timer.rest .big{color:var(--rest); text-shadow:0 0 40px rgba(53,208,186,.35);}
+  .fb{align-self:center; font-weight:600; font-size:clamp(15px,2.6vw,22px); padding:7px 16px; border-radius:12px; background:rgba(0,0,0,.55);}
+  .bottom{display:flex; justify-content:space-between; align-items:flex-end;}
+  .metric .n{font-family:"Barlow Condensed"; font-weight:700; font-size:clamp(40px,10vw,80px); line-height:.85;}
+  .metric .l{color:var(--muted); font-size:12px; letter-spacing:2px; text-transform:uppercase;}
+  .acc .n{color:var(--purple);}
+  .center-msg{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:12px; padding:24px;}
+  .center-msg h2{font-family:"Barlow Condensed"; font-size:32px; margin:0;}
+  .center-msg p{color:var(--muted); max-width:460px; margin:0; line-height:1.55; font-size:14px;}
+  .spinner{width:40px;height:40px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--work);animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .judge{position:absolute; top:32%; left:50%; transform:translate(-50%,-50%);
+    font-family:"Barlow Condensed"; font-weight:700; font-size:clamp(44px,10vw,92px);
+    letter-spacing:3px; text-transform:uppercase; pointer-events:none; opacity:0; z-index:5;}
+  .judge.show{animation:jpop .65s ease-out;}
+  @keyframes jpop{
+    0%{opacity:0; transform:translate(-50%,-50%) scale(.5)}
+    15%{opacity:1; transform:translate(-50%,-50%) scale(1.18)}
+    30%{transform:translate(-50%,-50%) scale(1)}
+    75%{opacity:1}
+    100%{opacity:0; transform:translate(-50%,-75%) scale(1)}}
+  .j-perfect{color:#FF7AF5; text-shadow:0 0 40px rgba(255,122,245,.9), 0 0 10px rgba(255,213,74,.7);}
+  .j-great{color:#FFD54A; text-shadow:0 0 34px rgba(255,213,74,.85), 0 0 8px rgba(255,213,74,.6);}
+  .j-good{color:var(--rest); text-shadow:0 0 30px rgba(53,208,186,.8);}
+  .j-ok{color:#9AA5FF; text-shadow:0 0 24px rgba(154,165,255,.75);}
+  .j-miss{color:var(--bad); text-shadow:0 0 26px rgba(255,107,107,.8);}
+  .next-preview{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:6px; background:rgba(10,17,40,.82); backdrop-filter:blur(3px); z-index:6; padding:20px;}
+  .next-preview .np-label{color:var(--rest); font-family:"Barlow Condensed"; font-weight:700;
+    font-size:clamp(16px,3vw,22px); letter-spacing:2px; text-transform:uppercase;}
+  .next-preview .np-art{width:min(42vw,180px); height:min(42vw,180px);}
+  .next-preview .np-art svg{width:100%; height:100%;}
+  .next-preview .np-name{color:#fff; font-family:"Barlow Condensed"; font-weight:700; font-size:clamp(28px,7vw,54px); line-height:1;}
+  .next-preview .np-tip{color:var(--muted); font-size:clamp(13px,2.4vw,17px); text-align:center; max-width:340px;}
+  .jcount{text-align:center; align-self:flex-end; padding-bottom:6px; font-family:"Barlow Condensed";
+    font-weight:700; font-size:16px; letter-spacing:1px; background:rgba(0,0,0,.45); border-radius:10px; padding:6px 12px;}
+  .jcount .jp{color:#FF7AF5} .jcount .jg{color:#FFD54A} .jcount .jgd{color:var(--rest)} .jcount .jo{color:#9AA5FF} .jcount .jb{color:var(--bad)}
+  .err{color:var(--bad);}
+
+  /* results */
+  .kpis{display:flex; gap:12px; flex-wrap:wrap; margin:14px 0;}
+  .kpi{background:var(--panel3); border-radius:12px; padding:12px 16px; min-width:112px; flex:1;}
+  .kpi .v{font-family:"Barlow Condensed"; font-weight:700; font-size:34px; line-height:1;}
+  .kpi .k{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:1px; margin-top:2px;}
+  .c1{color:var(--primary)} .c2{color:var(--purple)} .c3{color:var(--rest)} .c4{color:var(--good)}
+  table{width:100%; border-collapse:collapse; font-size:14px; margin-top:6px;}
+  th,td{padding:8px 10px; text-align:left; border-bottom:1px solid var(--line);}
+  th{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:1px; font-weight:600;}
+  td .num{font-size:16px; font-weight:600;}
+  .scorebar{height:10px; background:var(--panel3); border-radius:6px; overflow:hidden; margin-top:4px;}
+  .scorebar>div{height:100%; border-radius:6px;}
+  .breakdown{margin-top:12px; display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px;}
+  .bd{background:var(--panel3); border-radius:12px; padding:12px;}
+  .bd .t{display:flex; justify-content:space-between; font-size:13px; color:var(--muted); margin-bottom:2px;}
+  .bd .t b{color:var(--ink); font-family:"Barlow Condensed"; font-size:18px;}
+  .gain{margin-top:14px; background:var(--panel3); border:1px solid var(--primary2); border-radius:14px; padding:14px 18px; display:flex; align-items:center; gap:16px;}
+  .gain .av{font-size:44px;}
+  .gain .pts{font-family:"Barlow Condensed"; font-weight:700; font-size:30px; color:var(--purple);}
+  .empty{color:var(--muted); text-align:center; padding:30px 10px;}
+  .task-card{background:var(--panel3); border:1px solid var(--primary2); border-radius:14px;
+    padding:12px 14px; margin-bottom:10px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .task-card .tt{font-weight:700; color:var(--primary); font-size:16px;}
+  .task-card .td{color:var(--muted); font-size:13px; flex:1; min-width:180px;}
+  .mode-badge{font-size:13px; font-weight:600; background:var(--panel3); border:1px solid var(--line);
+    border-radius:999px; padding:6px 12px;}
+  .feed-item{background:var(--panel3); border-left:3px solid var(--primary); border-radius:8px;
+    padding:9px 12px; margin-bottom:6px; font-size:14px; animation:feedin .4s ease-out;}
+  .feed-item .hint{float:right;}
+  @keyframes feedin{from{opacity:0; transform:translateY(-8px)} to{opacity:1; transform:none}}
+  @media(max-width:600px){ .row{gap:10px} }
+
+  /* admin grouping */
+  .admin-group-label{font-family:"Barlow Condensed"; font-weight:700; font-size:15px; letter-spacing:1.5px;
+    text-transform:uppercase; color:var(--primary); background:var(--panel3); border-radius:999px;
+    display:inline-block; padding:6px 16px; margin:18px 0 6px;}
+  details.collapsible{margin-top:22px; border:1px solid var(--line); border-radius:14px; padding:2px 16px 14px; background:var(--panel3);}
+  details.collapsible summary{cursor:pointer; font-family:"Barlow Condensed"; font-weight:700; font-size:18px;
+    letter-spacing:.5px; padding:12px 0; color:var(--muted); list-style:none;}
+  details.collapsible summary::-webkit-details-marker{display:none;}
+  details.collapsible summary::before{content:"▶ "; font-size:13px;}
+  details.collapsible[open] summary::before{content:"▼ ";}
+  details.collapsible[open] summary{color:var(--ink);}
+
+  /* toast */
+  #toastBox{position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:10500;
+    display:flex; flex-direction:column; gap:8px; align-items:center; pointer-events:none; width:100%; padding:0 12px;}
+  .toast{pointer-events:auto; max-width:420px; background:var(--ink); color:#fff; border-radius:12px;
+    padding:12px 18px; font-size:14px; font-weight:600; box-shadow:0 10px 30px rgba(43,49,96,.35);
+    display:flex; align-items:center; gap:10px; opacity:0; transform:translateY(-14px); transition:opacity .25s,transform .25s;}
+  .toast.show{opacity:1; transform:translateY(0);}
+  .toast .em{font-size:20px;}
+  .toast.t-best{background:linear-gradient(90deg,var(--primary),var(--purple));}
+  .toast.t-good{background:var(--good);}
+  .toast.t-task{background:var(--primary2);}
+
+  /* my-stats trend */
+  .trend-row{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:10px 0;}
+  .trend-delta{font-family:"Barlow Condensed"; font-weight:700; font-size:20px;}
+  .trend-delta.up{color:var(--good)} .trend-delta.down{color:var(--bad)} .trend-delta.flat{color:var(--muted)}
+  #mineSpark{width:100%; max-width:420px; height:64px; background:var(--panel3); border-radius:10px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>타바타 AI 코치 <span style="color:var(--work)">PRO</span></h1>
+  <span class="tag">자세 인식 · 정확도/반복수/시간/강도 측정</span>
+  <div class="profile">
+    <div class="avatar" id="avatarEmoji">🥚</div>
+    <div><div class="pv num" id="totalPts">0 P</div><div class="pl" id="levelName">Lv.1 새싹</div></div>
+  </div>
+</header>
+
+<nav>
+  <button class="on" data-page="pgSetup">운동 설계</button>
+  <button data-page="pgWork">운동하기</button>
+  <button data-page="pgMine">내 기록</button>
+  <button data-page="pgAdmin">🔒 학습센터</button>
+</nav>
+
+<div class="wrap">
+
+  <!-- ================= SETUP ================= -->
+  <section class="page on" id="pgSetup">
+    <h3>① 내 정보</h3>
+    <div class="hint" style="margin-bottom:8px">학번을 입력하면 성명이 자동으로 표시됩니다. 학번 = <b>학년(1자리)+반(2자리)+번호(2자리)</b>입니다(예: 1학년 1반 1번 → <b>10101</b>). 명단에 없으면 아래 이름·학반을 직접 입력하세요.</div>
+    <div class="row">
+      <div class="field"><label>학번</label><input type="text" id="stuId" placeholder="10101" maxlength="5" inputmode="numeric" style="width:110px"></div>
+      <span class="hint" id="stuIdHint" style="align-self:center"></span>
+      <div class="field" id="stuNameField"><label>이름 (직접 입력)</label><input type="text" id="stuName" placeholder="홍길동"></div>
+      <div class="field" id="stuClassField"><label>학반 (직접 입력)</label><input type="text" id="stuClass" placeholder="1-3" style="width:80px"></div>
+      <span class="hint" id="myInfoBadge" style="align-self:center"></span>
+    </div>
+
+    <div id="taskCards"></div>
+    <h3>② 자율 실천 운동설계</h3>
+
+    <div class="step-box" style="margin-top:0">
+      <div style="font-weight:700;margin-bottom:4px">⚡ 빠른 운동설계</div>
+      <div class="hint" style="margin-bottom:8px">운동 목적에 맞는 구성을 버튼 하나로 바로 불러옵니다.</div>
+      <div class="presets">
+        <button class="btn btn-stop btn-sm" data-preset="basic">기본 전신</button>
+        <button class="btn btn-stop btn-sm" data-preset="lower">하체 집중</button>
+        <button class="btn btn-stop btn-sm" data-preset="upper">상체·코어</button>
+        <button class="btn btn-stop btn-sm" data-preset="cardio">유산소 위주</button>
+      </div>
+    </div>
+
+    <div class="step-box" style="margin-top:10px">
+      <div style="font-weight:700;margin-bottom:4px">✏️ 자율 운동설계</div>
+      <div class="hint" style="margin-bottom:8px">운동을 하나씩 골라 순서대로 추가하세요. 아래 ③ 강도 설정의 라운드 수만큼 이 목록을 처음부터 반복합니다.</div>
+      <div class="row" style="margin-bottom:0">
+        <div class="field"><label>운동 추가</label>
+          <select id="addEx">
+            <optgroup label="하체">
+              <option value="squat">스쿼트</option>
+              <option value="lunge">런지</option>
+              <option value="sidelunge">사이드런지</option>
+              <option value="jumpsquat">점프스쿼트</option>
+            </optgroup>
+            <optgroup label="상체">
+              <option value="pushup">푸쉬업</option>
+              <option value="pushupknee">푸쉬업 (무릎대고)</option>
+            </optgroup>
+            <optgroup label="코어">
+              <option value="crunch">크런치</option>
+              <option value="legraise">레그레이즈</option>
+              <option value="plank">플랭크 (시간)</option>
+            </optgroup>
+            <optgroup label="유산소">
+              <option value="jack">점핑잭</option>
+              <option value="highknee">하이니</option>
+              <option value="mtclimber">마운틴클라이머</option>
+              <option value="burpee">버피</option>
+            </optgroup>
+          </select>
+        </div>
+        <button class="btn btn-teal btn-sm" id="addBtn">+ 추가</button>
+      </div>
+      <div class="seqlist" id="seqList"></div>
+    </div>
+
+    <h3>③ 강도 설정</h3>
+    <div class="row">
+      <div class="field"><label>운동(초)</label><input type="number" id="workSec" value="20" min="10" max="60"></div>
+      <div class="field"><label>휴식(초)</label><input type="number" id="restSec" value="10" min="5" max="60"></div>
+      <div class="field"><label>라운드</label><input type="number" id="rounds" value="8" min="2" max="16"></div>
+      <input type="hidden" id="difficulty" value="1">
+      <button class="btn btn-go" id="toWorkout">운동 시작 →</button>
+    </div>
+    <div class="hint"><b>라운드 = "운동 + 휴식" 1묶음</b>입니다. 예를 들어 운동 20초·휴식 10초·8라운드면 총 8번(4분) 운동하며, 위에서 만든 운동 목록을 라운드 수만큼 처음부터 반복합니다(운동이 4개인데 8라운드면 각 운동을 2번씩 수행). 강도 점수는 라운드 수 × 운동시간을 표준 타바타(8라운드×20초)와 비교해 계산됩니다.</div>
+
+    <details class="collapsible" style="margin-top:22px">
+      <summary>④ ⚔️ 친구에게 결투 신청 (배틀)</summary>
+      <div class="hint" style="margin:10px 0 8px">같은 반 친구에게 결투를 신청하세요! 둘 다 <b>같은 구성</b>으로 운동해서 종합점수가 높은 쪽이 승리합니다. 🏆 승리 <b>+30P</b> · 무승부 +20P · 참가만 해도 +10P. (배틀은 서버 연결이 필요하며, 위 ① 내 정보에 입력한 이름·학반 기준으로 동작합니다)</div>
+
+      <div class="step-box" style="margin-top:10px">
+        <div style="font-weight:700;margin-bottom:4px">⚔️ 대결 운동설계</div>
+        <div class="hint" style="margin-bottom:8px">여기서 만든 구성이 그대로 대결 조건이 됩니다. 두 사람 모두 같은 구성으로 대결해요.</div>
+        <div class="row" style="margin-bottom:8px">
+          <div class="field"><label>운동 추가</label><select id="bAddEx"></select></div>
+          <button class="btn btn-teal btn-sm" id="bAddBtn">+ 추가</button>
+          <button class="btn btn-stop btn-sm" id="bCopyBtn">📥 내 운동설계 불러오기</button>
+        </div>
+        <div class="seqlist" id="bSeqList"></div>
+        <div class="row" style="margin-bottom:0">
+          <div class="field"><label>운동(초)</label><input type="number" id="bWorkSec" value="20" min="10" max="60"></div>
+          <div class="field"><label>휴식(초)</label><input type="number" id="bRestSec" value="10" min="5" max="60"></div>
+          <div class="field"><label>라운드</label><input type="number" id="bRounds" value="8" min="2" max="16"></div>
+          <input type="hidden" id="bDifficulty" value="1">
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <div class="field"><label>상대 선택 (우리 반)</label><select id="bOppo"><option value="">선택</option></select></div>
+        <div class="field"><label>또는 직접 입력</label><input type="text" id="bOppoName" placeholder="상대 이름" style="width:110px"></div>
+        <button class="btn btn-go btn-sm" id="bSend">⚔️ 결투 신청</button>
+      </div>
+      <div class="hint" id="bCfgHint"></div>
+      <div id="battleList" style="margin-top:10px"></div>
+    </details>
+  </section>
+
+  <!-- ================= WORKOUT ================= -->
+  <section class="page" id="pgWork">
+    <div id="healthGate" class="step-box" style="border-color:var(--bad);background:#FDECEE">
+      <div style="font-weight:700;color:var(--bad);margin-bottom:6px">🩺 운동 전 건강 자가체크</div>
+      <div class="hint" style="margin-bottom:8px">아래 항목 중 <b>해당되는 것이 하나라도 있으면</b> 오늘은 무리하지 말고 선생님께 알리세요.</div>
+      <div id="parqList"></div>
+      <div class="row" style="margin-top:8px;margin-bottom:0">
+        <button class="btn btn-go btn-sm" id="parqOk">모두 해당 없음 · 운동 준비 완료</button>
+        <span class="hint" id="parqMsg"></span>
+      </div>
+    </div>
+    <div id="workBody" style="display:none">
+    <div class="step-tag">STEP 1 · 운동 전 심박수 (안정 시)</div>
+    <div class="step-box">
+      <div class="row" style="margin-bottom:0">
+        <span class="hint">💓 준비운동 전에 측정하세요. 카메라 측정 또는 직접 입력 후 [확인]</span>
+        <button class="btn btn-teal btn-sm" id="preStart">📷 측정 (8~24초)</button>
+        <div class="field"><label>직접 입력 (BPM)</label><input type="number" id="preManual" placeholder="72" style="width:90px"></div>
+        <button class="btn btn-stop btn-sm" id="preSave">확인</button>
+        <span class="hint" id="preBadge"></span>
+      </div>
+      <div id="preLive" style="display:none;margin-top:8px">
+        <div class="hr-cam-wrap"><video id="preCam" class="hr-cam" playsinline muted></video><div class="hr-cam-ring"></div><div class="hr-cam-hint">손가락으로 렌즈를 덮으세요</div></div>
+        <canvas id="preWave" width="600" height="70" style="width:100%;height:70px;background:var(--bg);border-radius:10px;margin-top:8px"></canvas>
+        <div class="hint" id="preMsg" style="margin-top:6px"></div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:14px;margin-bottom:0">
+      <div class="step-tag">STEP 2 · 운동</div>
+    </div>
+    <div class="stage" id="stage">
+      <video id="video" playsinline muted></video>
+      <canvas class="ov" id="overlay"></canvas>
+      <button class="exit-fs" id="exitFs">✕ 종료</button>
+      <div class="center-msg" id="intro">
+        <h2>준비되면 시작을 누르세요</h2>
+        <p>전신이 보이게 카메라에서 2~3m 떨어져 주세요. 밝은 곳에서 한 명만 화면에 나와야 정확합니다. <b>플랭크·크런치·레그레이즈·푸쉬업(무릎대고 포함)·버피</b>는 카메라에 <b>옆모습</b>이 보이게 하면 인식이 정확합니다.</p>
+      </div>
+      <div class="hud" id="hud" style="display:none">
+        <div class="top">
+          <div class="pill" id="phasePill">준비</div>
+          <div class="pill p-ex" id="exPill">-</div>
+          <div class="pill p-ex" id="roundPill">1/8</div>
+        </div>
+        <div class="timer" id="timerBox"><div class="big num" id="timerBig">0</div></div>
+        <div class="fb" id="fb">자세를 잡아주세요</div>
+        <div class="bottom">
+          <div class="metric"><div class="n num" id="repN">0</div><div class="l" id="repL">횟수</div></div>
+          <div class="jcount" id="jCount" style="display:none"></div>
+          <div class="metric acc" style="text-align:right"><div class="n num" id="accN">–</div><div class="l">자세 정확도</div></div>
+        </div>
+      </div>
+      <div class="judge" id="judge"></div>
+      <div class="next-preview" id="nextPreview" style="display:none">
+        <div class="np-label">다음 동작</div>
+        <div class="np-art" id="npArt"></div>
+        <div class="np-name" id="npName"></div>
+        <div class="np-tip" id="npTip"></div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn btn-go" id="startBtn">시작</button>
+      <button class="btn btn-stop" id="stopBtn" disabled>중단</button>
+      <button class="btn btn-stop" id="musicBtn">🎵 음악 ON</button>
+      <span class="mode-badge" id="modeBadge">🌱 자율 실천 모드 — 완료 시 가산점 +20%</span>
+      <span class="hint" id="seqPreview"></span>
+    </div>
+
+    <!-- STEP 3 · 운동 후 심박수 (항상 표시 — 심박수→운동→심박수 순서) -->
+    <div id="hrStep3">
+      <div class="step-tag" style="margin-top:20px">STEP 3 · 운동 후 심박수</div>
+      <div class="step-box">
+      <h3 style="margin-top:2px">💓 운동 직후 심박수 측정</h3>
+      <div class="hint">운동이 끝나고 <b>30초 이내</b>에 측정해야 실제 운동 강도가 반영됩니다. 운동 후 심박수가 <b style="color:var(--good)">130 이상이면 성실 수행</b>으로 인정됩니다(중강도 이상). <b>스마트폰 권장</b>: 후면 카메라 렌즈를 손가락 끝으로 완전히 덮으세요(플래시가 자동으로 켜집니다). 노트북 웹캠은 플래시가 없어 측정이 잘 안 될 수 있어요 — 그 경우 목이나 손목 맥박을 <b>10초간 세고 ×6</b> 한 값을 직접 입력하세요.</div>
+      <div class="row" style="margin-top:10px">
+        <div class="field"><label>나이</label><input type="number" id="hrAge" value="16" min="10" max="20" style="width:72px"></div>
+        <button class="btn btn-teal btn-sm" id="hrStart">📷 카메라로 측정 (8~24초)</button>
+        <div class="field"><label>직접 입력 (BPM)</label><input type="number" id="hrManual" placeholder="예: 162" style="width:100px"></div>
+        <button class="btn btn-stop btn-sm" id="hrSave">기록에 저장</button>
+      </div>
+      <div id="hrLive" style="display:none">
+        <div class="hr-cam-wrap"><video id="hrCam" class="hr-cam" playsinline muted></video><div class="hr-cam-ring"></div><div class="hr-cam-hint">손가락으로 렌즈를 덮으세요</div></div>
+        <canvas id="hrWave" width="600" height="70" style="width:100%;height:70px;background:var(--panel3);border-radius:10px;margin-top:8px"></canvas>
+        <div class="hint" id="hrMsg" style="margin-top:6px"></div>
+      </div>
+      <div class="kpis" id="hrResult" style="display:none">
+        <div class="kpi"><div class="v num c1" id="hrBpm">–</div><div class="k">심박수 (BPM)</div></div>
+        <div class="kpi"><div class="v num c2" id="hrPct">–</div><div class="k">최대심박 대비</div></div>
+        <div class="kpi"><div class="v num c3" id="hrZone">–</div><div class="k">운동 강도 판정</div></div>
+      </div>
+      </div>
+    </div>
+
+    <!-- result -->
+    <div id="result" style="display:none">
+      <h3 style="margin-top:18px">이번 세션 결과</h3>
+      <div class="kpis">
+        <div class="kpi"><div class="v num c1" id="rScore">0</div><div class="k">종합점수 /100</div></div>
+        <div class="kpi"><div class="v num c2" id="rAcc">0%</div><div class="k">평균 정확도</div></div>
+        <div class="kpi"><div class="v num c3" id="rReps">0</div><div class="k">총 반복수</div></div>
+        <div class="kpi"><div class="v num c3" id="rTime">0초</div><div class="k">유효 수행시간</div></div>
+        <div class="kpi"><div class="v num c4" id="rInt">0</div><div class="k">강도점수</div></div>
+      </div>
+      <div class="breakdown" id="breakdown"></div>
+      <div class="kpis">
+        <div class="kpi"><div class="v num" style="color:#E24FD8" id="rPerfect">0</div><div class="k">퍼펙트</div></div>
+        <div class="kpi"><div class="v num" style="color:var(--gold)" id="rGreat">0</div><div class="k">그레이트</div></div>
+        <div class="kpi"><div class="v num c3" id="rGood">0</div><div class="k">굿</div></div>
+        <div class="kpi"><div class="v num" style="color:#7A85E8" id="rOk">0</div><div class="k">오케이</div></div>
+        <div class="kpi"><div class="v num" style="color:var(--bad)" id="rMiss">0</div><div class="k">미스</div></div>
+      </div>
+      <div class="gain"><div class="av" id="gainAv">🔥</div>
+        <div><div class="pts num" id="gainPts">+0 P</div><div class="hint" id="gainMsg"></div></div>
+      </div>
+      <h3 style="margin-top:18px">라운드별 상세</h3>
+      <table><thead><tr><th>라운드</th><th>운동</th><th>반복/유지</th><th>정확도</th><th>판정 (퍼·그·굿·오·미)</th></tr></thead>
+        <tbody id="roundRows"></tbody></table>
+
+    </div>
+    </div><!-- /workBody -->
+  </section>
+
+  <!-- ================= MY RECORDS ================= -->
+  <section class="page" id="pgMine">
+    <h3>내 기록</h3>
+    <div class="hint">운동 설계에서 입력한 이름·학반 기준으로 내 기록만 보여줍니다. 운동을 완료할 때마다 여기에 쌓여요.</div>
+    <div class="kpis" style="margin-top:12px">
+      <div class="kpi"><div class="v num c1" id="mineCount">0</div><div class="k">누적 세션</div></div>
+      <div class="kpi"><div class="v num c2" id="mineBest">–</div><div class="k">최고 점수</div></div>
+      <div class="kpi"><div class="v num" style="color:var(--gold)" id="mineGRate">–</div><div class="k">퍼펙트·그레이트율</div></div>
+      <div class="kpi"><div class="v num c3" id="mineHr">–</div><div class="k">최근 심박(전→후)</div></div>
+      <div class="kpi"><div class="v num" style="color:var(--good)" id="mineDil">0</div><div class="k">성실 수행 (≥130)</div></div>
+    </div>
+    <div class="trend-row" id="mineTrendRow" style="display:none">
+      <div><div class="hint">직전 세션 대비</div><div class="trend-delta" id="mineDelta">–</div></div>
+      <div style="flex:1;min-width:200px"><div class="hint" id="mineRank" style="margin-bottom:4px"></div><canvas id="mineSpark" width="420" height="64"></canvas></div>
+    </div>
+    <table><thead><tr><th>일시</th><th>구분</th><th>운동구성</th><th>정확도</th><th>판정(퍼·그·굿·오·미)</th><th>심박(전→후)</th><th>종합</th><th>획득P</th></tr></thead>
+      <tbody id="mineRows"><tr><td colspan="8" class="empty">아직 기록이 없습니다.</td></tr></tbody></table>
+  </section>
+
+  <!-- ================= ADMIN / LEARNING CENTER ================= -->
+  <section class="page" id="pgAdmin">
+    <div class="hint" style="margin-bottom:12px">🔒 교사 전용 학습센터입니다. 학생 화면에는 비밀번호 없이는 열리지 않습니다.</div>
+
+    <div class="admin-group-label">📚 수업 운영</div>
+
+    <h3>명렬표 등록</h3>
+    <div class="hint">엑셀·한글 명렬표에서 복사해 붙여넣으세요. 한 줄에 한 명, <b>번호 이름</b>(예: 5 김철수) 형식이 가장 좋고 <b>이름만</b> 붙여넣어도 번호가 자동으로 매겨집니다.</div>
+    <div class="row" style="margin-top:10px">
+      <div class="field"><label>반 이름</label><input type="text" id="rosterClass" placeholder="1-3" style="width:90px"></div>
+      <button class="btn btn-teal btn-sm" id="rosterAdd">명렬표 등록</button>
+      <span class="hint" id="rosterCount"></span>
+    </div>
+    <textarea id="rosterPaste" rows="6" placeholder="1	김민준&#10;2	이서연&#10;3	박도윤" style="width:100%;background:var(--panel3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:15px;resize:vertical"></textarea>
+    <div class="seqlist" id="classChips"></div>
+
+    <h3 style="margin-top:20px">반별 현황</h3>
+    <div class="row">
+      <div class="field"><label>반 선택</label><select id="viewClass"><option value="">반을 등록하세요</option></select></div>
+      <button class="btn btn-stop btn-sm" id="statCsv">⬇ 반별 현황 CSV</button>
+      <label class="btn btn-stop btn-sm" style="display:inline-flex;align-items:center;cursor:pointer">📂 기록 CSV 불러오기<input type="file" id="recImport" accept=".csv" style="display:none"></label>
+    </div>
+    <div class="hint" style="margin:6px 0 8px">명렬표·기록·포인트는 이 기기에 자동 저장되어 앱을 닫아도 유지됩니다. 단, 기기 분실·브라우저 데이터 삭제에 대비해 주기적으로 <b>CSV 내려받기</b>로 백업하세요. 다른 기기의 기록은 <b>기록 CSV 불러오기</b>로 합칠 수 있습니다(중복 자동 제거). 세션수가 곧 실천 횟수예요.</div>
+    <table><thead><tr><th>번호</th><th>이름</th><th>세션수</th><th>성실수행<br>(≥130)</th><th>평균정확도</th><th>최고점수</th><th>퍼펙트·그레이트율</th><th>최근심박</th><th>누적P</th><th>최근 수행</th></tr></thead>
+      <tbody id="stuRows"><tr><td colspan="9" class="empty">반을 등록하면 학생별 누적 현황이 표시됩니다.</td></tr></tbody></table>
+
+    <h3 style="margin-top:20px">🖥️ 실시간 수업 현황판</h3>
+    <div class="hint" style="margin-bottom:8px">선택한 반의 오늘(또는 최근) 수행 현황을 실시간으로 보여줍니다. TV·프로젝터에 띄워두기 좋아요.</div>
+    <div class="kpis" id="dashKpis">
+      <div class="kpi"><div class="v num c1" id="dashDone">0</div><div class="k">완료</div></div>
+      <div class="kpi"><div class="v num" style="color:var(--bad)" id="dashUndone">0</div><div class="k">미완료</div></div>
+      <div class="kpi"><div class="v num" style="color:var(--good)" id="dashDiligent">0</div><div class="k">성실수행(≥130)</div></div>
+      <div class="kpi"><div class="v num c2" id="dashAvg">–</div><div class="k">반 평균 점수</div></div>
+    </div>
+    <div class="row" style="margin-top:4px">
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)"><input type="checkbox" id="dashToday" checked> 오늘 수행만 집계</label>
+    </div>
+    <div id="dashChips" class="seqlist" style="margin-top:8px"></div>
+
+    <h3 style="margin-top:20px">🎮 수업 통제 (모든 학생 동시)</h3>
+    <div class="hint" style="margin-bottom:8px">서버로 연결된 모든 학생 앱에 신호를 보냅니다. (학생은 운동 설계·심박 준비가 끝난 상태여야 함)</div>
+    <div class="row">
+      <button class="btn btn-go btn-sm" id="ctrlStart">▶ 다같이 시작 (3초 후)</button>
+      <button class="btn btn-stop btn-sm" id="ctrlStop" style="color:var(--bad)">⏹ 전체 정지</button>
+      <span class="hint" id="ctrlMsg"></span>
+    </div>
+
+    <h3 style="margin-top:20px">📊 성적 자동 집계</h3>
+    <div class="hint" style="margin-bottom:8px">평가계획서 배점에 맞춰 학생별 원점수를 자동 계산합니다. 실천(15) = 공통과제 완료·성실수행·정확도·꾸준함·향상을 반영한 환산 점수이며, <b>운동계획·자기성찰은 별도 산출 항목</b>입니다(참고용 자동 계산).</div>
+    <div class="row">
+      <button class="btn btn-teal btn-sm" id="gradeCalc">점수 계산·표시</button>
+      <button class="btn btn-stop btn-sm" id="gradeCsv">⬇ 성적 CSV</button>
+    </div>
+    <table><thead><tr><th>번호</th><th>이름</th><th>세션수</th><th>공통과제</th><th>성실수행</th><th>평균정확도</th><th>실천 점수<br>(15점)</th></tr></thead>
+      <tbody id="gradeRows"><tr><td colspan="7" class="empty">반을 선택하고 [점수 계산]을 누르세요.</td></tr></tbody></table>
+
+    <h3 style="margin-top:20px">전체 세션 기록</h3>
+    <div class="hint" style="margin-bottom:10px"><span id="persistHint">저장 상태 확인 중…</span> CSV로 내려받아 성적 처리에 활용하세요.</div>
+    <div class="row">
+      <button class="btn btn-teal btn-sm" id="csvBtn">⬇ 전체 기록 CSV 내려받기</button>
+    </div>
+    <table><thead><tr><th>일시</th><th>이름</th><th>학반</th><th>구분</th><th>운동구성</th><th>라운드</th><th>정확도</th><th>반복수</th><th>수행시간</th><th>강도</th><th>판정(퍼/그/굿/오/미)</th><th>심박(전→후)</th><th>종합</th><th>획득P</th></tr></thead>
+      <tbody id="recRows"><tr><td colspan="14" class="empty">아직 기록이 없습니다.</td></tr></tbody></table>
+
+    <h3 style="margin-top:20px">📋 공통 과제 관리</h3>
+    <div class="hint">아래에서 과제로 낼 운동 구성·강도를 직접 설계하고 제목을 붙여 등록하세요. 등록 즉시 모든 학생 앱의 운동 설계 화면에 과제 카드가 나타나고, 학생이 [이 과제 하기]로 수행하면 기록에 과제명이 표시됩니다. 학생이 구성을 임의로 바꾸면 자율 모드로 전환되어 과제로 인정되지 않습니다.</div>
+
+    <div class="step-box" style="margin-top:8px">
+      <div style="font-weight:700;margin-bottom:4px">📋 과제 운동설계</div>
+      <div class="row" style="margin-bottom:8px">
+        <div class="field"><label>운동 추가</label><select id="tAddEx"></select></div>
+        <button class="btn btn-teal btn-sm" id="tAddBtn">+ 추가</button>
+        <button class="btn btn-stop btn-sm" id="tCopyBtn">📥 운동 설계 탭 구성 불러오기</button>
+      </div>
+      <div class="seqlist" id="tSeqList"></div>
+      <div class="row" style="margin-bottom:0">
+        <div class="field"><label>운동(초)</label><input type="number" id="tWorkSec" value="20" min="10" max="60"></div>
+        <div class="field"><label>휴식(초)</label><input type="number" id="tRestSec" value="10" min="5" max="60"></div>
+        <div class="field"><label>라운드</label><input type="number" id="tRounds" value="8" min="2" max="16"></div>
+        <input type="hidden" id="tDifficulty" value="1">
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:8px">
+      <div class="field" style="flex:1;min-width:200px"><label>과제 제목</label><input type="text" id="taskTitle" placeholder="예: 3주차 공통 타바타" style="width:100%"></div>
+      <button class="btn btn-teal btn-sm" id="taskAdd">위 설계로 과제 등록</button>
+    </div>
+    <div class="seqlist" id="taskChips"></div>
+    <div class="row" style="margin-top:6px">
+      <div class="field"><label>완료 현황 볼 과제</label><select id="taskView"><option value="">과제를 등록하세요</option></select></div>
+    </div>
+    <table><thead><tr><th>이름</th><th>학반</th><th>일시</th><th>정확도</th><th>심박(전→후)</th><th>종합</th></tr></thead>
+      <tbody id="taskRows"><tr><td colspan="6" class="empty">과제를 선택하면 완료한 학생이 표시됩니다.</td></tr></tbody></table>
+
+    <div class="admin-group-label">⚙️ 앱 설정</div>
+    <details class="collapsible">
+      <summary>Firebase 연동 · 관리자 비밀번호 · 데이터 초기화 (수업 중엔 열 필요 없어요)</summary>
+
+      <h3 style="margin-top:14px">🔥 Firebase 실시간 연동</h3>
+      <div class="hint">모든 기록·명렬표가 <b>Firebase 서버에 저장</b>되어 브라우저 데이터가 지워지거나 기기를 바꿔도 사라지지 않습니다. 학생이 운동을 마치는 <b>즉시</b> 선생님 화면에 실시간으로 나타납니다. 설정은 함께 제공되는 안내에 따라 한 번만 하면 되고, 설정이 저장된 앱을 학생들에게 배포하면 학생은 아무 설정 없이 바로 사용합니다.</div>
+      <div class="row" style="margin-top:10px">
+        <div class="field" style="flex:1;min-width:260px"><label>Firebase 설정 붙여넣기 (firebaseConfig)</label>
+          <textarea id="fbCfg" rows="5" placeholder='Firebase 콘솔에서 복사한 설정을 그대로 붙여넣으세요. 예:
+const firebaseConfig = {
+  apiKey: "AIza…",
+  databaseURL: "https://xxx.firebasedatabase.app",
+  projectId: "xxx", …
+};' style="width:100%;background:var(--panel3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:monospace;font-size:13px;resize:vertical"></textarea>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn btn-teal btn-sm" id="fbSave">🔗 연결 저장</button>
+        <span class="hint" id="liveStatus">아직 연결되지 않음 — 기록은 이 기기에만 저장 중</span>
+      </div>
+      <div class="hint" id="srvStatus"></div>
+      <div id="liveFeed" style="display:none;margin-top:8px;max-height:340px;overflow-y:auto"></div>
+
+      <h3 style="margin-top:20px">🔑 관리자 비밀번호</h3>
+      <div class="hint">초기 비밀번호는 <b>1234</b>입니다. 학생 배포 전에 꼭 변경하세요. (앱 내 잠금장치 수준이며 완전한 보안은 아닙니다)</div>
+      <div class="row" style="margin-top:8px">
+        <div class="field"><label>새 비밀번호</label><input type="password" id="newPw" style="width:150px"></div>
+        <button class="btn btn-teal btn-sm" id="pwBtn">변경</button>
+      </div>
+
+      <h3 style="margin-top:20px">🗑 데이터 초기화</h3>
+      <div class="hint">이 기기에 저장된 명렬표·기록·포인트를 삭제합니다. Firebase에 연결되어 있다면 서버의 기록은 유지되며 재연결하면 다시 내려받습니다. 되돌릴 수 없으니 먼저 CSV로 백업하세요.</div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn btn-stop btn-sm" id="wipeBtn" style="color:var(--bad)">🗑 전체 초기화</button>
+      </div>
+    </details>
+  </section>
+</div>
+
+<div id="levelupOverlay">
+  <div id="confetti"></div>
+  <div class="lu-card">
+    <div class="lu-title">LEVEL UP! 🎉</div>
+    <div class="lu-emoji" id="luEmoji">💪</div>
+    <div class="lu-name" id="luName">Lv.4 파이터</div>
+    <div class="lu-sub">축하해요! 아바타가 성장했어요</div>
+  </div>
+</div>
+<div id="toastBox"></div>
+
+<script type="module">
+import { PoseLandmarker, FilesetResolver, DrawingUtils }
+  from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.12";
+
+const $=id=>document.getElementById(id);
+
+/* ---------- nav ---------- */
+let adminUnlocked=false, adminPw="1234";
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>{
+  if(b.dataset.page==="pgAdmin"&&!adminUnlocked){
+    const pw=prompt("관리자(교사) 비밀번호를 입력하세요");
+    if(pw===null)return;
+    if(pw!==adminPw){alert("비밀번호가 틀렸습니다.");return;}
+    adminUnlocked=true;
+  }
+  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("on"));
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); $(b.dataset.page).classList.add("on");
+  if(b.dataset.page==="pgMine")renderMine();
+  if(b.dataset.page==="pgSetup")refreshBattleUI();
+  if(b.dataset.page==="pgWork" && !parqPassed){ $("healthGate").style.display="block"; $("workBody").style.display="none"; initParq(); }
+  if(b.dataset.page==="pgAdmin")renderDashboard();
+}));
+$("pwBtn")&&$("pwBtn").addEventListener("click",()=>{
+  const v=$("newPw").value.trim();
+  if(v.length<4){alert("4자 이상으로 정해주세요.");return;}
+  adminPw=v; saveAll(); $("newPw").value="";
+  alert("비밀번호가 변경·저장되었습니다.");
+});
+function goPage(id){ document.querySelector(`nav button[data-page=${id}]`).click(); }
+
+/* ---------- 운동 전 건강 자가체크 (PAR-Q 간이) ---------- */
+const PARQ=[
+ "지금 몸이 아프거나 다친 곳이 있다",
+ "어지럽거나 가슴이 답답한 증상이 있다",
+ "최근 감기·발열 등 컨디션이 좋지 않다",
+ "의사에게 운동을 제한받은 적이 있다",
+ "오늘 운동하기 부담스러운 다른 이유가 있다",
+];
+let parqPassed=false;
+function initParq(){
+  const box=$("parqList"); box.innerHTML="";
+  PARQ.forEach((q,i)=>{
+    const lab=document.createElement("label");
+    lab.style.cssText="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);margin:4px 0;cursor:pointer";
+    lab.innerHTML=`<input type="checkbox" class="parq-chk"> ${q}`;
+    box.appendChild(lab);
+  });
+  $("parqMsg").textContent="";
+}
+function anyParqChecked(){ return [...document.querySelectorAll(".parq-chk")].some(c=>c.checked); }
+$("parqOk").addEventListener("click",()=>{
+  if(anyParqChecked()){
+    $("parqMsg").innerHTML='<span class="err">해당 항목이 있어요. 오늘은 무리하지 말고 선생님께 알리세요.</span>';
+    return;
+  }
+  parqPassed=true;
+  $("healthGate").style.display="none";
+  $("workBody").style.display="block";
+});
+$("toWorkout").addEventListener("click",()=>goPage("pgWork"));
+
+/* ---------- exercise defs ---------- */
+const EXNAME={squat:"스쿼트",pushup:"푸쉬업",pushupknee:"푸쉬업(무릎대고)",lunge:"런지",jack:"점핑잭",plank:"플랭크",
+  crunch:"크런치",legraise:"레그레이즈",sidelunge:"사이드런지",jumpsquat:"점프스쿼트",
+  highknee:"하이니",mtclimber:"마운틴클라이머",burpee:"버피"};
+// minVis: 관절 최소 신뢰도 기준. 서서 하는 동작은 카메라에 잘 잡히지만
+// 엎드리거나 눕는 동작(푸쉬업·플랭크·크런치·레그레이즈·버피의 엎드림)은 몸이 겹치거나
+// 바닥에 가까워 포즈 모델의 인식 신뢰도가 원래 낮게 나온다. 기본 0.4 기준을 그대로 쓰면
+// 실제로 동작을 잘 해도 "인식 안 됨" 취급되어 카운트가 누락되므로 이 동작들만 기준을 낮춘다.
+const EX={
+  squat:{type:"rep",joints:[[24,26,28],[23,25,27]],down:100,up:160,perfect:85,
+    good:"좋은 깊이!",shallow:"조금 더 깊게 앉기"},
+  pushup:{type:"rep",joints:[[12,14,16],[11,13,15]],down:95,up:155,perfect:80,minVis:0.22,
+    good:"가슴까지 OK!",shallow:"팔꿈치 더 굽히기"},
+  // 무릎대고 하는 푸쉬업: 팔 각도를 재는 방식은 일반 푸쉬업과 같지만, 몸 전체 윤곽이
+  // 곧은 플랭크가 아니라 골반이 접힌 모양이라 포즈 모델이 훨씬 불안정하게 잡는다.
+  // 같은 기준을 쓰면 실제로 잘 하고 있어도 계속 "인식 안 됨"으로 버려지므로 기준을 더 낮춘다.
+  pushupknee:{type:"rep",joints:[[12,14,16],[11,13,15]],down:95,up:155,perfect:80,minVis:0.15,
+    good:"가슴까지 OK!",shallow:"팔꿈치 더 굽히기"},
+  lunge:{type:"rep",joints:[[24,26,28],[23,25,27]],down:110,up:165,perfect:95,
+    good:"안정적인 런지!",shallow:"무릎을 더 낮추기"},
+  jack:{type:"jack",good:"리듬 좋아요!",shallow:"팔을 머리 위까지!"},
+  plank:{type:"hold",joints:[[12,24,28],[11,23,27]],lo:150,hi:200,minVis:0.22,
+    good:"곧게 유지 중!",bad:"엉덩이 높이 맞추기"},
+  crunch:{type:"rep",joints:[[12,24,26],[11,23,25]],down:118,up:150,perfect:105,minVis:0.28,
+    good:"복부 수축 좋아요!",shallow:"상체를 더 말아올리기"},
+  legraise:{type:"rep",joints:[[12,24,26],[11,23,25]],down:100,up:150,perfect:90,minVis:0.28,
+    good:"다리 잘 올렸어요!",shallow:"다리를 더 높이"},
+  sidelunge:{type:"rep",joints:[[24,26,28],[23,25,27]],down:120,up:168,perfect:105,
+    good:"좋은 사이드런지!",shallow:"옆으로 더 낮게"},
+  jumpsquat:{type:"rep",joints:[[24,26,28],[23,25,27]],down:105,up:165,perfect:90,
+    good:"파워풀한 점프!",shallow:"더 깊게 앉았다 점프"},
+  highknee:{type:"knee",good:"무릎 높이 최고!",shallow:"무릎을 허리까지!"},
+  mtclimber:{type:"knee",good:"빠른 템포 좋아요!",shallow:"무릎을 가슴쪽으로 더"},
+  burpee:{type:"burpee",good:"완벽한 버피!",shallow:"점프까지 완전히!",minVis:0.28},
+};
+
+/* ---------- 운동 자세 그래픽 (SVG) + 팁 ---------- */
+const EXTIP={
+  squat:"발은 어깨너비, 무릎이 발끝을 넘지 않게 앉기",
+  pushup:"손은 어깨너비, 몸통을 일직선으로",
+  pushupknee:"무릎을 바닥에 대고, 어깨부터 무릎까지 일직선으로 팔굽혀펴기",
+  lunge:"한 발 앞으로, 양 무릎 90도로 내리기",
+  jack:"팔을 머리 위로, 다리는 옆으로 벌리며 점프",
+  plank:"팔꿈치와 발끝으로 버티며 몸 일직선 유지",
+  crunch:"무릎 굽히고 상체만 말아올리기",
+  legraise:"누워서 다리를 곧게 들어올리기",
+  sidelunge:"옆으로 한 발 크게, 그쪽 무릎 굽히기",
+  jumpsquat:"앉았다가 힘차게 위로 점프",
+  highknee:"제자리에서 무릎을 허리 높이까지 번갈아",
+  mtclimber:"엎드려 무릎을 가슴쪽으로 번갈아 당기기",
+  burpee:"섰다가 엎드리고 다시 점프",
+};
+// 공통 스틱맨 헬퍼: 머리+몸통을 조합해 자세별 SVG 생성 (색상 통일)
+function exerciseArt(k){
+  const C='#5B51E8', A='#FF9F1C', S=3.4;
+  const H=(cx,cy,r=9)=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${C}"/>`;
+  const L=(x1,y1,x2,y2,c=C)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${S}" stroke-linecap="round"/>`;
+  const G=g=>`<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><rect width="120" height="120" rx="16" fill="#F3F1FD"/>${g}</svg>`;
+  switch(k){
+    case "squat": return G(H(60,26)+L(60,35,60,62)+L(60,45,44,52,A)+L(60,45,76,52,A)+L(60,62,46,74)+L(46,74,46,92)+L(60,62,74,74)+L(74,74,74,92));
+    case "jumpsquat": return G(H(60,20)+L(60,29,60,52)+L(60,36,42,26,A)+L(60,36,78,26,A)+L(60,52,48,66)+L(48,66,50,84)+L(60,52,72,66)+L(72,66,70,84)+`<text x="60" y="106" font-size="12" fill="${A}" text-anchor="middle">▲ JUMP</text>`);
+    case "pushup": return G(H(28,54)+L(37,56,86,66)+L(50,58,50,74,A)+L(72,62,72,78,A)+L(86,66,104,74));
+    case "pushupknee": return G(H(30,54)+L(38,56,78,64)+L(48,58,48,74,A)+L(66,60,66,76,A)+L(78,64,86,78)+L(86,78,76,90)+`<text x="80" y="106" font-size="11" fill="${A}" text-anchor="middle">무릎대고</text>`);
+    case "lunge": return G(H(58,24)+L(58,33,58,60)+L(58,44,46,54,A)+L(58,44,70,54,A)+L(58,60,40,74)+L(40,74,40,92)+L(58,60,78,72)+L(78,72,78,92));
+    case "sidelunge": return G(H(60,24)+L(60,33,60,58)+L(60,42,48,50,A)+L(60,42,72,50,A)+L(60,58,34,84)+L(60,58,84,70)+L(84,70,84,90));
+    case "plank": return G(H(24,58)+L(33,60,96,72)+L(40,62,40,80,A)+L(96,72,108,80)+`<line x1="30" y1="86" x2="108" y2="86" stroke="${A}" stroke-width="2" stroke-dasharray="4 4"/>`);
+    case "crunch": return G(H(38,52)+L(44,56,58,68)+L(58,68,78,68)+L(78,68,66,84)+L(66,84,84,84)+L(44,56,30,64,A));
+    case "legraise": return G(H(28,74)+L(37,74,72,74)+L(72,74,96,44,A)+`<line x1="30" y1="84" x2="100" y2="84" stroke="#ccc" stroke-width="2"/>`);
+    case "highknee": return G(H(60,22)+L(60,31,60,58)+L(60,40,46,50,A)+L(60,40,74,34,A)+L(60,58,74,60)+L(74,60,74,78)+L(60,58,52,72,A)+L(52,72,60,86));
+    case "mtclimber": return G(H(26,56)+L(35,58,92,70)+L(44,60,44,78,A)+L(92,70,104,78)+L(60,64,74,58,A)+L(74,58,74,50,A));
+    case "burpee": return G(H(60,20)+L(60,28,60,50)+L(60,34,44,30,A)+L(60,34,76,30,A)+L(60,50,50,66)+L(60,50,70,66)+`<text x="60" y="92" font-size="11" fill="${C}" text-anchor="middle">서기→엎드림</text>`+`<text x="60" y="106" font-size="11" fill="${A}" text-anchor="middle">→점프</text>`);
+    case "jack": return G(H(60,24)+L(60,33,60,60)+L(60,40,40,24,A)+L(60,40,80,24,A)+L(60,60,44,88)+L(60,60,76,88)+`<text x="60" y="108" font-size="11" fill="${A}" text-anchor="middle">팔·다리 벌리기</text>`);
+    default: return G(H(60,30)+L(60,39,60,70)+L(60,50,44,58,A)+L(60,50,76,58,A)+L(60,70,48,92)+L(60,70,72,92));
+  }
+}
+
+/* ---------- sequence builder ---------- */
+let seq=["squat","pushup","jack","plank"];
+const PRESETS={basic:["squat","pushup","jack","plank"],lower:["squat","lunge","sidelunge","jumpsquat"],
+  upper:["pushup","crunch","plank","legraise"],cardio:["jack","highknee","mtclimber","burpee"]};
+function renderSeq(){
+  const el=$("seqList"); el.innerHTML="";
+  seq.forEach((k,i)=>{
+    const c=document.createElement("div"); c.className="chip";
+    c.innerHTML=`<span class="ord num">${i+1}</span>${EXNAME[k]}<button title="삭제">✕</button>`;
+    c.querySelector("button").addEventListener("click",()=>{
+      if(!confirmTaskBreak())return;
+      seq.splice(i,1);renderSeq();
+    });
+    el.appendChild(c);
+  });
+  $("seqPreview").textContent="구성: "+seq.map(k=>EXNAME[k]).join(" → ")+" (순환)";
+}
+$("addBtn").addEventListener("click",()=>{
+  if(!confirmTaskBreak())return;
+  if(seq.length<12){seq.push($("addEx").value);renderSeq();}
+});
+document.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click",()=>{
+  if(!confirmTaskBreak())return;
+  seq=[...PRESETS[b.dataset.preset]];renderSeq();
+}));
+
+/* ---------- 공통 과제 ---------- */
+const assignments={}; // {id:{title,seq,work,rest,rounds,diff,created}}
+let currentTask=null; // {id,title} | null(자율)
+function taskDesc(a){
+  return `${a.seq.map(k=>EXNAME[k]).join("→")} · ${a.work}초/${a.rest}초 × ${a.rounds}R`;
+}
+function updateModeBadge(){
+  $("modeBadge").innerHTML=currentBattle
+    ?`⚔️ 배틀: <b>vs ${currentBattle.vs}</b> — 최선을 다하세요!`
+    :currentTask
+    ?`📋 과제 수행 중: <b>${currentTask.title}</b>`
+    :"🌱 자율 실천 모드 — 완료 시 가산점 +20%";
+}
+function clearTask(){ if(currentTask){currentTask=null; updateModeBadge();} }
+function restoreTaskCfg(){
+  if(!currentTask)return;
+  const a=assignments[currentTask.id]; if(!a){clearTask();return;}
+  seq=[...a.seq]; renderSeq();
+  $("workSec").value=a.work; $("restSec").value=a.rest;
+  $("rounds").value=a.rounds; $("difficulty").value=String(a.diff);
+}
+function confirmTaskBreak(){
+  if(currentBattle){
+    const ok=confirm(`⚔️ 지금은 배틀(vs ${currentBattle.vs}) 준비 중입니다.\n구성을 변경하면 같은 조건 대결이 아니게 되어 배틀 모드가 해제됩니다.\n\n그래도 변경할까요?`);
+    if(ok){currentBattle=null;updateModeBadge();}
+    return ok;
+  }
+  if(!currentTask)return true;
+  const ok=confirm(`⚠️ 지금은 '${currentTask.title}' 과제 수행 중입니다.\n구성을 변경하면 과제로 인정되지 않고 자율 실천(가산점 +20%)으로 전환됩니다.\n\n그래도 변경할까요?`);
+  if(ok)clearTask();
+  return ok;
+}
+function applyAssignment(id){
+  const a=assignments[id]; if(!a)return;
+  seq=[...a.seq]; renderSeq();
+  $("workSec").value=a.work; $("restSec").value=a.rest;
+  $("rounds").value=a.rounds; $("difficulty").value=String(a.diff);
+  currentBattle=null;
+  currentTask={id,title:a.title}; updateModeBadge();
+  goPage("pgWork");
+}
+function renderTasks(){
+  // 학생: 과제 카드
+  const tc=$("taskCards"); tc.innerHTML="";
+  const ids=Object.keys(assignments);
+  ids.forEach(id=>{
+    const a=assignments[id];
+    const d=document.createElement("div"); d.className="task-card";
+    d.innerHTML=`<span class="tt">📋 ${a.title}</span><span class="td">${taskDesc(a)}</span>`;
+    const btn=document.createElement("button"); btn.className="btn btn-go btn-sm"; btn.textContent="이 과제 하기";
+    btn.addEventListener("click",()=>applyAssignment(id));
+    d.appendChild(btn); tc.appendChild(d);
+  });
+  // 교사: 과제 목록 칩 + 완료현황 select
+  const chips=$("taskChips"); chips.innerHTML="";
+  const tv=$("taskView"); const keep=tv.value;
+  tv.innerHTML=ids.length?"":'<option value="">과제를 등록하세요</option>';
+  ids.forEach(id=>{
+    const a=assignments[id];
+    const doneSet=new Set(records.filter(r=>r.taskId===id).map(r=>r.name+"|"+r.cls));
+    tv.insertAdjacentHTML("beforeend",`<option value="${id}">${a.title}</option>`);
+    const chip=document.createElement("div"); chip.className="chip";
+    chip.innerHTML=`<span class="ord num">📋</span>${a.title} <span class="hint">완료 ${doneSet.size}명</span><button title="과제 삭제">✕</button>`;
+    chip.querySelector("button").addEventListener("click",()=>{
+      if(!confirm(`'${a.title}' 과제를 삭제할까요? (완료 기록은 유지됩니다)`))return;
+      delete assignments[id]; renderTasks(); saveAll();
+      if(fdb)fmod.remove(fmod.ref(fdb,"assignments/"+id)).catch(()=>{});
+    });
+    chips.appendChild(chip);
+  });
+  if(ids.includes(keep))tv.value=keep;
+  renderTaskRows();
+}
+function renderTaskRows(){
+  const id=$("taskView").value, tb=$("taskRows");
+  if(!id||!assignments[id]){tb.innerHTML='<tr><td colspan="6" class="empty">과제를 선택하면 완료한 학생이 표시됩니다.</td></tr>';return;}
+  const rs=records.filter(r=>r.taskId===id);
+  if(!rs.length){tb.innerHTML='<tr><td colspan="6" class="empty">아직 완료한 학생이 없습니다.</td></tr>';return;}
+  tb.innerHTML="";
+  rs.forEach(r=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${r.name}</td><td>${r.cls}</td><td>${r.date}</td><td class="num">${r.acc}%</td>
+      <td class="num" style="color:${r.hr?(+r.hr>=130?"var(--good)":"var(--bad)"):"inherit"}">${r.hrPre||"–"}→${r.hr||"–"}${r.hr&&+r.hr>=130?" ✅":""}</td><td class="num" style="color:var(--primary)">${r.score}</td>`;
+    tb.appendChild(tr);
+  });
+}
+$("taskView").addEventListener("change",renderTaskRows);
+$("taskAdd").addEventListener("click",()=>{
+  const title=$("taskTitle").value.trim();
+  if(!title){alert("과제 제목을 입력하세요.");return;}
+  const cfg=taskDesigner.cfg();
+  if(!cfg.seq.length){alert("위의 '과제 운동설계'에서 운동을 먼저 추가해 주세요.");return;}
+  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const a={title,...cfg,created:new Date().toISOString().slice(0,10)};
+  assignments[id]=a; $("taskTitle").value="";
+  renderTasks(); saveAll();
+  if(fdb)fmod.set(fmod.ref(fdb,"assignments/"+id),a).catch(()=>{});
+  alert(`'${title}' 과제가 등록되었습니다. 학생 앱에 즉시 표시됩니다.`);
+});
+["workSec","restSec","rounds","difficulty"].forEach(id=>$(id).addEventListener("change",()=>{
+  if(currentBattle){
+    const ok=confirm(`⚔️ 지금은 배틀(vs ${currentBattle.vs}) 준비 중입니다.\n설정을 바꾸면 배틀 모드가 해제됩니다.\n\n그래도 변경할까요?`);
+    if(ok){currentBattle=null;updateModeBadge();}
+    else{const b=battles[currentBattleId()];if(b)applyCfg(b.cfg);}
+    return;
+  }
+  if(!currentTask)return;
+  const ok=confirm(`⚠️ 지금은 '${currentTask.title}' 과제 수행 중입니다.\n강도 설정을 바꾸면 과제로 인정되지 않고 자율 실천으로 전환됩니다.\n\n그래도 변경할까요?`);
+  if(ok)clearTask();
+  else restoreTaskCfg(); // 취소 → 과제 설정으로 되돌림
+}));
+
+/* ---------- ⚔️ 배틀 모드 ---------- */
+const battles={}; // Firebase /battles 미러
+let currentBattle=null; // {id,role:'c'|'o',vs}
+let seenBattles=[]; // 보상 지급 완료된 배틀 id
+const notifiedBattles=new Set(); // 이번 세션에 알림 띄운 신청
+function currentBattleId(){return currentBattle?currentBattle.id:"";}
+function myKey(){return {name:($("stuName").value||"").trim(), cls:($("stuClass").value||"").trim()};}
+function sameP(a,b){return a&&b&&a.name===b.name&&String(a.cls)===String(b.cls);}
+function applyCfg(cfg){
+  seq=[...cfg.seq]; renderSeq();
+  $("workSec").value=cfg.work; $("restSec").value=cfg.rest;
+  $("rounds").value=cfg.rounds; $("difficulty").value=String(cfg.diff);
+}
+function refreshBattleUI(){
+  const me=myKey();
+  // 상대 선택: 우리 반 명렬표에서 내 이름 제외
+  const sel=$("bOppo"); const keep=sel.value;
+  sel.innerHTML='<option value="">선택</option>';
+  (rosters[me.cls]||[]).filter(st=>st.name!==me.name)
+    .forEach(st=>sel.insertAdjacentHTML("beforeend",`<option value="${st.name}">${st.no}. ${st.name}</option>`));
+  if([...sel.options].some(o=>o.value===keep))sel.value=keep;
+  updateBCfgHint();
+  renderBattles();
+}
+function updateBCfgHint(){
+  const me=myKey();
+  if(!me.name){$("bCfgHint").textContent="⚠️ 먼저 운동 설계 탭에서 내 이름·학반을 입력하세요.";return;}
+  const s=battleDesigner?battleDesigner.seq:seq;
+  $("bCfgHint").textContent=s.length
+    ?`대결 구성: ${s.map(k=>EXNAME[k]).join("→")} · ${$("bWorkSec").value}초/${$("bRestSec").value}초 × ${$("bRounds").value}R`
+    :"⚠️ 위의 대결 운동설계에서 운동을 추가하세요.";
+}
+function battleStatusHtml(b,mineRole){
+  const r=b.results||{};
+  if(b.status==="done"){
+    const cs=r.c?r.c.score:"-", os=r.o?r.o.score:"-";
+    let tag="무승부 🤝";
+    if(b.winner==="c")tag=`${b.ch.name} 승리 🏆`;
+    if(b.winner==="o")tag=`${b.op.name} 승리 🏆`;
+    return `<b style="color:var(--primary)">${b.ch.name} ${cs} : ${os} ${b.op.name}</b> — ${tag}`;
+  }
+  if(b.status==="declined")return `<span style="color:var(--muted)">거절됨</span>`;
+  if(b.status==="accepted"){
+    const meDone=r[mineRole], otherDone=r[mineRole==="c"?"o":"c"];
+    return meDone?`내 기록 제출 완료 ✔ — 상대 대기 중…`:(otherDone?`⚠️ 상대는 이미 완료! 어서 도전하세요`:`수락됨 — 운동을 시작하세요`);
+  }
+  return `<span style="color:var(--gold)">응답 대기 중…</span>`;
+}
+function renderBattles(){
+  const me=myKey(); const list=$("battleList"); list.innerHTML="";
+  const mine=Object.entries(battles)
+    .filter(([id,b])=>sameP(b.ch,me)||sameP(b.op,me))
+    .sort((a,b)=>(b[1].created||0)-(a[1].created||0)).slice(0,20);
+  if(!me.name){list.innerHTML='<div class="empty">운동 설계 탭에서 내 이름·학반을 먼저 입력하세요.</div>';return;}
+  if(!mine.length){list.innerHTML='<div class="empty">아직 배틀이 없습니다. 친구에게 결투를 신청해 보세요!</div>';return;}
+  mine.forEach(([id,b])=>{
+    const iAmC=sameP(b.ch,me), role=iAmC?"c":"o";
+    const other=iAmC?b.op.name:b.ch.name;
+    const d=document.createElement("div"); d.className="task-card";
+    d.innerHTML=`<span class="tt">⚔️ vs ${other}</span>
+      <span class="td">${b.cfg.seq.map(k=>EXNAME[k]).join("→")} · ${b.cfg.work}/${b.cfg.rest}초 × ${b.cfg.rounds}R<br>${battleStatusHtml(b,role)}</span>`;
+    const btns=document.createElement("span");
+    if(b.status==="pending"&&!iAmC){
+      const acc=document.createElement("button"); acc.className="btn btn-go btn-sm"; acc.textContent="수락";
+      acc.addEventListener("click",()=>fmod.update(fmod.ref(fdb,"battles/"+id),{status:"accepted"}).catch(()=>alert("전송 실패")));
+      const dec=document.createElement("button"); dec.className="btn btn-stop btn-sm"; dec.textContent="거절"; dec.style.marginLeft="6px";
+      dec.addEventListener("click",()=>fmod.update(fmod.ref(fdb,"battles/"+id),{status:"declined"}).catch(()=>{}));
+      btns.append(acc,dec);
+    } else if(b.status==="pending"&&iAmC){
+      const cx=document.createElement("button"); cx.className="btn btn-stop btn-sm"; cx.textContent="신청 취소";
+      cx.addEventListener("click",()=>fmod.remove(fmod.ref(fdb,"battles/"+id)).catch(()=>{}));
+      btns.append(cx);
+    } else if(b.status==="accepted"&&!(b.results&&b.results[role])){
+      const go=document.createElement("button"); go.className="btn btn-go btn-sm"; go.textContent="배틀 운동 시작";
+      go.addEventListener("click",()=>{
+        applyCfg(b.cfg); clearTask();
+        currentBattle={id,role,vs:other}; updateModeBadge();
+        alert(`⚔️ vs ${other} 배틀 모드!\n같은 구성으로 대결합니다. 첫 시도 기록이 제출되니 최선을 다하세요!`);
+        goPage("pgWork");
+      });
+      btns.append(go);
+    }
+    d.appendChild(btns); list.appendChild(d);
+  });
+}
+$("bSend").addEventListener("click",()=>{
+  const me=myKey();
+  if(!me.name||!me.cls){alert("운동 설계 탭에서 내 이름·학반을 먼저 입력하세요.");return;}
+  if(!fdb){alert("배틀은 서버 연결이 필요합니다. 인터넷을 확인해 주세요.");return;}
+  const oppo=($("bOppoName").value||"").trim()||$("bOppo").value;
+  if(!oppo){alert("상대를 선택하거나 이름을 입력하세요.");return;}
+  if(oppo===me.name){alert("자기 자신에게는 신청할 수 없어요 😄");return;}
+  const cfg=battleDesigner.cfg();
+  if(!cfg.seq.length){alert("위의 '대결 운동설계'에서 운동을 먼저 추가해 주세요.");return;}
+  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const b={ch:me, op:{name:oppo,cls:me.cls}, cfg, status:"pending", created:Date.now()};
+  fmod.set(fmod.ref(fdb,"battles/"+id),b)
+    .then(()=>{ $("bOppoName").value=""; alert(`⚔️ ${oppo}님에게 결투를 신청했습니다!\n상대가 수락하면 알림이 옵니다.`); })
+    .catch(()=>alert("신청 전송 실패 — 인터넷을 확인하세요."));
+});
+async function submitBattleResult(rec){
+  if(!currentBattle||!fdb)return;
+  const {id,role}=currentBattle; const bId=id;
+  try{
+    const snap=await fmod.get(fmod.ref(fdb,"battles/"+bId));
+    const b=snap.val();
+    if(!b||b.status==="declined"){
+      alert("⚔️ 배틀이 취소되어 이번 기록은 자율 실천으로만 저장되었습니다.");
+    } else if(b.results&&b.results[role]){
+      alert("⚔️ 이미 제출한 배틀입니다. 첫 시도만 인정되어 이번 기록은 배틀에 반영되지 않습니다.");
+    } else {
+      await fmod.set(fmod.ref(fdb,`battles/${bId}/results/${role}`),
+        {name:rec.name,score:rec.score,acc:rec.acc,date:rec.date});
+      const other=role==="c"?"o":"c";
+      const oRes=b.results&&b.results[other];
+      if(oRes){
+        const winner=rec.score>oRes.score?role:(oRes.score>rec.score?other:"draw");
+        await fmod.update(fmod.ref(fdb,"battles/"+bId),{status:"done",winner});
+      } else {
+        alert("⚔️ 내 기록 제출 완료! 상대가 완료하면 결과와 포인트를 알려드립니다.");
+      }
+    }
+  }catch(e){ alert("⚔️ 배틀 결과 전송 실패 — 기록은 저장되었으니 인터넷 연결 후 다시 시도하세요."); }
+  currentBattle=null; updateModeBadge();
+}
+function handleBattleEvents(){
+  const me=myKey(); if(!me.name)return;
+  Object.entries(battles).forEach(([id,b])=>{
+    const iAmC=sameP(b.ch,me), iAmO=sameP(b.op,me);
+    if(!iAmC&&!iAmO)return;
+    const role=iAmC?"c":"o";
+    // 새 결투 신청 알림 (상대일 때)
+    if(b.status==="pending"&&iAmO&&!notifiedBattles.has(id)){
+      notifiedBattles.add(id);
+      if(!running)alert(`⚔️ ${b.ch.name}님이 결투를 신청했습니다!\n배틀 탭에서 수락/거절할 수 있어요.`);
+    }
+    // 결과 확정 → 보상 1회 지급
+    if(b.status==="done"&&!seenBattles.includes(id)){
+      seenBattles.push(id);
+      let msg,reward;
+      if(b.winner==="draw"){msg="무승부! 🤝";reward=20;}
+      else if(b.winner===role){msg="🏆 승리했습니다!";reward=30;}
+      else{msg="아쉽게 패배… 다음에 설욕해요!";reward=10;}
+      totalPts+=reward; refreshProfile(); saveAll();
+      const r=b.results||{};
+      if(!running)alert(`⚔️ 배틀 결과\n${b.ch.name} ${r.c?r.c.score:"-"} : ${r.o?r.o.score:"-"} ${b.op.name}\n\n${msg} +${reward}P`);
+    }
+  });
+}
+renderSeq();
+
+/* ---------- 미니 운동설계 (배틀·공통과제 화면 내장) ---------- */
+function setupMiniDesigner(o){ // o={sel,add,copy,list,work,rest,rounds,diff,onChange?}
+  const st={seq:[...seq]};
+  $(o.sel).innerHTML=$("addEx").innerHTML; // 운동 목록 재사용
+  function render(){
+    const el=$(o.list); el.innerHTML="";
+    st.seq.forEach((k,i)=>{
+      const c=document.createElement("div"); c.className="chip";
+      c.innerHTML=`<span class="ord num">${i+1}</span>${EXNAME[k]}<button title="삭제">✕</button>`;
+      c.querySelector("button").addEventListener("click",()=>{st.seq.splice(i,1);render();});
+      el.appendChild(c);
+    });
+    if(!st.seq.length)el.innerHTML='<span class="hint">아직 운동이 없습니다 — 위에서 추가하세요.</span>';
+    if(o.onChange)o.onChange();
+  }
+  $(o.add).addEventListener("click",()=>{ if(st.seq.length<12){st.seq.push($(o.sel).value);render();} });
+  $(o.copy).addEventListener("click",()=>{
+    st.seq=[...seq];
+    $(o.work).value=$("workSec").value; $(o.rest).value=$("restSec").value;
+    $(o.rounds).value=$("rounds").value; $(o.diff).value=$("difficulty").value;
+    render();
+  });
+  [o.work,o.rest,o.rounds,o.diff].forEach(id=>$(id).addEventListener("change",()=>{ if(o.onChange)o.onChange(); }));
+  render();
+  return {
+    get seq(){return st.seq;},
+    cfg(){return {seq:[...st.seq],work:+$(o.work).value||20,rest:+$(o.rest).value||10,rounds:+$(o.rounds).value||8,diff:$(o.diff).value};}
+  };
+}
+let battleDesigner=null,taskDesigner=null;
+battleDesigner=setupMiniDesigner({sel:"bAddEx",add:"bAddBtn",copy:"bCopyBtn",list:"bSeqList",
+  work:"bWorkSec",rest:"bRestSec",rounds:"bRounds",diff:"bDifficulty",onChange:updateBCfgHint});
+taskDesigner=setupMiniDesigner({sel:"tAddEx",add:"tAddBtn",copy:"tCopyBtn",list:"tSeqList",
+  work:"tWorkSec",rest:"tRestSec",rounds:"tRounds",diff:"tDifficulty"});
+
+/* ---------- gamification ---------- */
+let totalPts=0;
+const LEVELS=[[0,"🥚","Lv.1 새싹"],[150,"🐣","Lv.2 병아리"],[400,"🐥","Lv.3 꼬마 선수"],
+  [800,"💪","Lv.4 파이터"],[1400,"🏃","Lv.5 러너"],[2200,"🦸","Lv.6 히어로"],[3200,"🏆","Lv.7 챔피언"]];
+function levelIndex(pts){ let i=0; LEVELS.forEach((l,idx)=>{ if(pts>=l[0]) i=idx; }); return i; }
+let shownLevel=0;
+function refreshProfile(opts){
+  const idx=levelIndex(totalPts), cur=LEVELS[idx];
+  $("avatarEmoji").textContent=cur[1]; $("levelName").textContent=cur[2];
+  $("totalPts").textContent=totalPts+" P";
+  if(!(opts&&opts.silent) && idx>shownLevel && shownLevel>0){
+    celebrateLevelUp(cur);
+  }
+  shownLevel=idx;
+}
+function celebrateLevelUp(lv){
+  const o=$("levelupOverlay");
+  $("luEmoji").textContent=lv[1];
+  $("luName").textContent=lv[2];
+  o.style.display="flex"; o.classList.remove("show"); void o.offsetWidth; o.classList.add("show");
+  spawnConfetti();
+  // 축하 팡파레
+  [0,120,240,420].forEach((d,i)=>setTimeout(()=>beep([660,880,1046,1318][i],.18,.2),d));
+  clearTimeout(celebrateLevelUp._t);
+  celebrateLevelUp._t=setTimeout(()=>{o.classList.remove("show"); setTimeout(()=>o.style.display="none",400);},3600);
+}
+$("levelupOverlay") && $("levelupOverlay").addEventListener("click",()=>{
+  const o=$("levelupOverlay"); o.classList.remove("show"); setTimeout(()=>o.style.display="none",400);
+});
+/* ---------- toast (비차단 알림) ---------- */
+function toast(msg,kind,emoji){
+  const box=$("toastBox"); if(!box)return;
+  const el=document.createElement("div");
+  el.className="toast"+(kind?` t-${kind}`:"");
+  el.innerHTML=`${emoji?`<span class="em">${emoji}</span>`:""}<span>${msg}</span>`;
+  box.appendChild(el);
+  void el.offsetWidth; el.classList.add("show");
+  setTimeout(()=>{
+    el.classList.remove("show");
+    setTimeout(()=>el.remove(),300);
+  },4200);
+}
+function spawnConfetti(){
+  const box=$("confetti"); box.innerHTML="";
+  const colors=["#5B51E8","#8B80F9","#FF9F1C","#2EC4B6","#F45B69","#D3960A","#3CBB75"];
+  for(let i=0;i<80;i++){
+    const s=document.createElement("span");
+    const sz=6+Math.random()*8;
+    s.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz*0.5}px;
+      background:${colors[i%colors.length]};animation-delay:${Math.random()*0.6}s;
+      animation-duration:${1.8+Math.random()*1.4}s;transform:rotate(${Math.random()*360}deg);`;
+    box.appendChild(s);
+  }
+}
+
+/* ---------- geometry ---------- */
+function angle(a,b,c){
+  const ab={x:a.x-b.x,y:a.y-b.y},cb={x:c.x-b.x,y:c.y-b.y};
+  const m=Math.hypot(ab.x,ab.y)*Math.hypot(cb.x,cb.y); if(!m)return 180;
+  return Math.acos(Math.max(-1,Math.min(1,(ab.x*cb.x+ab.y*cb.y)/m)))*180/Math.PI;
+}
+function bestSide(lm,joints){
+  let best=null,bv=-1;
+  for(const [a,b,c] of joints){
+    const v=Math.min(lm[a].visibility,lm[b].visibility,lm[c].visibility);
+    if(v>bv){bv=v;best=angle(lm[a],lm[b],lm[c]);}
+  } return {ang:best,vis:bv};
+}
+
+/* ---------- rep/hold engines ---------- */
+let repState,minAng,jackState,jackQ=0;
+let roundReps=0,roundAccSum=0,roundAccN=0,holdMs=0,holdJudgeMs=0,badMs=0,lastT=0;
+let roundJ={p:0,g:0,gd:0,o:0,b:0};
+// 랜드마크가 순간적으로 튀면 문턱값을 두 번 왔다갔다 하며 같은 반복이 중복 카운트될 수 있어
+// 방금 카운트한 반복 이후 최소 시간(REP_DEBOUNCE_MS) 안에는 다음 카운트를 인정하지 않는다.
+const REP_DEBOUNCE_MS=250;
+let lastRepT=0;
+function resetRound(){repState="up";minAng=180;jackState="closed";jackQ=0;burpeePhase="stand";roundReps=0;roundAccSum=0;roundAccN=0;holdMs=0;holdJudgeMs=0;badMs=0;roundJ={p:0,g:0,gd:0,o:0,b:0};lastT=performance.now();lastRepT=0;updateJCount();}
+function updateJCount(){
+  const el=$("jCount"); el.style.display="block";
+  el.innerHTML=`<span class="jp">P ${roundJ.p}</span>·<span class="jg">G ${roundJ.g}</span>·<span class="jgd">GD ${roundJ.gd}</span>·<span class="jo">OK ${roundJ.o}</span>·<span class="jb">M ${roundJ.b}</span>`;
+}
+/* 5단계 판정: PERFECT ≥95 / GREAT ≥88 / GOOD ≥78 / OK ≥68 / MISS <68 */
+function judge(acc){
+  const tier=acc>=95?"perfect":acc>=88?"great":acc>=78?"good":acc>=68?"ok":"miss";
+  if(tier==="perfect"){roundJ.p++; beep(1568,.09,.2); setTimeout(()=>beep(2093,.08,.15),70);}
+  else if(tier==="great"){roundJ.g++; beep(1318,.09,.18);}
+  else if(tier==="good"){roundJ.gd++; beep(988,.09,.15);}
+  else if(tier==="ok"){roundJ.o++; beep(740,.09,.13);}
+  else {roundJ.b++; beep(440,.12,.15);}
+  const el=$("judge");
+  el.textContent=tier==="perfect"?"PERFECT!!":tier==="great"?"GREAT!":tier==="good"?"GOOD":tier==="ok"?"OK":"MISS";
+  el.className="judge j-"+tier;
+  void el.offsetWidth; el.classList.add("show");
+  updateJCount();
+}
+function repAccuracy(min,def){ // depth-based 0~100 (5단계에 맞춰 기준 상향)
+  const span=def.down-def.perfect;
+  if(min<=def.perfect-span*0.25) return 100;                     // 기준각보다 확실히 깊게 → PERFECT급
+  if(min<=def.perfect) return Math.round(93+7*(def.perfect-min)/(span*0.25)); // 93~100
+  if(min>=def.down) return 55;
+  return Math.round(93-38*(min-def.perfect)/span);               // 93 → 55
+}
+function procRep(lm,def){
+  const {ang,vis}=bestSide(lm,def.joints);
+  if(vis<(def.minVis??0.4)||ang==null){$("fb").textContent="전신이 보이게 서주세요";return;}
+  if(repState==="up"&&ang<def.down){repState="down";minAng=ang;}
+  else if(repState==="down"){
+    minAng=Math.min(minAng,ang);
+    if(ang>def.up){
+      repState="up";
+      const now=performance.now();
+      if(now-lastRepT<REP_DEBOUNCE_MS){minAng=180;return;}
+      lastRepT=now; roundReps++;
+      const acc=repAccuracy(minAng,def);
+      roundAccSum+=acc; roundAccN++;
+      $("repN").textContent=roundReps;
+      $("accN").textContent=Math.round(roundAccSum/roundAccN)+"%";
+      $("fb").textContent=(acc>=88?def.good:def.shallow)+` (정확도 ${acc}%)`;
+      judge(acc);
+      minAng=180;
+    }
+  }
+}
+function procJack(lm){
+  const nose=lm[0],lw=lm[15],rw=lm[16],la=lm[27],ra=lm[28],ls=lm[11],rs=lm[12];
+  const armsUp=lw.y<nose.y&&rw.y<nose.y;
+  const armsHigh=lw.y<nose.y-0.06&&rw.y<nose.y-0.06;
+  const legsApart=Math.abs(la.x-ra.x)>Math.abs(ls.x-rs.x)*1.4;
+  const open=armsUp&&legsApart, closed=!armsUp&&!legsApart;
+  if(jackState==="closed"&&open){jackState="open"; jackQ=armsHigh?100:74;}
+  else if(jackState==="open"){
+    if(armsHigh)jackQ=100;
+    else if(jackQ<86&&armsUp)jackQ=86;
+    if(closed){
+      jackState="closed";
+      const now=performance.now();
+      if(now-lastRepT<REP_DEBOUNCE_MS){jackQ=0;return;}
+      lastRepT=now; roundReps++;
+      const acc=jackQ||74; roundAccSum+=acc; roundAccN++;
+      $("repN").textContent=roundReps;
+      $("accN").textContent=Math.round(roundAccSum/roundAccN)+"%";
+      $("fb").textContent=acc>=90?EX.jack.good:EX.jack.shallow;
+      judge(acc); jackQ=0;
+    }
+  } else if(!armsUp&&legsApart){ $("fb").textContent=EX.jack.shallow; }
+}
+// 무릎 올리기 계열 (하이니·마운틴클라이머): 좌우 무릎이 번갈아 골반 높이까지 올라오는 횟수
+function procKnee(lm,def){
+  const lh=lm[23],rh=lm[24],lk=lm[25],rk=lm[26];
+  const hipY=(lh.y+rh.y)/2;
+  const lUp=lk.y<hipY+0.02, rUp=rk.y<hipY+0.02; // 무릎이 골반 근처까지
+  const lHigh=lk.y<hipY-0.04, rHigh=rk.y<hipY-0.04;
+  const anyUp=lUp||rUp, anyHigh=lHigh||rHigh;
+  if(jackState==="closed"&&anyUp){jackState="open"; jackQ=anyHigh?100:72;}
+  else if(jackState==="open"){
+    if(anyHigh)jackQ=Math.max(jackQ,100);
+    else jackQ=Math.max(jackQ,84);
+    if(!lUp&&!rUp){
+      jackState="closed";
+      const now=performance.now();
+      if(now-lastRepT<REP_DEBOUNCE_MS){jackQ=0;return;}
+      lastRepT=now; roundReps++;
+      const acc=jackQ||72; roundAccSum+=acc; roundAccN++;
+      $("repN").textContent=roundReps;
+      $("accN").textContent=Math.round(roundAccSum/roundAccN)+"%";
+      $("fb").textContent=acc>=90?def.good:def.shallow;
+      judge(acc); jackQ=0;
+    }
+  }
+}
+// 버피: 서기(무릎 곧게) → 엎드림(어깨가 골반 아래로) 순환 1회
+let burpeePhase="stand";
+function procBurpee(lm,def){
+  const ls=lm[11],rs=lm[12],lh=lm[23],rh=lm[24];
+  const shY=(ls.y+rs.y)/2, hipY=(lh.y+rh.y)/2;
+  // 오른쪽 다리만 보던 것을 다른 자세들처럼 양쪽 중 더 잘 보이는 다리로 판정(측면 각도에 따라 한쪽이 가려질 수 있음)
+  const {ang:kneeAng,vis}=bestSide(lm,[[24,26,28],[23,25,27]]);
+  if(vis<(def.minVis??0.35)||kneeAng==null){$("fb").textContent="전신이 보이게 서주세요";return;}
+  const standing=kneeAng>150&&shY<hipY-0.15; // 곧게 서 있고 어깨가 골반보다 위
+  const down=shY>hipY-0.05;                   // 어깨가 골반 높이까지 내려옴(엎드림/플랭크)
+  if(burpeePhase==="stand"&&down){burpeePhase="down";}
+  else if(burpeePhase==="down"&&standing){
+    const now=performance.now();
+    if(now-lastRepT<REP_DEBOUNCE_MS)return;
+    lastRepT=now;
+    burpeePhase="stand"; roundReps++;
+    const acc= kneeAng>170?100:kneeAng>160?86:72;
+    roundAccSum+=acc; roundAccN++;
+    $("repN").textContent=roundReps;
+    $("accN").textContent=Math.round(roundAccSum/roundAccN)+"%";
+    $("fb").textContent=acc>=95?def.good:def.shallow;
+    judge(acc);
+  } else if(burpeePhase==="down"){ $("fb").textContent="일어나서 점프!"; }
+}
+function procHold(lm,def){
+  const now=performance.now(),dt=now-lastT; lastT=now;
+  const {ang,vis}=bestSide(lm,def.joints);
+  if(vis<(def.minVis??0.35)||ang==null){$("fb").textContent="옆모습이 보이게 해주세요";return;}
+  if(ang>=def.lo&&ang<=def.hi){
+    holdMs+=dt; holdJudgeMs+=dt; badMs=0;
+    const dev=Math.min(Math.abs(ang-180),25);
+    const acc=Math.round(100-dev*2.2); // 5단계 기준 상향: 몸이 굽을수록 급격히 감점
+    roundAccSum+=acc*dt; roundAccN+=dt;
+    $("repN").textContent=(holdMs/1000).toFixed(1);
+    $("accN").textContent=Math.round(roundAccSum/roundAccN)+"%";
+    $("fb").textContent=def.good;
+    if(holdJudgeMs>=1000){holdJudgeMs-=1000; judge(acc);} // 1초 유지마다 판정
+  } else {
+    $("fb").textContent=def.bad;
+    badMs+=dt; holdJudgeMs=0;
+    if(badMs>=1500){badMs=0; judge(50);} // 자세가 무너진 채 1.5초 → MISS
+  }
+}
+
+/* ---------- audio ---------- */
+let audio=null;
+function beep(f=880,d=.12,v=.2){try{
+  audio=audio||new (window.AudioContext||window.webkitAudioContext)();
+  const o=audio.createOscillator(),g=audio.createGain();
+  o.frequency.value=f;o.connect(g);g.connect(audio.destination);
+  g.gain.setValueAtTime(v,audio.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);
+  o.start();o.stop(audio.currentTime+d);
+}catch(e){}}
+
+/* ---------- BGM 엔진 (Web Audio, 저작권 free) ---------- */
+let bgmOn=true, bgmTimer=null, bgmStep=0, bgmMode=null;
+// 음계(펜타토닉) — 밝고 신나는 느낌
+const BGM_WORK=[0,3,5,7,10,12,10,7]; // 빠른 상행 리프
+const BGM_REST=[0,5,7,12];           // 느긋한 아르페지오
+const BGM_CD=[12,12,12];             // 카운트다운 긴장 비트
+function midi(semi){return 220*Math.pow(2,semi/12);}
+function note(freq,dur,vol,type){
+  if(!audio)return;
+  const o=audio.createOscillator(),g=audio.createGain();
+  o.type=type||"triangle"; o.frequency.value=freq;
+  o.connect(g); g.connect(audio.destination);
+  g.gain.setValueAtTime(0,audio.currentTime);
+  g.gain.linearRampToValueAtTime(vol,audio.currentTime+.02);
+  g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);
+  o.start(); o.stop(audio.currentTime+dur);
+}
+function bgmTick(){
+  if(!bgmOn||!audio)return;
+  if(bgmMode==="work"){
+    const s=BGM_WORK[bgmStep%BGM_WORK.length];
+    note(midi(s+12),.14,.12,"square");                 // 멜로디
+    if(bgmStep%2===0) note(midi(s-12),.18,.16,"triangle"); // 베이스
+    if(bgmStep%4===0) note(110,.05,.10,"sawtooth");     // 킥 느낌
+  } else if(bgmMode==="rest"){
+    const s=BGM_REST[bgmStep%BGM_REST.length];
+    note(midi(s),.5,.07,"sine");
+  } else if(bgmMode==="cd"){
+    note(midi(BGM_CD[bgmStep%BGM_CD.length]),.1,.13,"square");
+  }
+  bgmStep++;
+}
+function startBgm(mode){
+  bgmMode=mode; bgmStep=0;
+  if(bgmTimer)clearInterval(bgmTimer);
+  if(!bgmOn)return;
+  try{audio=audio||new (window.AudioContext||window.webkitAudioContext)(); if(audio.state==="suspended")audio.resume();}catch(e){}
+  const bpm = mode==="work"?150 : mode==="rest"?90 : 120;
+  bgmTimer=setInterval(bgmTick, 60000/bpm/2); // 8분음표 간격
+}
+function stopBgm(){ if(bgmTimer){clearInterval(bgmTimer);bgmTimer=null;} bgmMode=null; }
+const video=$("video"),overlay=$("overlay"),ctx=overlay.getContext("2d");
+let landmarker=null,draw=null,running=false,rafId=null,lastVid=-1;
+function stopWorkoutCam(){
+  try{const s=video.srcObject; if(s){s.getTracks().forEach(t=>t.stop()); video.srcObject=null;}}catch(e){}
+}
+async function ensureWorkoutCam(){
+  const s=video.srcObject;
+  if(s && s.getVideoTracks().some(t=>t.readyState==="live")) return;
+  const ns=await navigator.mediaDevices.getUserMedia({video:{width:960,height:720,facingMode:"user"}});
+  video.srcObject=ns; await video.play();
+  overlay.width=video.videoWidth||overlay.width; overlay.height=video.videoHeight||overlay.height;
+}
+async function setup(){
+  if(!landmarker) $("intro").innerHTML='<div class="spinner"></div><p>AI 모델 불러오는 중…</p>';
+  try{
+    await ensureWorkoutCam();
+  }catch(e){$("intro").innerHTML='<h2>카메라를 열 수 없어요</h2><p class="err">카메라 권한을 허용해 주세요. 다른 앱이나 심박 측정이 카메라를 쓰고 있으면 닫고 다시 시도하세요.</p>';throw e;}
+  if(landmarker){ draw=draw||new DrawingUtils(ctx); return; }
+  try{
+    const vision=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.12/wasm");
+    landmarker=await PoseLandmarker.createFromOptions(vision,{
+      // lite 모델은 서 있는 동작은 빠르고 무난하지만 푸쉬업·플랭크처럼 엎드린 자세에서
+      // 관절 신뢰도가 크게 떨어져 카운트 누락이 잦았다. full 모델로 정확도를 우선한다.
+      baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",delegate:"GPU"},
+      runningMode:"VIDEO",numPoses:1});
+  }catch(e){$("intro").innerHTML='<h2>모델 로드 실패</h2><p class="err">인터넷 연결이 필요합니다. 확인 후 새로고침해 주세요.</p>';throw e;}
+  draw=new DrawingUtils(ctx);
+}
+function loop(){
+  if(!running)return;
+  if(video.currentTime!==lastVid){
+    lastVid=video.currentTime;
+    const res=landmarker.detectForVideo(video,performance.now());
+    ctx.clearRect(0,0,overlay.width,overlay.height);
+    if(res.landmarks&&res.landmarks.length){
+      const lm=res.landmarks[0];
+      draw.drawConnectors(lm,PoseLandmarker.POSE_CONNECTIONS,{color:"#35D0BA88",lineWidth:3});
+      draw.drawLandmarks(lm,{color:"#FFB020",radius:3});
+      if(phase==="work"){
+        const def=EX[curEx];
+        if(def.type==="rep")procRep(lm,def);
+        else if(def.type==="jack")procJack(lm);
+        else if(def.type==="knee")procKnee(lm,def);
+        else if(def.type==="burpee")procBurpee(lm,def);
+        else procHold(lm,def);
+      }
+    } else if(phase==="work"){$("fb").textContent="화면에 사람이 안 보여요";}
+  }
+  rafId=requestAnimationFrame(loop);
+}
+
+/* ---------- tabata engine ---------- */
+let phase="idle",roundIdx=0,totalRounds=8,timeLeft=0,tickId=null,workSec=20,restSec=10,curEx="squat";
+let log=[]; // per-round {ex,reps,acc,type,hold}
+function setUI(){
+  $("timerBox").className="timer "+(phase==="work"?"work":"rest");
+  $("phasePill").className="pill "+(phase==="work"?"p-work":"p-rest");
+  $("phasePill").textContent=phase==="work"?"운동":phase==="rest"?"휴식":"준비";
+  $("roundPill").textContent=`${Math.min(roundIdx+1,totalRounds)}/${totalRounds}`;
+  $("exPill").textContent=EXNAME[curEx];
+  $("repL").textContent=EX[curEx].type==="hold"?"유지(초)":"횟수";
+}
+function startWork(){
+  curEx=seq[roundIdx%seq.length];
+  phase="work"; timeLeft=workSec; resetRound();
+  $("nextPreview").style.display="none";
+  $("repN").textContent="0"; $("accN").textContent="–";
+  $("fb").textContent=EXNAME[curEx]+" 시작!"; setUI(); beep(1046,.15);
+  startBgm("work");
+}
+function startRest(){
+  const next=seq[(roundIdx)%seq.length];
+  phase="rest"; timeLeft=restSec;
+  $("fb").textContent="다음: "+EXNAME[next]; setUI(); beep(660,.15);
+  $("npArt").innerHTML=exerciseArt(next);
+  $("npName").textContent=EXNAME[next];
+  $("npTip").textContent=EXTIP[next]||"";
+  $("nextPreview").style.display="flex";
+  startBgm("rest");
+}
+function endRound(){
+  const def=EX[curEx];
+  const acc=roundAccN?Math.round(roundAccSum/roundAccN):0;
+  log.push({ex:curEx,type:def.type,reps:def.type==="hold"?+(holdMs/1000).toFixed(1):roundReps,acc,
+    perfect:roundJ.p,great:roundJ.g,good:roundJ.gd,ok:roundJ.o,bad:roundJ.b});
+}
+function tick(){
+  timeLeft--; $("timerBig").textContent=Math.max(timeLeft,0);
+  if(timeLeft<=3&&timeLeft>0)beep(phase==="work"?900:600,.08,.15);
+  if(timeLeft<=0){
+    if(phase==="work"){
+      endRound(); roundIdx++;
+      if(roundIdx>=totalRounds){finish();return;}
+      startRest();
+    } else startWork();
+    $("timerBig").textContent=timeLeft;
+  }
+}
+
+/* ---------- scoring ---------- */
+function computeScores(){
+  const diff=+$("difficulty").value;
+  const repRounds=log.filter(r=>r.type!=="hold");
+  const holdRounds=log.filter(r=>r.type==="hold");
+  const totalReps=repRounds.reduce((a,r)=>a+r.reps,0);
+  const totalHold=holdRounds.reduce((a,r)=>a+r.reps,0);
+  const avgAcc=log.length?Math.round(log.reduce((a,r)=>a+r.acc,0)/log.length):0;
+
+  // 수행량: 라운드당 목표(운동시간 기반) 대비 달성률
+  const repTarget=workSec*0.5;           // 20초당 10회 기준
+  const holdTarget=workSec*0.8;          // 20초당 16초 유지 기준
+  let volRatio=0,volN=0;
+  repRounds.forEach(r=>{volRatio+=Math.min(r.reps/repTarget,1.2);volN++;});
+  holdRounds.forEach(r=>{volRatio+=Math.min(r.reps/holdTarget,1.2);volN++;});
+  const volPct=volN?Math.round(Math.min(volRatio/volN,1)*100):0;
+
+  // 강도점수: 총 운동시간 × 난이도 (표준 타바타 8×20×1.0 = 100 기준)
+  const intensity=Math.round((totalRounds*workSec*diff)/(8*20)*100);
+  const intensityCapped=Math.min(intensity,150);
+
+  // 완수율
+  const done=Math.round(log.length/totalRounds*100);
+
+  // 종합 100점: 정확도40 + 수행량30 + 강도20 + 완수10
+  const score=Math.round(avgAcc*0.4 + volPct*0.3 + Math.min(intensityCapped,100)*0.2 + done*0.1);
+  const workTime=(log.length*workSec);
+  const pts=Math.round(score*(0.8+0.4*diff)); // 난이도 보정 포인트
+  const jP=log.reduce((a,r)=>a+(r.perfect||0),0);
+  const jG=log.reduce((a,r)=>a+(r.great||0),0);
+  const jGd=log.reduce((a,r)=>a+(r.good||0),0);
+  const jO=log.reduce((a,r)=>a+(r.ok||0),0);
+  const jB=log.reduce((a,r)=>a+(r.bad||0),0);
+  return {avgAcc,totalReps,totalHold,workTime,intensity:intensityCapped,done,volPct,score,pts,diff,jP,jG,jGd,jO,jB};
+}
+
+/* ---------- records ---------- */
+const records=[];
+function renderRecRow(rec){
+  const tb=$("recRows");
+  if(tb.querySelector(".empty"))tb.innerHTML="";
+  const tr=document.createElement("tr");
+  const dOk=rec.hr&&(+rec.hr>=130);
+  const taskCell=rec.task==="자율"?'<span style="color:var(--good)">🌱 자율</span>':rec.task?`<span style="color:var(--primary)">📋 ${rec.task}</span>`:"–";
+  tr.innerHTML=`<td>${rec.date}</td><td>${rec.name}</td><td>${rec.cls}</td><td class="num">${taskCell}</td><td>${rec.seq}</td>
+    <td class="num">${rec.rounds}</td><td class="num">${rec.acc}%</td><td class="num">${rec.reps}</td>
+    <td class="num">${rec.time}초</td><td class="num">${rec.int}</td>
+    <td class="num"><span style="color:#E24FD8">${rec.jP||0}</span>/<span style="color:var(--gold)">${rec.jG||0}</span>/<span style="color:var(--rest)">${rec.jGd||0}</span>/<span style="color:#7A85E8">${rec.jO||0}</span>/<span style="color:var(--bad)">${rec.jB||0}</span></td>
+    <td class="num hr-cell" style="color:${rec.hr?(dOk?"var(--good)":"var(--bad)"):"var(--muted)"}">${rec.hrPre||"–"}→${rec.hr||"–"}${dOk?" ✅":""}</td>
+    <td class="num" style="color:var(--work)">${rec.score}</td>
+    <td class="num" style="color:var(--purple)">+${rec.pts}</td>`;
+  tb.appendChild(tr);
+  rec._row=tr;
+}
+function addRecord(s){
+  const d=new Date();
+  const rec={
+    id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),
+    date:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`,
+    name:$("stuName").value||"이름없음", cls:$("stuClass").value||"-",
+    seq:seq.map(k=>EXNAME[k]).join("·"), rounds:totalRounds,
+    acc:s.avgAcc, reps:s.totalReps+(s.totalHold?`+${s.totalHold}초`:""), time:s.workTime,
+    int:s.intensity, jP:s.jP, jG:s.jG, jGd:s.jGd, jO:s.jO, jB:s.jB, hrPre:pendingPreHr||"", hr:"", zone:"",
+    task:currentBattle?("⚔️ vs "+currentBattle.vs):(currentTask?currentTask.title:"자율"),
+    taskId:currentTask?currentTask.id:"",
+    score:s.score, pts:s.pts
+  };
+  records.push(rec);
+  renderRecRow(rec);
+  renderStats();
+  saveAll();
+  pushRecord(rec);
+  submitBattleResult(rec);
+  pendingPreHr=null; $("preBadge").textContent=""; $("preManual").value="";
+  clearTask(); renderTasks();
+}
+$("csvBtn").addEventListener("click",()=>{
+  if(!records.length){alert("저장할 기록이 없습니다.");return;}
+  const head="일시,이름,학반,운동구성,라운드,평균정확도(%),총반복수,수행시간(초),강도점수,퍼펙트,그레이트,굿,오케이,미스,운동전심박(BPM),운동후심박(BPM),심박강도판정,성실수행여부,종합점수,획득포인트,구분(과제명/자율)";
+  const rows=records.map(r=>[r.date,r.name,r.cls,r.seq,r.rounds,r.acc,`"${r.reps}"`,r.time,r.int,r.jP||0,r.jG||0,r.jGd||0,r.jO||0,r.jB||0,r.hrPre||"",r.hr,r.zone,(r.hr&&+r.hr>=130?"성실수행":(r.hr?"미달":"")),r.score,r.pts,`"${r.task||""}"`].join(","));
+  const blob=new Blob(["\uFEFF"+head+"\n"+rows.join("\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=`타바타기록_${($("stuClass").value||"전체")}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+});
+
+/* ---------- roster & class management ---------- */
+const rosters={}; // {반이름: [{no,name}]}
+function parseRoster(text){
+  const out=[];
+  text.split(/\r?\n/).forEach(line=>{
+    const t=line.trim(); if(!t)return;
+    const parts=t.split(/[\t,]+|\s+/).filter(Boolean);
+    if(parts.length>=2&&/^\d+$/.test(parts[0]))
+      out.push({no:parts[0], name:parts.slice(1).join(" ")});
+    else
+      out.push({no:String(out.length+1), name:parts.join(" ")});
+  });
+  return out;
+}
+function refreshClassUI(){
+  const chips=$("classChips"); chips.innerHTML="";
+  const vc=$("viewClass");
+  const keepV=vc.value;
+  vc.innerHTML="";
+  const names=Object.keys(rosters);
+  if(!names.length) vc.innerHTML='<option value="">반을 등록하세요</option>';
+  names.forEach(c=>{
+    vc.insertAdjacentHTML("beforeend",`<option>${c}</option>`);
+    const chip=document.createElement("div"); chip.className="chip";
+    chip.innerHTML=`<span class="ord num">${c}</span>${rosters[c].length}명<button title="반 삭제">✕</button>`;
+    chip.querySelector("button").addEventListener("click",()=>{
+      if(confirm(c+"반 명렬표를 삭제할까요? (기록은 유지됩니다)")){delete rosters[c];refreshClassUI();saveAll();removeRosterRemote(c);}
+    });
+    chips.appendChild(chip);
+  });
+  if(names.includes(keepV))vc.value=keepV;
+  renderStats(); refreshBattleUI();
+  syncStuId(); // 명렬표가 나중에 도착(서버 동기화)해도 이미 입력된 학번을 다시 찾아본다
+}
+$("rosterAdd").addEventListener("click",()=>{
+  const c=$("rosterClass").value.trim();
+  if(!c){alert("반 이름을 입력하세요 (예: 1-3)");return;}
+  const list=parseRoster($("rosterPaste").value);
+  if(!list.length){alert("명렬표 내용을 붙여넣어 주세요.");return;}
+  rosters[c]=list;
+  $("rosterCount").textContent=`${c}반 ${list.length}명 등록 완료`;
+  $("rosterPaste").value=""; refreshClassUI(); saveAll(); pushRoster(c);
+});
+// 학번(학년1자리+반2자리+번호2자리, 예 10101=1학년 1반 1번) → 명렬표에서 이름을 찾는다
+function stuIdToKey(raw){
+  if(raw.length<5)return null;
+  return {cls:`${raw[0]}-${parseInt(raw.slice(1,3),10)}`, no:parseInt(raw.slice(3,5),10)};
+}
+function lookupByStuId(raw){
+  const key=stuIdToKey(raw); if(!key)return null;
+  const list=rosters[key.cls]; if(!list)return null;
+  const stu=list.find(s=>parseInt(s.no,10)===key.no);
+  return stu?{cls:key.cls,name:stu.name}:null;
+}
+function syncStuId(){
+  const raw=($("stuId").value||"").replace(/\D/g,"");
+  const hit=lookupByStuId(raw);
+  if(hit){
+    $("stuClass").value=hit.cls; $("stuName").value=hit.name;
+    $("stuClassField").style.display="none"; $("stuNameField").style.display="none";
+    $("stuIdHint").textContent="";
+  } else {
+    $("stuClassField").style.display="flex"; $("stuNameField").style.display="flex";
+    $("stuIdHint").innerHTML=raw.length>=5?'<span style="color:var(--bad)">일치하는 학생을 찾을 수 없습니다 — 아래에 직접 입력하세요</span>':"";
+  }
+  syncMyInfoFields();
+}
+function syncMyInfoFields(){
+  const name=($("stuName").value||"").trim(), cls=($("stuClass").value||"").trim();
+  $("myInfoBadge").innerHTML=(name&&cls)?`✔ <b style="color:var(--primary)">${cls}반 ${name}</b>`:"";
+  refreshBattleUI(); // 결투 신청이 이제 이 탭에 있어 이름·학반이 바뀔 때마다 상대 목록도 갱신
+}
+$("stuId").addEventListener("input",syncStuId);
+["stuName","stuClass"].forEach(id=>$(id).addEventListener("input",syncMyInfoFields));
+$("viewClass").addEventListener("change",()=>{renderStats();renderDashboard();renderGrades();});
+$("dashToday")&&$("dashToday").addEventListener("change",renderDashboard);
+
+/* ---------- 실시간 수업 현황판 ---------- */
+function todayStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
+function recsForClass(cls,todayOnly){
+  let rs=records.filter(r=>String(r.cls)===String(cls));
+  if(todayOnly)rs=rs.filter(r=>(r.date||"").startsWith(todayStr()));
+  return rs;
+}
+function renderDashboard(){
+  const c=$("viewClass").value;
+  const chips=$("dashChips");
+  if(!c||!rosters[c]){$("dashDone").textContent="0";$("dashUndone").textContent="0";$("dashDiligent").textContent="0";$("dashAvg").textContent="–";chips.innerHTML="";return;}
+  const todayOnly=$("dashToday").checked;
+  const rs=recsForClass(c,todayOnly);
+  const doneNames=new Set(rs.map(r=>r.name));
+  const roster=rosters[c];
+  const done=roster.filter(s=>doneNames.has(s.name)).length;
+  const undone=roster.length-done;
+  const diligent=new Set(rs.filter(r=>r.hr&&+r.hr>=130).map(r=>r.name)).size;
+  const scores=rs.map(r=>+r.score||0);
+  const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
+  $("dashDone").textContent=done; $("dashUndone").textContent=undone;
+  $("dashDiligent").textContent=diligent; $("dashAvg").textContent=avg==null?"–":avg;
+  chips.innerHTML="";
+  roster.forEach(s=>{
+    const did=doneNames.has(s.name);
+    const dil=rs.some(r=>r.name===s.name&&r.hr&&+r.hr>=130);
+    const chip=document.createElement("div"); chip.className="chip";
+    chip.style.borderColor=did?(dil?"var(--good)":"var(--work)"):"var(--line)";
+    chip.innerHTML=`<span class="ord num" style="color:${did?(dil?'var(--good)':'var(--work)'):'var(--muted)'}">${did?(dil?'✅':'○'):'·'}</span>${s.no}. ${s.name}`;
+    chips.appendChild(chip);
+  });
+}
+
+/* ---------- 성적 자동 집계 (실천 15점 환산) ---------- */
+function practiceScore(name,cls){
+  const rs=records.filter(r=>r.name===name&&String(r.cls)===String(cls));
+  if(!rs.length)return {n:0,task:0,dil:0,acc:0,score:0};
+  const n=rs.length;
+  const taskDone=rs.some(r=>r.taskId); // 공통과제 1회 이상 완료
+  const dil=rs.filter(r=>r.hr&&+r.hr>=130).length;
+  const avgAcc=Math.round(rs.reduce((a,r)=>a+(+r.acc||0),0)/n);
+  // 15점 환산: 공통과제 완료 5 + 성실수행(최대 4회까지 회당 1.5, 최대6) + 정확도(최대4)
+  let sc=0;
+  sc+=taskDone?5:0;
+  sc+=Math.min(dil*1.5,6);
+  sc+=Math.round(avgAcc/100*4*10)/10;
+  sc=Math.min(Math.round(sc*10)/10,15);
+  return {n,task:taskDone?"완료":"미완료",dil,acc:avgAcc,score:sc};
+}
+function renderGrades(){
+  const c=$("viewClass").value, tb=$("gradeRows");
+  if(!c||!rosters[c]){tb.innerHTML='<tr><td colspan="7" class="empty">반을 선택하고 [점수 계산]을 누르세요.</td></tr>';return;}
+  tb.innerHTML="";
+  rosters[c].forEach(s=>{
+    const g=practiceScore(s.name,c);
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td class="num">${s.no}</td><td>${s.name}</td>
+      <td class="num">${g.n}</td>
+      <td class="num" style="color:${g.task==='완료'?'var(--good)':'var(--muted)'}">${g.n?g.task:'–'}</td>
+      <td class="num" style="color:var(--good)">${g.dil}</td>
+      <td class="num">${g.n?g.acc+'%':'–'}</td>
+      <td class="num" style="color:var(--primary);font-weight:700">${g.n?g.score:'–'}</td>`;
+    tb.appendChild(tr);
+  });
+}
+$("gradeCalc").addEventListener("click",()=>{ if(!$("viewClass").value){alert("먼저 반을 선택하세요.");return;} renderGrades(); });
+$("gradeCsv").addEventListener("click",()=>{
+  const c=$("viewClass").value;
+  if(!c||!rosters[c]){alert("먼저 반을 선택하세요.");return;}
+  const head="번호,이름,세션수,공통과제,성실수행횟수,평균정확도(%),실천점수(15점)";
+  const rows=rosters[c].map(s=>{const g=practiceScore(s.name,c);return [s.no,s.name,g.n,g.n?g.task:"",g.dil,g.n?g.acc:"",g.n?g.score:""].join(",");});
+  const blob=new Blob(["\uFEFF"+head+"\n"+rows.join("\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=`성적집계_${c}_${todayStr()}.csv`; a.click(); URL.revokeObjectURL(a.href);
+});
+
+function statsFor(name,cls){
+  const rs=records.filter(r=>r.name===name&&r.cls===cls);
+  if(!rs.length)return null;
+  const n=rs.length;
+  const avgAcc=Math.round(rs.reduce((a,r)=>a+(+r.acc||0),0)/n);
+  const best=Math.max(...rs.map(r=>+r.score||0));
+  const p=rs.reduce((a,r)=>a+(+r.jP||0),0), g=rs.reduce((a,r)=>a+(+r.jG||0),0), gd=rs.reduce((a,r)=>a+(+r.jGd||0),0),
+    o=rs.reduce((a,r)=>a+(+r.jO||0),0), b=rs.reduce((a,r)=>a+(+r.jB||0),0);
+  const tot=p+g+gd+o+b, gRate=tot?Math.round((p+g)/tot*100):null; // 퍼펙트+그레이트 비율
+  const pts=rs.reduce((a,r)=>a+(+r.pts||0),0);
+  const diligent=rs.filter(r=>r.hr&&+r.hr>=130).length;
+  const last=rs[rs.length-1];
+  const hrDisp=(last.hrPre||last.hr)?`${last.hrPre||"–"}→${last.hr||"–"}`:"–";
+  return {n,avgAcc,best,gRate,pts,diligent,hr:hrDisp,date:last.date};
+}
+function renderStats(){
+  const c=$("viewClass").value, tb=$("stuRows");
+  if(!c||!rosters[c]){tb.innerHTML='<tr><td colspan="10" class="empty">반을 등록하면 학생별 누적 현황이 표시됩니다.</td></tr>';return;}
+  tb.innerHTML="";
+  rosters[c].forEach(s=>{
+    const st=statsFor(s.name,c);
+    const tr=document.createElement("tr");
+    tr.innerHTML=st?
+      `<td class="num">${s.no}</td><td>${s.name}</td>
+       <td class="num" style="color:var(--rest)">${st.n}</td>
+       <td class="num" style="color:var(--good)">${st.diligent}</td>
+       <td class="num">${st.avgAcc}%</td>
+       <td class="num" style="color:var(--work)">${st.best}</td>
+       <td class="num" style="color:var(--gold)">${st.gRate==null?"–":st.gRate+"%"}</td>
+       <td class="num">${st.hr}</td><td class="num" style="color:var(--purple)">${st.pts}</td><td>${st.date}</td>`:
+      `<td class="num">${s.no}</td><td>${s.name}</td>
+       <td class="num" style="color:var(--muted)">0</td><td class="num">0</td><td class="num">–</td><td class="num">–</td>
+       <td class="num">–</td><td class="num">–</td><td class="num">0</td><td style="color:var(--muted)">미수행</td>`;
+    tb.appendChild(tr);
+  });
+}
+function renderMine(){
+  const name=($("stuName").value||"").trim(), cls=($("stuClass").value||"").trim();
+  const tb=$("mineRows"); if(!tb)return;
+  const rs=records.filter(r=>r.name===name&&String(r.cls)===cls);
+  $("mineCount").textContent=rs.length;
+  $("mineBest").textContent=rs.length?Math.max(...rs.map(r=>+r.score||0)):"–";
+  const g=rs.reduce((a,r)=>a+(+r.jP||0)+(+r.jG||0),0);
+  const t=rs.reduce((a,r)=>a+(+r.jP||0)+(+r.jG||0)+(+r.jGd||0)+(+r.jO||0)+(+r.jB||0),0);
+  $("mineGRate").textContent=t?Math.round(g/t*100)+"%":"–";
+  const last=rs[rs.length-1];
+  $("mineHr").textContent=last&&(last.hrPre||last.hr)?`${last.hrPre||"–"}→${last.hr||"–"}`:"–";
+  $("mineDil").textContent=rs.filter(r=>r.hr&&+r.hr>=130).length;
+  renderMineTrend(rs,name,cls);
+  if(!rs.length){tb.innerHTML='<tr><td colspan="8" class="empty">아직 기록이 없습니다.</td></tr>';return;}
+  tb.innerHTML="";
+  rs.slice().reverse().forEach(r=>{
+    const tr=document.createElement("tr");
+    const tcell=r.task==="자율"?'<span style="color:var(--good)">🌱 자율</span>':r.task?`<span style="color:var(--primary)">📋 ${r.task}</span>`:"–";
+    tr.innerHTML=`<td>${r.date}</td><td>${tcell}</td><td>${r.seq}</td><td class="num">${r.acc}%</td>
+      <td class="num"><span style="color:#E24FD8">${r.jP||0}</span>·<span style="color:var(--gold)">${r.jG||0}</span>·<span style="color:var(--rest)">${r.jGd||0}</span>·<span style="color:#7A85E8">${r.jO||0}</span>·<span style="color:var(--bad)">${r.jB||0}</span></td>
+      <td class="num">${r.hrPre||"–"}→${r.hr||"–"}</td>
+      <td class="num" style="color:var(--primary)">${r.score}</td><td class="num">+${r.pts}</td>`;
+    tb.appendChild(tr);
+  });
+}
+function renderMineTrend(rs,name,cls){
+  const box=$("mineTrendRow"); if(!box)return;
+  if(rs.length<2){box.style.display="none";return;}
+  box.style.display="flex";
+  const delta=(+rs[rs.length-1].score||0)-(+rs[rs.length-2].score||0);
+  const dEl=$("mineDelta");
+  dEl.className="trend-delta "+(delta>0?"up":delta<0?"down":"flat");
+  dEl.textContent=(delta>0?"▲ +":delta<0?"▼ ":"– ")+Math.abs(delta)+"점";
+  // 같은 반 친구들과 비교(서버 동기화된 기록 기준 — 아직 동기화 전이면 나만 표시될 수 있음)
+  const rankEl=$("mineRank");
+  if(cls){
+    const byStu={};
+    records.filter(r=>String(r.cls)===cls).forEach(r=>{
+      (byStu[r.name]=byStu[r.name]||[]).push(+r.score||0);
+    });
+    const avgs=Object.entries(byStu).map(([n,arr])=>[n,arr.reduce((a,b)=>a+b,0)/arr.length])
+      .sort((a,b)=>b[1]-a[1]);
+    const myIdx=avgs.findIndex(([n])=>n===name);
+    rankEl.textContent=(myIdx>=0&&avgs.length>1)?`우리 반 평균점수 순위: ${myIdx+1}/${avgs.length}`:"";
+  } else rankEl.textContent="";
+  drawSparkline(rs.slice(-12).map(r=>+r.score||0));
+}
+function drawSparkline(vals){
+  const cv=$("mineSpark"); if(!cv)return;
+  const cx=cv.getContext("2d"), W=cv.width,H=cv.height;
+  cx.clearRect(0,0,W,H);
+  if(vals.length<2)return;
+  const mn=Math.min(...vals), mx=Math.max(...vals), rg=(mx-mn)||1, pad=8;
+  cx.strokeStyle="#5B51E8"; cx.lineWidth=2.5; cx.beginPath();
+  vals.forEach((v,i)=>{
+    const x=pad+i/(vals.length-1)*(W-pad*2), y=H-pad-((v-mn)/rg)*(H-pad*2);
+    i?cx.lineTo(x,y):cx.moveTo(x,y);
+  });
+  cx.stroke();
+  cx.fillStyle="#FF9F1C";
+  vals.forEach((v,i)=>{
+    const x=pad+i/(vals.length-1)*(W-pad*2), y=H-pad-((v-mn)/rg)*(H-pad*2);
+    cx.beginPath(); cx.arc(x,y,3,0,Math.PI*2); cx.fill();
+  });
+}
+const _renderStats=renderStats;
+renderStats=function(){_renderStats();renderMine();renderDashboard();};
+
+$("statCsv").addEventListener("click",()=>{
+  const c=$("viewClass").value;
+  if(!c||!rosters[c]){alert("반을 먼저 등록·선택하세요.");return;}
+  const head="번호,이름,세션수,성실수행(≥130회),평균정확도(%),최고점수,퍼펙트그레이트율(%),최근심박수,누적포인트,최근수행일";
+  const rows=rosters[c].map(s=>{
+    const st=statsFor(s.name,c);
+    return st?[s.no,s.name,st.n,st.diligent,st.avgAcc,st.best,st.gRate==null?"":st.gRate,st.hr,st.pts,st.date].join(",")
+             :[s.no,s.name,0,0,"","","","",0,"미수행"].join(",");
+  });
+  const blob=new Blob(["\uFEFF"+head+"\n"+rows.join("\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=`반별현황_${c}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+});
+
+/* ---------- 지난 기록 CSV 불러오기 (학기 누적) ---------- */
+function parseCsvLine(line){
+  const out=[]; let cur="",q=false;
+  for(const ch of line){
+    if(ch==='"'){q=!q;continue;}
+    if(ch===','&&!q){out.push(cur);cur="";}else cur+=ch;
+  }
+  out.push(cur); return out;
+}
+$("recImport").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const lines=rd.result.replace(/^\uFEFF/,"").split(/\r?\n/).filter(l=>l.trim());
+    const headCols=parseCsvLine(lines[0]);
+    if(!lines.length||headCols[0]!=="일시"){
+      alert("이 앱에서 내려받은 기록 CSV 파일이 아닙니다."); e.target.value=""; return;
+    }
+    const isNew=headCols.includes("운동전심박(BPM)");
+    const hasDil=headCols.includes("성실수행여부"); // 구 최신 포맷
+    const has5=headCols.includes("퍼펙트");          // 5단계 판정 포맷
+    let added=0;
+    for(let i=1;i<lines.length;i++){
+      const c=parseCsvLine(lines[i]); if(c.length<16)continue;
+      const rec=has5
+        ?{date:c[0],name:c[1],cls:c[2],seq:c[3],rounds:+c[4]||0,acc:+c[5]||0,reps:c[6],time:+c[7]||0,
+          int:+c[8]||0,jP:+c[9]||0,jG:+c[10]||0,jGd:+c[11]||0,jO:+c[12]||0,jB:+c[13]||0,hrPre:c[14],hr:c[15],zone:c[16],diligent:c[17],score:+c[18]||0,pts:+c[19]||0,task:c[20]||"",taskId:""}
+        :hasDil
+        ?{date:c[0],name:c[1],cls:c[2],seq:c[3],rounds:+c[4]||0,acc:+c[5]||0,reps:c[6],time:+c[7]||0,
+          int:+c[8]||0,jG:+c[9]||0,jGd:+c[10]||0,jB:+c[11]||0,hrPre:c[12],hr:c[13],zone:c[14],diligent:c[15],score:+c[16]||0,pts:+c[17]||0,task:c[18]||"",taskId:""}
+        :isNew
+        ?{date:c[0],name:c[1],cls:c[2],seq:c[3],rounds:+c[4]||0,acc:+c[5]||0,reps:c[6],time:+c[7]||0,
+          int:+c[8]||0,jG:+c[9]||0,jGd:+c[10]||0,jB:+c[11]||0,hrPre:c[12],hr:c[13],zone:c[14],score:+c[15]||0,pts:+c[16]||0,task:c[17]||"",taskId:""}
+        :{date:c[0],name:c[1],cls:c[2],seq:c[3],rounds:+c[4]||0,acc:+c[5]||0,reps:c[6],time:+c[7]||0,
+          int:+c[8]||0,jG:+c[9]||0,jGd:+c[10]||0,jB:+c[11]||0,hrPre:"",hr:c[12],zone:c[13],score:+c[14]||0,pts:+c[15]||0};
+      if(records.some(r=>r.date===rec.date&&r.name===rec.name&&r.score===rec.score))continue; // 중복 방지
+      rec.id=Date.now().toString(36)+Math.random().toString(36).slice(2,7)+i;
+      rec.synced=false;
+      records.push(rec); renderRecRow(rec); added++;
+    }
+    alert(added+"건의 기록을 불러왔습니다. 반별 현황에 반영됩니다.");
+    renderStats(); saveAll(); syncPending(); e.target.value="";
+  };
+  rd.readAsText(f,"utf-8");
+});
+
+/* ---------- finish & result ---------- */
+function finish(){
+  stopAll();
+  const s=computeScores();
+  s.bonus=0;
+  const prevStats=statsFor($("stuName").value||"이름없음",$("stuClass").value||"-");
+  const prevBest=prevStats?prevStats.best:0;
+  if(!currentTask&&!currentBattle){ s.bonus=Math.round(s.pts*0.2); s.pts+=s.bonus; }
+  $("rScore").textContent=s.score;
+  $("rAcc").textContent=s.avgAcc+"%";
+  $("rReps").textContent=s.totalReps+(s.totalHold?` +${s.totalHold}s`:"");
+  $("rTime").textContent=s.workTime+"초";
+  $("rInt").textContent=s.intensity;
+  const bd=$("breakdown"); bd.innerHTML="";
+  [["자세 정확도 (40%)",s.avgAcc,"--purple"],["수행량 (30%)",s.volPct,"--work"],
+   ["강도 (20%)",Math.min(s.intensity,100),"--rest"],["완수율 (10%)",s.done,"--good"]].forEach(([t,v,c])=>{
+    const d=document.createElement("div"); d.className="bd";
+    d.innerHTML=`<div class="t"><span>${t}</span><b class="num">${v}</b></div>
+      <div class="scorebar"><div style="width:${Math.min(v,100)}%;background:var(${c})"></div></div>`;
+    bd.appendChild(d);
+  });
+  totalPts+=s.pts; refreshProfile();
+  $("rPerfect").textContent=s.jP; $("rGreat").textContent=s.jG; $("rGood").textContent=s.jGd; $("rOk").textContent=s.jO; $("rMiss").textContent=s.jB;
+  $("gainPts").textContent="+"+s.pts+" P";
+  $("gainAv").textContent=$("avatarEmoji").textContent;
+  const bonusTxt=s.bonus?` 🌱 자율 실천 가산점 +${s.bonus}P 포함!`:(currentBattle?` ⚔️ 배틀 기록으로 제출됩니다!`:` 📋 '${currentTask?currentTask.title:""}' 과제 완료로 인정되었습니다.`);
+  $("gainMsg").textContent=(s.score>=85?"훌륭해요! 아바타가 성장하고 있어요.":
+    s.avgAcc<70?"횟수보다 자세 정확도를 먼저 올려보세요.":"수행량을 조금 더 채우면 점수가 크게 오릅니다.")+bonusTxt;
+  const tb=$("roundRows"); tb.innerHTML="";
+  log.forEach((r,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td class="num">${i+1}</td><td>${EXNAME[r.ex]}</td>
+      <td class="num">${r.reps}${r.type==="hold"?"초":"회"}</td><td class="num">${r.acc}%</td>
+      <td class="num"><span style="color:#E24FD8">${r.perfect||0}</span> · <span style="color:var(--gold)">${r.great}</span> · <span style="color:var(--rest)">${r.good}</span> · <span style="color:#7A85E8">${r.ok||0}</span> · <span style="color:var(--bad)">${r.bad}</span></td>`;
+    tb.appendChild(tr);
+  });
+  $("result").style.display="block";
+  setTimeout(()=>{try{$("hrStep3").scrollIntoView({behavior:"smooth",block:"start"});}catch(e){}},200); // 운동 직후 STEP 3 심박 측정으로 안내
+  addRecord(s); beep(1200,.3);
+  if(prevBest>0&&s.score>prevBest) toast(`신기록! 종합점수 ${prevBest}점 → ${s.score}점`,"best","🏅");
+}
+
+/* ---------- start/stop ---------- */
+async function start(){
+  if(!seq.length){alert("운동 구성이 비어 있습니다. 운동 설계에서 추가해 주세요.");goPage("pgSetup");return;}
+  if(!currentTask&&!currentBattle&&Object.keys(assignments).length){
+    if(!confirm("🌱 자율 실천 모드로 시작합니다 (완료 시 가산점 +20%).\n\n📋 선생님 과제로 수행하려면 [취소]를 누르고 운동 설계에서 과제 카드를 선택하세요.\n\n자율 실천으로 시작할까요?"))return;
+  }
+  if(pendingPreHr==null&&!confirm("운동 전 심박수를 아직 측정하지 않았습니다.\n측정 없이 시작할까요?"))return;
+  $("startBtn").disabled=true; $("result").style.display="none";
+  roundIdx=0; log=[];
+  workSec=+$("workSec").value||20; restSec=+$("restSec").value||10; totalRounds=+$("rounds").value||8;
+  try{await setup();}catch(e){$("startBtn").disabled=false;return;}
+  $("intro").style.display="none"; $("hud").style.display="flex";
+  enterFullscreen();
+  running=true; $("stopBtn").disabled=false; loop();
+  phase="ready"; curEx=seq[0]; setUI();
+  let c=3; $("timerBig").textContent=c; $("timerBox").className="timer rest";
+  $("fb").textContent=currentBattle?`⚔️ vs ${currentBattle.vs} 배틀 시작!`:currentTask?`📋 '${currentTask.title}' 과제 시작!`:"🌱 자율 실천 시작! (가산점 +20%)"; beep(700,.1);
+  startBgm("cd");
+  const cd=setInterval(()=>{c--;
+    if(c>0){$("timerBig").textContent=c;beep(700,.1);}
+    else{clearInterval(cd);startWork();tickId=setInterval(tick,1000);}},1000);
+}
+function stopAll(){
+  running=false; if(rafId)cancelAnimationFrame(rafId); if(tickId)clearInterval(tickId);
+  $("stopBtn").disabled=true; $("startBtn").disabled=false;
+  $("nextPreview").style.display="none";
+  exitFullscreen();
+  ctx.clearRect(0,0,overlay.width,overlay.height); phase="idle";
+  stopBgm();
+  stopWorkoutCam(); // 카메라 해제 → 이후 심박 측정 카메라가 열릴 수 있게
+}
+function resizeOverlay(){
+  // 오버레이 캔버스를 표시 크기에 맞춰 좌표계 유지
+  overlay.width=video.videoWidth||overlay.width;
+  overlay.height=video.videoHeight||overlay.height;
+}
+function enterFullscreen(){
+  $("stage").classList.add("fullscreen");
+  document.body.classList.add("fs-lock");
+  if(document.documentElement.requestFullscreen){
+    document.documentElement.requestFullscreen().catch(()=>{}); // 지원 시 진짜 전체화면(안드로이드), 실패해도 CSS 전체화면 유지
+  }
+  setTimeout(resizeOverlay,150);
+}
+function exitFullscreen(){
+  $("stage").classList.remove("fullscreen");
+  document.body.classList.remove("fs-lock");
+  if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});
+}
+$("exitFs").addEventListener("click",stopAll);
+$("startBtn").addEventListener("click",start);
+$("stopBtn").addEventListener("click",stopAll);
+$("musicBtn").addEventListener("click",()=>{
+  bgmOn=!bgmOn;
+  $("musicBtn").textContent=bgmOn?"🎵 음악 ON":"🔇 음악 OFF";
+  $("musicBtn").classList.toggle("btn-go",bgmOn);
+  $("musicBtn").classList.toggle("btn-stop",!bgmOn);
+  if(!bgmOn)stopBgm();
+  else if(phase==="work")startBgm("work"); else if(phase==="rest")startBgm("rest");
+  try{localStorage.setItem("tabataBgm",bgmOn?"1":"0");}catch(e){}
+});
+try{ if(localStorage.getItem("tabataBgm")==="0"){bgmOn=false; $("musicBtn").textContent="🔇 음악 OFF"; $("musicBtn").classList.remove("btn-go"); $("musicBtn").classList.add("btn-stop");} else {$("musicBtn").classList.add("btn-go");$("musicBtn").classList.remove("btn-stop");} }catch(e){}
+document.addEventListener("fullscreenchange",()=>{
+  // 시스템 뒤로가기/ESC로 네이티브 전체화면을 빠져나온 경우 CSS도 정리
+  if(!document.fullscreenElement && running) resizeOverlay();
+});
+
+/* ---------- heart rate: camera PPG ---------- */
+const HR_DILIGENT=130; // 운동 후 심박 130 이상 = 성실 수행 인정
+function hrZoneOf(bpm,age){
+  const max=220-age, pct=Math.round(bpm/max*100);
+  const zone=pct>=77?"고강도":pct>=64?"중강도":"저강도";
+  const diligent=bpm>=HR_DILIGENT; // 중강도 이상 성실 수행
+  return {pct,zone,diligent};
+}
+function showHr(bpm){
+  const age=+$("hrAge").value||16;
+  const {pct,zone,diligent}=hrZoneOf(bpm,age);
+  $("hrBpm").textContent=bpm; $("hrPct").textContent=pct+"%";
+  $("hrZone").textContent=(diligent?"✅ 성실 수행":"미달")+` (${bpm}bpm)`;
+  $("hrZone").style.color=diligent?"var(--good)":"var(--bad)";
+  $("hrResult").style.display="flex";
+  return {pct,zone,diligent};
+}
+$("hrSave").addEventListener("click",()=>{
+  const bpm=+$("hrManual").value||parseInt($("hrBpm").textContent)||0;
+  if(!bpm){alert("먼저 카메라로 측정하거나 BPM을 직접 입력하세요.");return;}
+  if(!records.length){alert("연결할 세션 기록이 없습니다. 운동을 먼저 완료하세요.");return;}
+  const {pct,zone,diligent}=showHr(bpm);
+  const rec=records[records.length-1];
+  rec.hr=bpm; rec.zone=`${zone}(${pct}%)`; rec.diligent=diligent?"성실수행":"미달";
+  const cell=rec._row.querySelector(".hr-cell");
+  cell.textContent=`${rec.hrPre||"–"}→${bpm}${diligent?" ✅":""}`;
+  cell.style.color=diligent?"var(--good)":"var(--bad)";
+  renderStats(); saveAll(); pushRecord(rec);
+  $("hrMsg").innerHTML=diligent
+    ?`✅ <b style="color:var(--good)">성실 수행으로 인정</b>됩니다 (심박 ${bpm} ≥ 130). 기록·CSV에 저장되었습니다.`
+    :`심박수 ${bpm}로 성실 수행 기준(130 이상)에 미달했습니다. 다음엔 조금 더 강도를 올려보세요. (기록은 저장됨)`;
+  $("hrLive").style.display="block";
+});
+let ppgStream=null, lastHrDeviceId=null;
+/* ---------- 심박 PPG 측정 v3 ----------
+   v2까지 남아있던 두 가지 실사용 문제:
+   ① 측정할 때마다 getUserMedia를 새로 요청하면 폰이 후면 카메라 중 다른 렌즈(광각 등)를
+      골라 화면·초점이 매번 바뀌어 손가락을 다시 대야 했다 → 이번엔 이전에 성공한 카메라
+      deviceId를 기억해 다음 측정에도 같은 렌즈를 우선 요청한다.
+   ② 15초 안에 신뢰 기준을 못 넘기면 그대로 실패 처리되어 손가락을 뗐다가 처음부터
+      다시 시작해야 했다 → 최소 8초 이후부터는 신호가 안정되는 즉시 끝내고(더 기다릴 필요 없음),
+      불안정해도 카메라를 계속 켜둔 채 최대 24초까지 자동으로 더 측정한다(다시 누를 필요 없음). */
+async function measurePPG(waveEl,msgEl,btn,onDone,camEl){
+  btn.disabled=true;
+  const say=(t,err)=>{msgEl.innerHTML=err?`<span class="err">${t}</span>`:t;};
+  say("카메라 준비 중…");
+  // 다른 카메라 스트림을 먼저 완전히 해제 (폰은 카메라 1개만 동시 사용 가능)
+  stopWorkoutCam();
+  if(ppgStream){try{ppgStream.getTracks().forEach(t=>t.stop());}catch(e){} ppgStream=null;}
+  await new Promise(r=>setTimeout(r,300)); // 이전 카메라가 해제될 시간
+  let stream;
+  const baseVideo={width:320,height:240,frameRate:{ideal:30,min:15}};
+  if(lastHrDeviceId){
+    try{ stream=await navigator.mediaDevices.getUserMedia({video:{...baseVideo,deviceId:{exact:lastHrDeviceId}}}); }catch(e){}
+  }
+  if(!stream){
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({video:{...baseVideo,facingMode:{ideal:"environment"}}});
+    }catch(e){
+      try{ stream=await navigator.mediaDevices.getUserMedia({video:{frameRate:{ideal:30,min:15}}}); } // 후면 실패 시 아무 카메라라도
+      catch(e2){ say("카메라를 열 수 없습니다. 다른 앱이 카메라를 쓰고 있으면 닫고, 권한을 허용한 뒤 다시 시도하세요.",true); btn.disabled=false; return; }
+    }
+  }
+  ppgStream=stream;
+  const track=stream.getVideoTracks()[0];
+  try{ lastHrDeviceId=track.getSettings().deviceId||lastHrDeviceId; }catch(e){}
+  let hasTorch=false;
+  try{
+    const caps=track.getCapabilities?track.getCapabilities():{};
+    if(caps.torch){ await track.applyConstraints({advanced:[{torch:true}]}); hasTorch=true; }
+    else say("💡 플래시가 없어요 — 아래 화면을 보며 손가락으로 렌즈를 완전히 덮고, 밝은 곳에서 측정하세요.");
+    // 손가락이 렌즈에 거의 닿아있어 카메라가 계속 재초점을 시도하며 화면이 흔들릴 수 있다.
+    // 지원하는 기기에서는 가장 가까운 초점 거리로 고정해 이를 줄인다(미지원이면 조용히 무시).
+    if(caps.focusMode&&caps.focusMode.includes("manual")&&caps.focusDistance){
+      await track.applyConstraints({advanced:[{focusMode:"manual",focusDistance:caps.focusDistance.min}]});
+    }
+  }catch(e){}
+  const v=camEl||document.createElement("video");
+  v.srcObject=stream; v.playsInline=true; v.setAttribute("playsinline",""); v.muted=true;
+  try{await v.play();}catch(e){ try{await new Promise(r=>setTimeout(r,200)); await v.play();}catch(e2){} }
+  const cv=document.createElement("canvas"); cv.width=64; cv.height=48;
+  const cx=cv.getContext("2d",{willReadFrequently:true});
+  const wctx=waveEl.getContext("2d");
+  const MIN_DUR=8000, CHECK_STEP=2000, MAX_DUR=24000; // 최소 8초, 이후 2초마다 재확인, 최대 24초
+  const t0=performance.now(), sig=[];
+  let lastWarnT=0, stopped=false, nextCheck=MIN_DUR, checking=false;
+
+  function grab(){ // 새 프레임 1개당 1회만 호출됨
+    try{
+      cx.drawImage(v,0,0,64,48);
+      const d=cx.getImageData(0,0,64,48).data;
+      let r=0; for(let i=0;i<d.length;i+=4) r+=d[i];
+      sig.push({t:performance.now()-t0, v:r/(d.length/4)});
+    }catch(e){}
+  }
+  function drawWave(){
+    const win=sig.slice(-150);
+    wctx.fillStyle="#EFEDFB"; wctx.fillRect(0,0,waveEl.width,waveEl.height);
+    if(win.length>5){
+      const vals=win.map(p=>p.v), mn=Math.min(...vals), mx=Math.max(...vals), rg=(mx-mn)||1;
+      wctx.strokeStyle="#FF6B6B"; wctx.lineWidth=2; wctx.beginPath();
+      win.forEach((p,i)=>{
+        const x=i/win.length*waveEl.width, y=waveEl.height-((p.v-mn)/rg)*(waveEl.height-10)-5;
+        i?wctx.lineTo(x,y):wctx.moveTo(x,y);
+      });
+      wctx.stroke();
+    }
+  }
+  function feedback(t){
+    if(sig.length<6)return;
+    const last=sig[sig.length-1].v;
+    if(t-lastWarnT<1500)return;
+    if(!hasTorch&&last<35){lastWarnT=t; say("신호가 약해요 — 손가락으로 렌즈를 완전히 덮고 좀 더 밝은 곳에서 측정하세요.");}
+    else if(last>250){lastWarnT=t; say("너무 밝아요 — 손가락을 조금 더 눌러 렌즈를 완전히 가리세요.");}
+    else if(t>2000){lastWarnT=t; say(`측정 중… 손가락을 움직이지 마세요 (${Math.floor(t/1000)}초 경과)`);}
+  }
+
+  const useVFC = typeof v.requestVideoFrameCallback === "function";
+  if(useVFC){
+    const onFrame=()=>{
+      if(stopped)return;
+      grab(); drawWave();
+      const t=performance.now()-t0; feedback(t); maybeCheck(t);
+      if(!stopped) v.requestVideoFrameCallback(onFrame);
+    };
+    v.requestVideoFrameCallback(onFrame);
+  } else {
+    let lastVidT=-1;
+    const loop=()=>{
+      if(stopped)return;
+      if(v.currentTime!==lastVidT){ // 실제 새 프레임일 때만 샘플 — 중복 샘플링(구버전 버그) 방지
+        lastVidT=v.currentTime;
+        grab(); drawWave();
+        const t=performance.now()-t0; feedback(t); maybeCheck(t);
+      }
+      if(!stopped) requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  }
+
+  function maybeCheck(t){
+    // 최소 시간 전이거나 이미 분석 중이면 건너뜀. 신뢰 가능한 결과가 나오면 즉시 종료(더 기다릴 필요 없음),
+    // 아니면 카메라는 그대로 둔 채 다음 체크 시점까지 계속 데이터를 쌓는다(최대 MAX_DUR까지).
+    if(checking||t<nextCheck)return;
+    nextCheck=t+CHECK_STEP;
+    checking=true;
+    const r=analyze(t);
+    checking=false;
+    if(r.ok) finish(r.bpm);
+    else if(t>=MAX_DUR) giveUp();
+  }
+  function finish(bpm){
+    stopped=true;
+    try{track.stop();}catch(e){}
+    try{if(camEl){camEl.pause();camEl.srcObject=null;}}catch(e){}
+    ppgStream=null; btn.disabled=false;
+    onDone(bpm);
+  }
+  function giveUp(){
+    stopped=true;
+    try{track.stop();}catch(e){}
+    try{if(camEl){camEl.pause();camEl.srcObject=null;}}catch(e){}
+    ppgStream=null; btn.disabled=false;
+    say("맥박 신호가 뚜렷하지 않습니다. 손가락으로 렌즈를 완전히 덮었는지, 측정 중 손가락이 움직이지 않았는지 확인하고 다시 시도하거나, 10초 맥박 ×6 값을 직접 입력해 주세요.",true);
+  }
+  function analyze(elapsed){
+    // 오래된 데이터가 섞이면 주기 추정이 흐려지므로 최근 15초 구간만 사용
+    const from=Math.max(0,elapsed-15000);
+    const pts=sig.filter(p=>p.t>=from);
+    const n=pts.length;
+    if(n<40) return {ok:false};
+    // 1) 균일 시간격자(30Hz)로 리샘플 — 실제 카메라 fps가 들쭉날쭉해도 이후 필터가 안정적으로 동작
+    const FS=30, stepMs=1000/FS;
+    const t0local=pts[0].t;
+    const totalMs=pts[n-1].t-t0local;
+    const m=Math.max(1,Math.floor(totalMs/stepMs));
+    const rs=new Array(m); let j=0;
+    for(let i=0;i<m;i++){
+      const tt=t0local+i*stepMs;
+      while(j<n-2&&pts[j+1].t<tt) j++;
+      const a=pts[j], b=pts[Math.min(j+1,n-1)];
+      const span=(b.t-a.t)||1, k=Math.max(0,Math.min(1,(tt-a.t)/span));
+      rs[i]=a.v+(b.v-a.v)*k;
+    }
+    // 2) 대역통과 유사 필터: 1초 이동평균으로 기저선(조명 변화 등) 제거 → 짧은 이동평균으로 고주파 잡음 완화
+    const baseW=Math.round(FS*1.0), smoothW=3;
+    const hp=new Array(m);
+    for(let i=0;i<m;i++){
+      let s=0,c=0;
+      for(let k2=Math.max(0,i-baseW);k2<Math.min(m,i+baseW);k2++){s+=rs[k2];c++;}
+      hp[i]=rs[i]-s/c;
+    }
+    const filt=new Array(m);
+    for(let i=0;i<m;i++){
+      let s=0,c=0;
+      for(let k2=Math.max(0,i-smoothW);k2<=Math.min(m-1,i+smoothW);k2++){s+=hp[k2];c++;}
+      filt[i]=s/c;
+    }
+    const trim=FS; // 필터 경계 왜곡되는 앞뒤 1초 버림
+    const sig2=filt.slice(trim,m-trim);
+    if(sig2.length<FS*5) return {ok:false};
+
+    // 3) 자기상관으로 주기 추정 (40~220bpm) — 피크 하나하나를 따지지 않고 신호 전체의 주기성을 보므로 잡음에 더 강함
+    const minLag=Math.round(FS*60/220), maxLag=Math.min(Math.round(FS*60/40), sig2.length-1);
+    const mean=sig2.reduce((a,b)=>a+b,0)/sig2.length;
+    const cent=sig2.map(x=>x-mean);
+    const energy=cent.reduce((a,b)=>a+b*b,0)||1;
+    let bestLag=-1,bestCorr=-1;
+    for(let lag=minLag;lag<=maxLag;lag++){
+      let s=0; for(let i=0;i<cent.length-lag;i++) s+=cent[i]*cent[i+lag];
+      const corr=s/energy;
+      if(corr>bestCorr){bestCorr=corr;bestLag=lag;}
+    }
+    const acBpm=bestLag>0?Math.round(60*FS/bestLag):0;
+
+    // 4) 적응형 피크 검출 (교차검증용)
+    const amp=Math.sqrt(cent.reduce((a,b)=>a+b*b,0)/cent.length);
+    const peaks=[], thr=amp*0.5, refr=Math.round(FS*0.28); // 최대 약 214bpm까지 허용
+    for(let i=1;i<cent.length-1;i++){
+      if(cent[i]>thr&&cent[i]>=cent[i-1]&&cent[i]>cent[i+1]){
+        if(!peaks.length||i-peaks[peaks.length-1]>refr) peaks.push(i);
+      }
+    }
+    let peakBpm=0;
+    if(peaks.length>=6){
+      const ivs=[]; for(let i=1;i<peaks.length;i++) ivs.push(peaks[i]-peaks[i-1]);
+      ivs.sort((a,b)=>a-b);
+      peakBpm=Math.round(60*FS/ivs[Math.floor(ivs.length/2)]);
+    }
+
+    // 5) 자기상관 신뢰도 + 두 추정치 일치 여부로 신뢰 가능한 값인지 판정
+    // (여러 시점에서 반복 확인하므로 v2보다 기준을 살짝 완화해도 오탐 위험이 크게 늘지 않는다)
+    const reliable=bestCorr>0.20&&amp>0.10&&(!peakBpm||Math.abs(acBpm-peakBpm)<=Math.max(8,acBpm*0.12));
+    if(!reliable||acBpm<45||acBpm>210) return {ok:false};
+    return {ok:true,bpm:peakBpm?Math.round((acBpm+peakBpm)/2):acBpm};
+  }
+}
+$("hrStart").addEventListener("click",()=>{
+  $("hrLive").style.display="block"; $("hrResult").style.display="none";
+  measurePPG($("hrWave"),$("hrMsg"),$("hrStart"),bpm=>{
+    showHr(bpm);
+    $("hrMsg").textContent="측정 완료! [기록에 저장]을 누르면 세션·CSV에 연결됩니다.";
+  },$("hrCam"));
+});
+
+/* ---------- 운동 전 심박수 ---------- */
+let pendingPreHr=null;
+function setPreHr(bpm){
+  pendingPreHr=bpm;
+  $("preBadge").innerHTML=`✔ 운동 전 <b style="color:var(--rest)">${bpm} BPM</b> 저장됨 — 아래 <b>STEP 2</b>에서 시작하세요`;
+}
+$("preStart").addEventListener("click",()=>{
+  $("preLive").style.display="block";
+  measurePPG($("preWave"),$("preMsg"),$("preStart"),bpm=>{
+    setPreHr(bpm);
+    $("preMsg").textContent="측정 완료!";
+  },$("preCam"));
+});
+$("preSave").addEventListener("click",()=>{
+  const bpm=+$("preManual").value||0;
+  if(!bpm){alert("BPM을 입력하세요 (10초간 맥박을 세고 ×6).");return;}
+  if(bpm<40||bpm>200){alert("입력값이 비정상적입니다. 다시 확인해 주세요.");return;}
+  setPreHr(bpm);
+});
+
+/* ---------- 자동 저장 (기기 내 영구 보관) ---------- */
+const STORE_KEY="tabataCoachData_v1";
+let storageOK=false;
+function saveAll(){
+  if(!storageOK)return;
+  try{
+    const recs=records.map(({_row,...r})=>r);
+    localStorage.setItem(STORE_KEY,JSON.stringify({rosters,records:recs,totalPts,fbCfg:$("fbCfg").value,adminPw,assignments,seenBattles}));
+  }catch(e){}
+}
+function loadAll(){
+  try{localStorage.setItem("__probe","1");localStorage.removeItem("__probe");storageOK=true;}
+  catch(e){storageOK=false;}
+  $("persistHint").innerHTML=storageOK
+    ?"✅ 기록·명렬표·포인트가 이 기기에 <b>자동 저장</b>됩니다(닫아도 유지). 백업용으로 주기적으로 CSV도 내려받으세요."
+    :"⚠️ 이 환경(미리보기 등)에서는 자동 저장이 되지 않습니다. 파일을 저장해 Chrome에서 직접 열면 자동 저장이 켜집니다. 지금은 반드시 <b>CSV 내려받기</b>로 보존하세요.";
+  if(!storageOK)return;
+  try{
+    const raw=localStorage.getItem(STORE_KEY); if(!raw)return;
+    const d=JSON.parse(raw);
+    Object.assign(rosters,d.rosters||{});
+    (d.records||[]).forEach(r=>{records.push(r);renderRecRow(r);});
+    totalPts=+d.totalPts||0;
+    if(d.fbCfg)$("fbCfg").value=d.fbCfg;
+    if(d.adminPw)adminPw=d.adminPw;
+    if(d.assignments)Object.assign(assignments,d.assignments);
+    if(Array.isArray(d.seenBattles))seenBattles=d.seenBattles;
+  }catch(e){}
+}
+
+/* ---------- Firebase 실시간 연동 ---------- */
+function srvMsg(t,err){ $("srvStatus").innerHTML=err?`<span class="err">${t}</span>`:t; }
+function setLive(t,err){ $("liveStatus").innerHTML=err?`<span class="err">${t}</span>`:t; }
+let fdb=null,fmod=null,fbBooting=false;
+let lastCtrlTs=0;
+function sendControl(cmd){
+  if(!fdb){alert("서버(Firebase)에 연결되어야 사용할 수 있습니다.");return;}
+  fmod.set(fmod.ref(fdb,"control"),{cmd,ts:Date.now()})
+    .then(()=>$("ctrlMsg").textContent=(cmd==="start"?"▶ 전체 시작 신호를 보냈습니다.":"⏹ 전체 정지 신호를 보냈습니다."))
+    .catch(()=>$("ctrlMsg").innerHTML='<span class="err">전송 실패 — 연결을 확인하세요.</span>');
+}
+window.addEventListener("DOMContentLoaded",()=>{});
+
+
+function parseFbCfg(text){
+  if(!text||!text.trim())return null;
+  try{const j=JSON.parse(text); if(j.apiKey&&j.databaseURL)return j;}catch(e){}
+  const cfg={}, re=/(\w+)\s*:\s*["']([^"']+)["']/g; let m;
+  while((m=re.exec(text)))cfg[m[1]]=m[2];
+  return (cfg.apiKey&&cfg.databaseURL)?cfg:null;
+}
+function normalizeRec(r){
+  return {id:r.id||"",date:String(r.date||""),name:r.name,cls:String(r.cls||""),
+    seq:r.seq||"",rounds:+r.rounds||0,acc:+r.acc||0,reps:String(r.reps||""),time:+r.time||0,int:+r.int||0,
+    jP:+r.jP||0,jG:+r.jG||0,jGd:+r.jGd||0,jO:+r.jO||0,jB:+r.jB||0,hrPre:r.hrPre||"",hr:r.hr||"",zone:r.zone||"",
+    score:+r.score||0,pts:+r.pts||0,task:r.task||"",taskId:r.taskId||"",synced:true};
+}
+/* 배포용 기본 Firebase 설정 — 학생들은 아무 설정 없이 접속 즉시 서버에 연결됩니다. */
+const DEFAULT_FB_CFG=`const firebaseConfig = {
+  apiKey: "AIzaSyDJGFKaqZgDP4-CSArQQEv8PFuV3EjzPG0",
+  authDomain: "kys5487-tabata.firebaseapp.com",
+  databaseURL: "https://kys5487-tabata-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "kys5487-tabata",
+  storageBucket: "kys5487-tabata.firebasestorage.app",
+  messagingSenderId: "542136346720",
+  appId: "1:542136346720:web:7238c624945703ffc63b05"
+};`;
+async function initFirebase(){
+  if(fdb||fbBooting)return true;
+  const cfg=parseFbCfg($("fbCfg").value)||parseFbCfg(DEFAULT_FB_CFG);
+  if(!cfg){
+    setLive("아직 연결되지 않음 — 기록은 이 기기에만 저장 중");
+    if($("fbCfg").value.trim())setLive("설정을 해석할 수 없습니다. apiKey와 databaseURL이 포함됐는지 확인하세요. (databaseURL은 Realtime Database를 만들어야 생깁니다)",true);
+    return false;
+  }
+  fbBooting=true; setLive("Firebase 연결 중…");
+  try{
+    const appM=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+    fmod=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
+    const app=appM.initializeApp(cfg);
+    fdb=fmod.getDatabase(app);
+    attachFbListeners();
+    setLive("🟢 Firebase 실시간 연결됨 — 기록이 서버에 안전하게 저장됩니다");
+    syncPending();
+    fbBooting=false; return true;
+  }catch(e){
+    fbBooting=false; fdb=null;
+    setLive("연결 실패 — 인터넷과 설정을 확인하세요. 기록은 이 기기에 보관되며 연결되면 자동 전송됩니다.",true);
+    return false;
+  }
+}
+function attachFbListeners(){
+  const {ref,onChildAdded,onChildChanged,onValue}=fmod;
+  $("liveFeed").style.display="block";
+  // 교사 수업 통제 신호 수신 (학생)
+  onValue(ref(fdb,"control"),snap=>{
+    const c=snap.val(); if(!c||!c.cmd||!c.ts)return;
+    if(c.ts===lastCtrlTs)return; lastCtrlTs=c.ts;
+    if(Date.now()-c.ts>15000)return; // 오래된 신호 무시
+    if(c.cmd==="start"){
+      if(!running && parqPassed && document.querySelector("nav button.on")?.dataset.page==="pgWork"){
+        start();
+      } else if(!running){
+        // 운동 탭이 아니거나 준비 안 됨 → 안내
+        alert("📢 선생님이 '다같이 시작'을 눌렀어요! 운동하기 화면에서 건강체크 후 시작하세요.");
+      }
+    } else if(c.cmd==="stop"){
+      if(running)stopAll();
+    }
+  });
+  onChildAdded(ref(fdb,"records"),snap=>{
+    const r=snap.val(); if(!r||!r.name)return;
+    if(r.id&&records.some(x=>x.id===r.id)){ // 내 기록의 서버 반영 확인
+      const loc=records.find(x=>x.id===r.id);
+      if(loc&&loc.synced!==true){loc.synced=true;saveAll();}
+      return;
+    }
+    const rec=normalizeRec(r);
+    records.push(rec); renderRecRow(rec); addLiveFeed(rec);
+    renderStats(); saveAll(); beep(1200,.1,.12);
+  });
+  onChildChanged(ref(fdb,"records"),snap=>{
+    const r=snap.val(); if(!r||!r.id)return;
+    const loc=records.find(x=>x.id===r.id);
+    if(!loc)return;
+    const row=loc._row;
+    Object.assign(loc,normalizeRec(r)); loc._row=row;
+    if(row){const cell=row.querySelector(".hr-cell");
+      if(cell){cell.textContent=`${loc.hrPre||"–"}→${loc.hr||"–"}`; if(loc.hr)cell.style.color="var(--work)";}}
+    renderStats(); saveAll();
+  });
+  let taskSyncedOnce=false;
+  onValue(ref(fdb,"assignments"),snap=>{
+    const prevIds=Object.keys(assignments);
+    Object.keys(assignments).forEach(k=>delete assignments[k]);
+    Object.assign(assignments,snap.val()||{});
+    renderTasks(); saveAll();
+    // 수행 중이던 과제가 삭제/변경됨
+    if(currentTask&&!assignments[currentTask.id]){
+      if(!running)toast(`'${currentTask.title}' 과제가 선생님에 의해 변경·삭제되어 자율 실천 모드로 전환됩니다.`,"task","⚠️");
+      clearTask();
+    }
+    // 새 과제 도착 알림 (첫 동기화·운동 중 제외)
+    if(taskSyncedOnce&&!running){
+      const fresh=Object.keys(assignments).filter(id=>!prevIds.includes(id));
+      if(fresh.length){
+        const names=fresh.map(id=>assignments[id].title).join(", ");
+        toast(`새로운 과제가 도착했습니다: ${names} — 운동 설계 탭에서 [이 과제 하기]를 눌러 수행하세요.`,"task","📋");
+      }
+    }
+    taskSyncedOnce=true;
+  });
+  onValue(ref(fdb,"battles"),snap=>{
+    Object.keys(battles).forEach(k=>delete battles[k]);
+    Object.assign(battles,snap.val()||{});
+    renderBattles(); handleBattleEvents();
+  });
+  onValue(ref(fdb,"rosters"),snap=>{
+    const v=snap.val(); if(!v)return;
+    Object.assign(rosters,v);
+    refreshClassUI(); saveAll();
+  });
+}
+function pushRecord(rec){
+  if(!rec.id)rec.id=Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+  if(!fdb){rec.synced=false; saveAll();
+    srvMsg("서버 미연결 — 기록은 이 기기에 보관되며 연결되면 자동 전송됩니다."); return;}
+  const {_row,synced,...clean}=rec;
+  fmod.set(fmod.ref(fdb,"records/"+rec.id),clean)
+    .then(()=>{rec.synced=true; saveAll(); srvMsg(`☁️ ${rec.name} 기록 서버 저장 완료 ✔`);})
+    .catch(()=>{rec.synced=false; saveAll();
+      srvMsg("서버 저장 실패 — 기기에 보관됨, 연결되면 자동 재전송합니다.",true);});
+}
+function syncPending(){
+  if(!fdb)return;
+  const pend=records.filter(r=>r.synced===false);
+  if(pend.length){srvMsg(`미전송 기록 ${pend.length}건을 서버로 보내는 중…`); pend.forEach(pushRecord);}
+}
+function pushRoster(c){
+  if(fdb)fmod.set(fmod.ref(fdb,"rosters/"+c),rosters[c]).catch(()=>{});
+}
+function removeRosterRemote(c){
+  if(fdb)fmod.remove(fmod.ref(fdb,"rosters/"+c)).catch(()=>{});
+}
+$("ctrlStart").addEventListener("click",()=>sendControl("start"));
+$("ctrlStop").addEventListener("click",()=>sendControl("stop"));
+$("fbSave").addEventListener("click",async()=>{
+  saveAll();
+  if(!$("fbCfg").value.trim()){setLive("설정이 비어 있습니다.");return;}
+  if(fdb){setLive("이미 연결되어 있습니다. 설정을 바꾸려면 앱을 새로고침 후 다시 저장하세요.");return;}
+  await initFirebase();
+});
+window.addEventListener("online",()=>{ if(fdb)syncPending(); else initFirebase(); });
+
+function addLiveFeed(rec){
+  const f=$("liveFeed");
+  if(f.style.display==="none")return;
+  const div=document.createElement("div");
+  div.className="feed-item";
+  div.innerHTML=`<span class="hint">${(rec.date||"").slice(11)||rec.date}</span>
+    <b>${rec.name}</b> <span class="hint">(${rec.cls})</span> —
+    종합 <b style="color:var(--work)">${rec.score}</b>점 · 정확도 ${rec.acc}% ·
+    <span style="color:#E24FD8">P ${rec.jP||0}</span>/<span style="color:var(--gold)">G ${rec.jG||0}</span>/<span style="color:var(--rest)">GD ${rec.jGd||0}</span>/<span style="color:#7A85E8">OK ${rec.jO||0}</span>/<span style="color:var(--bad)">M ${rec.jB||0}</span>${rec.hr?` · 💓 ${rec.hrPre||"–"}→${rec.hr}`:""}`;
+  f.prepend(div);
+  while(f.children.length>40)f.removeChild(f.lastChild);
+}
+$("wipeBtn").addEventListener("click",()=>{
+  if(!confirm("이 기기의 명렬표·기록·포인트를 삭제합니다. (Firebase 서버의 기록은 유지되며, 재연결하면 다시 내려받습니다)"))return;
+  if(!confirm("정말 초기화할까요?"))return;
+  try{localStorage.removeItem(STORE_KEY);}catch(e){}
+  location.reload();
+});
+
+loadAll();
+shownLevel=levelIndex(totalPts);
+refreshClassUI();
+refreshProfile({silent:true});
+renderTasks();
+updateModeBadge();
+syncMyInfoFields();
+initFirebase();
+</script>
+</body>
+</html>
