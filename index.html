@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="타바타코치">
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%235B51E8"/><rect x="44" y="8" width="12" height="10" rx="3" fill="%23FFFFFF"/><rect x="47" y="16" width="6" height="10" fill="%23FFFFFF"/><rect x="24" y="14" width="10" height="8" rx="3" fill="%23FFFFFF" transform="rotate(-35 29 18)"/><rect x="66" y="14" width="10" height="8" rx="3" fill="%23FFFFFF" transform="rotate(35 71 18)"/><circle cx="50" cy="58" r="32" fill="none" stroke="%23FFFFFF" stroke-width="7"/><path d="M50 26 A32 32 0 0 1 79 70" fill="none" stroke="%23FF9F1C" stroke-width="7" stroke-linecap="round"/><line x1="50" y1="58" x2="50" y2="38" stroke="%23FFFFFF" stroke-width="5" stroke-linecap="round"/><line x1="50" y1="58" x2="64" y2="58" stroke="%23FFFFFF" stroke-width="5" stroke-linecap="round"/><circle cx="50" cy="58" r="4" fill="%23FF9F1C"/></svg>'>
 <link rel="apple-touch-icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="%235B51E8"/><rect x="44" y="8" width="12" height="10" rx="3" fill="%23FFFFFF"/><rect x="47" y="16" width="6" height="10" fill="%23FFFFFF"/><rect x="24" y="14" width="10" height="8" rx="3" fill="%23FFFFFF" transform="rotate(-35 29 18)"/><rect x="66" y="14" width="10" height="8" rx="3" fill="%23FFFFFF" transform="rotate(35 71 18)"/><circle cx="50" cy="58" r="32" fill="none" stroke="%23FFFFFF" stroke-width="7"/><path d="M50 26 A32 32 0 0 1 79 70" fill="none" stroke="%23FF9F1C" stroke-width="7" stroke-linecap="round"/><line x1="50" y1="58" x2="50" y2="38" stroke="%23FFFFFF" stroke-width="5" stroke-linecap="round"/><line x1="50" y1="58" x2="64" y2="58" stroke="%23FFFFFF" stroke-width="5" stroke-linecap="round"/><circle cx="50" cy="58" r="4" fill="%23FF9F1C"/></svg>'>
-<link rel="manifest" href='data:application/manifest+json,{"name":"타바타 AI 코치","short_name":"타바타코치","display":"standalone","orientation":"portrait","background_color":"%23E9E7F8","theme_color":"%235B51E8","start_url":".","icons":[{"src":"data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><rect width=\"100\" height=\"100\" rx=\"20\" fill=\"%235B51E8\"/><rect x=\"44\" y=\"8\" width=\"12\" height=\"10\" rx=\"3\" fill=\"%23FFFFFF\"/><rect x=\"47\" y=\"16\" width=\"6\" height=\"10\" fill=\"%23FFFFFF\"/><rect x=\"24\" y=\"14\" width=\"10\" height=\"8\" rx=\"3\" fill=\"%23FFFFFF\" transform=\"rotate(-35 29 18)\"/><rect x=\"66\" y=\"14\" width=\"10\" height=\"8\" rx=\"3\" fill=\"%23FFFFFF\" transform=\"rotate(35 71 18)\"/><circle cx=\"50\" cy=\"58\" r=\"32\" fill=\"none\" stroke=\"%23FFFFFF\" stroke-width=\"7\"/><path d=\"M50 26 A32 32 0 0 1 79 70\" fill=\"none\" stroke=\"%23FF9F1C\" stroke-width=\"7\" stroke-linecap=\"round\"/><line x1=\"50\" y1=\"58\" x2=\"50\" y2=\"38\" stroke=\"%23FFFFFF\" stroke-width=\"5\" stroke-linecap=\"round\"/><line x1=\"50\" y1=\"58\" x2=\"64\" y2=\"58\" stroke=\"%23FFFFFF\" stroke-width=\"5\" stroke-linecap=\"round\"/><circle cx=\"50\" cy=\"58\" r=\"4\" fill=\"%23FF9F1C\"/></svg>","sizes":"any","type":"image/svg+xml","purpose":"any"},{"src":"data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><rect width=\"100\" height=\"100\" rx=\"20\" fill=\"%235B51E8\"/><rect x=\"44\" y=\"8\" width=\"12\" height=\"10\" rx=\"3\" fill=\"%23FFFFFF\"/><rect x=\"47\" y=\"16\" width=\"6\" height=\"10\" fill=\"%23FFFFFF\"/><rect x=\"24\" y=\"14\" width=\"10\" height=\"8\" rx=\"3\" fill=\"%23FFFFFF\" transform=\"rotate(-35 29 18)\"/><rect x=\"66\" y=\"14\" width=\"10\" height=\"8\" rx=\"3\" fill=\"%23FFFFFF\" transform=\"rotate(35 71 18)\"/><circle cx=\"50\" cy=\"58\" r=\"32\" fill=\"none\" stroke=\"%23FFFFFF\" stroke-width=\"7\"/><path d=\"M50 26 A32 32 0 0 1 79 70\" fill=\"none\" stroke=\"%23FF9F1C\" stroke-width=\"7\" stroke-linecap=\"round\"/><line x1=\"50\" y1=\"58\" x2=\"50\" y2=\"38\" stroke=\"%23FFFFFF\" stroke-width=\"5\" stroke-linecap=\"round\"/><line x1=\"50\" y1=\"58\" x2=\"64\" y2=\"58\" stroke=\"%23FFFFFF\" stroke-width=\"5\" stroke-linecap=\"round\"/><circle cx=\"50\" cy=\"58\" r=\"4\" fill=\"%23FF9F1C\"/></svg>","sizes":"192x192","type":"image/svg+xml","purpose":"any"}]}'>
+<link rel="manifest" href="manifest.webmanifest">
 <title>타바타 AI 코치 PRO</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -176,6 +176,22 @@
   .rank-name{font-weight:700; flex:1;}
   .rank-n{font-family:"Barlow Condensed"; font-weight:700; color:var(--primary); font-size:17px;}
   .rank-pts{font-family:"Barlow Condensed"; font-weight:700; color:var(--purple); font-size:15px; min-width:56px; text-align:right;}
+  /* 학생용 현황판 (프로젝터용, 큰 화면) */
+  #classBoardOverlay{position:fixed; inset:0; z-index:10003; background:#0A1128; display:none;
+    flex-direction:column; padding:24px clamp(16px,4vw,48px); overflow-y:auto;}
+  .board-title{color:#fff; font-family:"Barlow Condensed"; font-weight:700; font-size:clamp(18px,2.4vw,26px);
+    letter-spacing:.5px; margin-bottom:10px;}
+  #classBoardOverlay .stage-row, #classBoardOverlay .rank-row{background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.16);}
+  #classBoardOverlay .stage-row{padding:12px 16px; gap:14px;}
+  #classBoardOverlay .no{color:#8A8FB5;}
+  #classBoardOverlay .nm{color:#fff; font-size:clamp(14px,1.6vw,20px);}
+  #classBoardOverlay .stage-dot{width:clamp(15px,1.8vw,24px); height:clamp(15px,1.8vw,24px);}
+  #classBoardOverlay .stage-label{color:#C9C6EE; font-size:clamp(11px,1.2vw,15px); min-width:auto;}
+  #classBoardOverlay .rank-row{padding:12px 16px;}
+  #classBoardOverlay .rank-name{color:#fff; font-size:clamp(14px,1.8vw,22px);}
+  #classBoardOverlay .rank-medal{font-size:clamp(16px,2vw,24px);}
+  #classBoardOverlay .rank-n{font-size:clamp(15px,2vw,22px);}
+  #classBoardOverlay .rank-pts{font-size:clamp(12px,1.4vw,17px);}
   .kpi .v{font-family:"Barlow Condensed"; font-weight:700; font-size:34px; line-height:1;}
   .kpi .k{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:1px; margin-top:2px;}
   .c1{color:var(--primary)} .c2{color:var(--purple)} .c3{color:var(--rest)} .c4{color:var(--good)}
@@ -590,6 +606,10 @@
     </div>
     <div id="dashChips" class="seqlist" style="margin-top:8px"></div>
 
+    <div class="row" style="margin-top:8px">
+      <button class="btn btn-go btn-sm" id="boardBig">🖥️ 학생용 화면으로 크게 보기 (접속현황+운동순위)</button>
+    </div>
+
     <h3 style="margin-top:20px">🚦 학생별 진행 신호등</h3>
     <div class="hint" style="margin-bottom:8px">위 반 선택 기준으로, 명렬표 번호 순서대로 각 학생이 지금 어느 단계인지 실시간으로 보여줍니다(서버 연결 필요). 프로젝터에 띄워두면 누가 어디서 멈춰있는지 한눈에 보입니다. 점 5개 = 건강체크·운동전심박·운동중·운동후심박·완료, 2분 이상 신호가 없으면 미접속으로 표시됩니다.</div>
     <div id="stageRows" class="stage-rows"></div>
@@ -698,6 +718,25 @@ const firebaseConfig = {
   <canvas id="qrBigCanvas" width="440" height="440" style="width:min(74vmin,440px);height:min(74vmin,440px);background:#fff;border-radius:20px;image-rendering:pixelated"></canvas>
   <div id="qrBigUrl" style="color:#fff;font-family:'Barlow Condensed';font-weight:700;font-size:clamp(20px,4vw,34px);letter-spacing:.5px;word-break:break-all;text-align:center"></div>
   <div style="color:#C9C6EE;font-size:15px">카메라로 QR을 찍어 접속하세요 · 화면을 누르면 닫힙니다</div>
+</div>
+<div id="classBoardOverlay">
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap">
+    <div style="color:#fff;font-family:'Barlow Condensed';font-weight:700;font-size:clamp(22px,3.6vw,36px);display:flex;align-items:center;gap:12px">🏫
+      <select id="boardClassSelect" style="font-family:'Barlow Condensed';font-weight:700;font-size:clamp(20px,3.2vw,32px);background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:4px 12px"></select>
+      반 실시간 현황
+    </div>
+    <button id="boardClose" style="margin-left:auto;background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:10px;padding:9px 18px;font-family:'Barlow Condensed';font-weight:700;font-size:15px;cursor:pointer">✕ 닫기</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:28px;flex:1;min-height:0">
+    <div style="overflow-y:auto">
+      <div class="board-title">🚦 접속 현황</div>
+      <div id="bigStageRows" class="stage-rows"></div>
+    </div>
+    <div style="overflow-y:auto">
+      <div class="board-title">🏆 운동 순위</div>
+      <div id="bigRankRows" class="rank-rows"></div>
+    </div>
+  </div>
 </div>
 
 <script type="module">
@@ -1677,6 +1716,7 @@ function refreshClassUI(){
   if(names.includes(keepV))vc.value=keepV;
   renderStats(); refreshBattleUI();
   syncStuId(); // 명렬표가 나중에 도착(서버 동기화)해도 이미 입력된 학번을 다시 찾아본다
+  refreshBoardClassSelect();
 }
 $("rosterAdd").addEventListener("click",()=>{
   const c=$("rosterClass").value.trim();
@@ -1819,9 +1859,11 @@ function attachPresenceListener(){
   if(!presenceTimer)presenceTimer=setInterval(renderStageRows,10000); // 신호가 없어도 시간 경과로 미접속 갱신
 }
 function renderStageRows(){
-  const box=$("stageRows"); if(!box)return;
+  // 학습센터의 작은 표와 학생용 큰 현황판(#bigStageRows)이 항상 같은 내용을 보여주도록 둘 다 채운다.
+  const boxes=["stageRows","bigStageRows"].map(id=>$(id)).filter(Boolean);
+  if(!boxes.length)return;
   const c=$("viewClass").value;
-  if(!c||!rosters[c]){box.innerHTML='<div class="hint">반을 선택하면 표시됩니다.</div>';return;}
+  if(!c||!rosters[c]){boxes.forEach(box=>box.innerHTML='<div class="hint">반을 선택하면 표시됩니다.</div>');return;}
   const now=Date.now();
   const clsPresence=presenceData[c]||{};
   const byNo={};
@@ -1830,7 +1872,7 @@ function renderStageRows(){
     const no=parseInt(stuIdKey.slice(3,5),10);
     if(!isNaN(no))byNo[no]=p;
   });
-  box.innerHTML="";
+  const frag=document.createDocumentFragment();
   rosters[c].forEach(s=>{
     const p=byNo[parseInt(s.no,10)];
     const stale=!p||(now-(+p.ts||0)>PRESENCE_STALE_MS);
@@ -1841,29 +1883,32 @@ function renderStageRows(){
     row.className="stage-row"+(stale?" offline":"");
     row.innerHTML=`<span class="no num">${s.no}</span><span class="nm">${s.name}</span>
       <div class="stage-dots">${dots}</div><span class="stage-label">${stale?"미접속":STAGE_LABELS[stage]}</span>`;
-    box.appendChild(row);
+    frag.appendChild(row);
   });
+  boxes.forEach(box=>{ box.innerHTML=""; box.appendChild(frag.cloneNode(true)); });
 }
 
 /* ---------- 실천 랭킹: 세션수 많은 순, 동률이면 누적P 순 ---------- */
 function renderRanking(){
-  const box=$("rankRows"); if(!box)return;
+  const boxes=["rankRows","bigRankRows"].map(id=>$(id)).filter(Boolean);
+  if(!boxes.length)return;
   const c=$("viewClass").value;
-  if(!c||!rosters[c]){box.innerHTML='<div class="hint">반을 선택하면 표시됩니다.</div>';return;}
+  if(!c||!rosters[c]){boxes.forEach(box=>box.innerHTML='<div class="hint">반을 선택하면 표시됩니다.</div>');return;}
   const rows=rosters[c].map(s=>({no:s.no,name:s.name,st:statsFor(s.name,c)}))
     .filter(r=>r.st&&r.st.n>0)
     .sort((a,b)=>b.st.n-a.st.n || b.st.pts-a.st.pts)
     .slice(0,10);
-  box.innerHTML="";
-  if(!rows.length){box.innerHTML='<div class="hint">아직 수행 기록이 없습니다.</div>';return;}
+  if(!rows.length){boxes.forEach(box=>box.innerHTML='<div class="hint">아직 수행 기록이 없습니다.</div>');return;}
   const medals=["🥇","🥈","🥉"];
+  const frag=document.createDocumentFragment();
   rows.forEach((r,i)=>{
     const row=document.createElement("div");
     row.className="rank-row"+(i<3?` top${i+1}`:"");
     row.innerHTML=`<span class="rank-medal">${medals[i]||(i+1)+"위"}</span><span class="rank-name">${r.name}</span>
       <span class="rank-n">${r.st.n}회</span><span class="rank-pts">${r.st.pts}P</span>`;
-    box.appendChild(row);
+    frag.appendChild(row);
   });
+  boxes.forEach(box=>{ box.innerHTML=""; box.appendChild(frag.cloneNode(true)); });
 }
 
 /* ---------- 성적 자동 집계 (실천 15점 환산) ---------- */
@@ -2859,6 +2904,29 @@ function initJoinShare(){
     catch(e){ toast("복사 실패 — 주소를 길게 눌러 직접 복사하세요","task","⚠️"); }
   });
 }
+// 학생용 현황판: 관리 버튼 없이 접속현황+운동순위만 큼직하게 프로젝터에 띄우는 화면.
+// 교시마다 반이 바뀌므로, 화면을 닫지 않고 안에서 바로 반을 바꿀 수 있게 자체 반 선택을 둔다.
+function refreshBoardClassSelect(){
+  const sel=$("boardClassSelect"); if(!sel)return;
+  const keep=sel.value||$("viewClass").value;
+  sel.innerHTML="";
+  Object.keys(rosters).forEach(c=>sel.insertAdjacentHTML("beforeend",`<option value="${c}">${c}</option>`));
+  if(Object.keys(rosters).includes(keep))sel.value=keep;
+}
+function showClassBoard(cls){
+  if(!cls||!rosters[cls])return;
+  $("viewClass").value=cls; // 표시되는 데이터는 항상 viewClass 기준이므로 같이 맞춘다
+  renderStats(); renderDashboard(); renderStageRows(); renderRanking();
+}
+$("boardBig").addEventListener("click",()=>{
+  const c=$("viewClass").value;
+  if(!c||!rosters[c]){alert("먼저 위에서 반을 선택하세요.");return;}
+  refreshBoardClassSelect(); $("boardClassSelect").value=c;
+  showClassBoard(c);
+  $("classBoardOverlay").style.display="flex";
+});
+$("boardClassSelect").addEventListener("change",()=>{ showClassBoard($("boardClassSelect").value); });
+$("boardClose").addEventListener("click",()=>{ $("classBoardOverlay").style.display="none"; });
 
 loadAll();
 shownLevel=levelIndex(totalPts);
