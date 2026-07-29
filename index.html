@@ -172,17 +172,42 @@
   .rank-badge.top1{color:var(--gold); background:rgba(211,150,10,.16);}
   .rank-badge.top2{color:#8A8FB5; background:rgba(138,143,181,.16);}
   .rank-badge.top3{color:var(--work); background:rgba(255,159,28,.14);}
-  /* 학생용 현황판 (프로젝터용, 큰 화면) */
-  #classBoardOverlay{position:fixed; inset:0; z-index:10003; background:#0A1128; display:none;
+  /* 학생용 현황판 (프로젝터용, 큰 화면) — 어둡되 답답하지 않게 깊이감과 여백을 준다 */
+  #classBoardOverlay{position:fixed; inset:0; z-index:10003; display:none;
+    background:radial-gradient(1100px 620px at 50% -12%, #34408C 0%, rgba(52,64,140,0) 62%),
+      linear-gradient(180deg, #1B2352 0%, #141A3D 100%);
     flex-direction:column; padding:24px clamp(16px,4vw,48px); overflow-y:auto;}
   .board-title{color:#fff; font-family:"Barlow Condensed"; font-weight:700; font-size:clamp(18px,2.4vw,26px);
     letter-spacing:.5px; margin-bottom:10px;}
-  #classBoardOverlay .stage-row{background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.16); padding:12px 16px; gap:14px; flex-wrap:wrap;}
-  #classBoardOverlay .no{color:#8A8FB5;}
+  #classBoardOverlay .stage-rows{gap:9px;}
+  #classBoardOverlay .stage-row{background:rgba(255,255,255,.10); border-color:rgba(255,255,255,.20);
+    box-shadow:0 2px 10px rgba(0,0,0,.18); padding:13px 18px; gap:14px; flex-wrap:wrap;}
+  #classBoardOverlay .stage-row.offline{opacity:.5;}
+  #classBoardOverlay .no{color:#A8AEE0;}
   #classBoardOverlay .nm{color:#fff; font-size:clamp(14px,1.6vw,20px);}
-  #classBoardOverlay .stage-dot{width:clamp(15px,1.8vw,24px); height:clamp(15px,1.8vw,24px);}
-  #classBoardOverlay .stage-label{color:#C9C6EE; font-size:clamp(11px,1.2vw,15px); min-width:auto;}
-  #classBoardOverlay .rank-badge{font-size:clamp(12px,1.4vw,15px); padding:3px 10px;}
+  #classBoardOverlay .stage-dot{width:clamp(15px,1.8vw,24px); height:clamp(15px,1.8vw,24px);
+    background:rgba(255,255,255,.14); box-shadow:none;}
+  #classBoardOverlay .stage-label{color:#DAD8FF; font-size:clamp(11px,1.2vw,15px); min-width:auto;}
+  #classBoardOverlay .rank-badge{font-size:clamp(12px,1.4vw,15px); padding:3px 10px; color:#C9C6EE; background:rgba(255,255,255,.13);}
+  #classBoardOverlay .rank-badge.top1{color:#FFD76A; background:rgba(255,199,60,.22);}
+  #classBoardOverlay .rank-badge.top2{color:#DDE2FF; background:rgba(210,218,255,.20);}
+  #classBoardOverlay .rank-badge.top3{color:#FFC08A; background:rgba(255,159,28,.22);}
+  .board-chip{font-family:"Barlow Condensed"; font-weight:700; font-size:clamp(15px,2vw,20px); cursor:pointer;
+    background:rgba(255,255,255,.10); color:#A8AEE0; border:1px solid rgba(255,255,255,.20);
+    border-radius:10px; padding:6px 16px; transition:all .15s;}
+  .board-chip:hover{background:rgba(255,255,255,.16); color:#fff;}
+  .board-chip.on{background:#5B51E8; color:#fff; border-color:#8A82FF; box-shadow:0 3px 12px rgba(91,81,232,.45);}
+  .board-class-head{color:#8A82FF; font-family:"Barlow Condensed"; font-weight:700;
+    font-size:clamp(15px,1.9vw,21px); letter-spacing:.5px; margin:14px 0 4px; padding-left:4px;}
+  .board-class-head:first-child{margin-top:0;}
+  /* 과제를 낼 반 고르기 */
+  .task-class-pick{display:flex; gap:6px; flex-wrap:wrap;}
+  .task-class-pick button{font-family:"Barlow Condensed"; font-weight:700; font-size:14px; cursor:pointer;
+    background:var(--panel3); color:var(--muted); border:1px solid var(--line);
+    border-radius:8px; padding:4px 12px; transition:all .15s;}
+  .task-class-pick button.on{background:var(--primary); color:#fff; border-color:var(--primary);}
+  .task-cls-tag{font-family:"Barlow Condensed"; font-weight:700; font-size:12px; color:var(--purple);
+    background:var(--panel2); border-radius:6px; padding:1px 7px; margin-left:4px;}
   .kpi .v{font-family:"Barlow Condensed"; font-weight:700; font-size:34px; line-height:1;}
   .kpi .k{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:1px; margin-top:2px;}
   .c1{color:var(--primary)} .c2{color:var(--purple)} .c3{color:var(--rest)} .c4{color:var(--good)}
@@ -528,52 +553,40 @@
     </div>
 
     <details class="collapsible" open>
-    <summary>🎮 수업 진행 — 통제·실시간 현황·순위 (매 수업 사용)</summary>
+    <summary>🎮 수업 진행 (매 수업 사용)</summary>
 
-    <h3 style="margin-top:14px">🎮 수업 통제 (선택한 반 전체)</h3>
-    <div class="hint" style="margin-bottom:8px">아래 "반별 현황"에서 선택된 반의 학생 앱에만 신호를 보냅니다. (학생은 운동 설계·심박 준비가 끝난 상태여야 함)</div>
-    <div class="row">
-      <button class="btn btn-go btn-sm" id="ctrlStart">▶ 다같이 시작 (3초 후)</button>
-      <button class="btn btn-stop btn-sm" id="ctrlStop" style="color:var(--bad)">⏹ 전체 정지</button>
-      <span class="hint" id="ctrlMsg"></span>
-    </div>
-
-    <h3 style="margin-top:20px">반별 현황</h3>
-    <div class="row">
+    <div class="row" style="margin-top:14px;align-items:flex-end">
+      <button class="btn btn-go" id="boardBig" style="font-size:17px;padding:14px 22px">🖥️ 학생용 화면 크게 보기 (수업 시작·정지)</button>
       <div class="field"><label>반 선택</label><select id="viewClass"><option value="">반을 등록하세요</option></select></div>
-      <label class="btn btn-stop btn-sm" style="display:inline-flex;align-items:center;cursor:pointer">📂 기록 CSV 불러오기<input type="file" id="recImport" accept=".csv" style="display:none"></label>
     </div>
-    <div class="hint" style="margin:6px 0 8px">다른 기기의 기록은 <b>기록 CSV 불러오기</b>로 합칠 수 있습니다(중복 자동 제거). 세션수가 곧 실천 횟수예요. 이 표를 CSV로 내려받으려면 아래 <b>📊 성적 자동 집계</b>의 CSV 버튼을 이용하세요(같은 내용이 포함되어 있습니다). <b>관리</b> 열의 🗑는 테스트 등으로 잘못 쌓인 특정 학생의 기록만 골라 서버까지 완전히 삭제할 때 씁니다.</div>
-    <table><thead><tr><th>번호</th><th>이름</th><th>성별</th><th>세션수</th><th>성실수행</th><th>평균정확도</th><th>최고점수</th><th>퍼펙트·그레이트율</th><th>최근심박</th><th>누적P</th><th>최근 수행</th><th>관리</th></tr></thead>
-      <tbody id="stuRows"><tr><td colspan="12" class="empty">반을 등록하면 학생별 누적 현황이 표시됩니다.</td></tr></tbody></table>
+    <div class="hint" style="margin:6px 0 8px">프로젝터·TV에 띄우는 큰 화면입니다. 그 안에서 <b>여러 반을 동시에</b> 켤 수 있고, <b>다같이 시작·정지</b>도 거기서 누릅니다. 아래 목록은 선생님 손안에서 확인하는 용도예요.</div>
 
-    <h3 style="margin-top:20px">🖥️ 실시간 수업 현황판</h3>
-    <div class="hint" style="margin-bottom:8px">선택한 반의 오늘(또는 최근) 수행 현황을 실시간으로 보여줍니다. TV·프로젝터에 띄워두기 좋아요.</div>
+    <h3 style="margin-top:20px">🚦 지금 진행 상황 (실시간)</h3>
+    <div class="hint" style="margin-bottom:8px">선택한 반 학생이 <b>지금 이 순간</b> 어느 단계인지 보여줍니다. 점 5개 = 건강체크·운동전심박·운동중·운동후심박·완료, 2분 이상 신호가 없으면 미접속입니다. 이름 옆 배지는 세션수(실천 횟수) 기준 순위입니다(동률이면 누적P 순).</div>
+    <div id="stageRows" class="stage-rows"></div>
+
+    <h3 style="margin-top:20px">📊 수행 집계</h3>
+    <div class="hint" style="margin-bottom:8px">위 신호등이 <b>지금 상태</b>라면, 이건 실제로 <b>저장된 기록</b> 기준 집계입니다(성실수행·평균점수는 신호등에 없는 정보예요).</div>
+    <div class="row" style="margin-bottom:4px">
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)"><input type="checkbox" id="dashToday" checked> 오늘 수행만 집계</label>
+    </div>
     <div class="kpis" id="dashKpis">
       <div class="kpi"><div class="v num c1" id="dashDone">0</div><div class="k">완료</div></div>
       <div class="kpi"><div class="v num" style="color:var(--bad)" id="dashUndone">0</div><div class="k">미완료</div></div>
       <div class="kpi"><div class="v num" style="color:var(--good)" id="dashDiligent">0</div><div class="k">성실수행</div></div>
       <div class="kpi"><div class="v num c2" id="dashAvg">–</div><div class="k">반 평균 점수</div></div>
     </div>
-    <div class="row" style="margin-top:4px">
-      <label style="display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)"><input type="checkbox" id="dashToday" checked> 오늘 수행만 집계</label>
+
+    <h3 style="margin-top:20px">📋 학생별 누적 현황</h3>
+    <div class="row">
+      <label class="btn btn-stop btn-sm" style="display:inline-flex;align-items:center;cursor:pointer">📂 기록 CSV 불러오기<input type="file" id="recImport" accept=".csv" style="display:none"></label>
     </div>
-    <div id="dashChips" class="seqlist" style="margin-top:8px"></div>
+    <div class="hint" style="margin:6px 0 8px">학기 전체 누적입니다(위 집계와 달리 오늘만이 아니에요). 다른 기기의 기록은 <b>기록 CSV 불러오기</b>로 합칠 수 있습니다(중복 자동 제거). 세션수가 곧 실천 횟수예요. CSV로 내려받으려면 <b>📊 성적 자동 집계</b>의 CSV 버튼을 이용하세요. <b>관리</b> 열의 🗑는 테스트 등으로 잘못 쌓인 특정 학생의 기록만 골라 서버까지 완전히 삭제할 때 씁니다.</div>
+    <table><thead><tr><th>번호</th><th>이름</th><th>성별</th><th>세션수</th><th>성실수행</th><th>평균정확도</th><th>최고점수</th><th>퍼펙트·그레이트율</th><th>최근심박</th><th>누적P</th><th>최근 수행</th><th>관리</th></tr></thead>
+      <tbody id="stuRows"><tr><td colspan="12" class="empty">반을 등록하면 학생별 누적 현황이 표시됩니다.</td></tr></tbody></table>
 
-    <div class="row" style="margin-top:8px">
-      <button class="btn btn-go btn-sm" id="boardBig">🖥️ 학생용 화면으로 크게 보기 (접속현황·순위·수업통제)</button>
-    </div>
-
-    <h3 style="margin-top:20px">🚦 학생별 진행 신호등 · 실천 순위</h3>
-    <div class="hint" style="margin-bottom:8px">위 반 선택 기준으로, 명렬표 번호 순서대로 각 학생이 지금 어느 단계인지 실시간으로 보여줍니다(서버 연결 필요). 점 5개 = 건강체크·운동전심박·운동중·운동후심박·완료, 2분 이상 신호가 없으면 미접속으로 표시됩니다. 이름 옆 배지는 세션수(실천 횟수) 기준 순위입니다(동률이면 누적P 순).</div>
-    <div id="stageRows" class="stage-rows"></div>
-    </details>
-
-    <details class="collapsible">
-    <summary>📋 과제·명렬표·성적 처리 (평소엔 열 필요 없어요)</summary>
-
-    <h3 style="margin-top:14px">📋 공통 과제 관리</h3>
-    <div class="hint">아래에서 과제로 낼 운동 구성·강도를 직접 설계하고 제목을 붙여 등록하세요. 등록 즉시 모든 학생 앱의 운동 설계 화면에 과제 카드가 나타나고, 학생이 [이 과제 하기]로 수행하면 기록에 과제명이 표시됩니다. 학생이 구성을 임의로 바꾸면 자율 모드로 전환되어 과제로 인정되지 않습니다.</div>
+    <h3 style="margin-top:22px">📋 공통 과제 관리 (차시별 과제 내기)</h3>
+    <div class="hint">과제로 낼 운동 구성을 설계하고 제목을 붙여 <b>반을 골라</b> 등록하세요. 반마다 휴일·시간표가 다르므로, 같은 차시 과제라도 <b>오늘 수업하는 반에만</b> 내면 됩니다. 나중에 다른 반 차례가 오면 등록된 과제의 <b>[반]</b> 버튼으로 그 반을 추가하세요. 학생이 구성을 임의로 바꾸면 자율 모드로 전환되어 과제로 인정되지 않습니다.</div>
 
     <div class="step-box" style="margin-top:8px">
       <div style="font-weight:700;margin-bottom:4px">📋 과제 운동설계</div>
@@ -592,7 +605,13 @@
     </div>
 
     <div class="row" style="margin-top:8px">
-      <div class="field" style="flex:1;min-width:200px"><label>과제 제목</label><input type="text" id="taskTitle" placeholder="예: 3주차 공통 타바타" style="width:100%"></div>
+      <div class="field" style="flex:1;min-width:200px"><label>과제 제목</label><input type="text" id="taskTitle" placeholder="예: 3차시 공통 타바타" style="width:100%"></div>
+    </div>
+    <div style="margin-top:6px">
+      <div class="hint" style="margin-bottom:4px">이 과제를 낼 반 (누르면 켜짐 / 하나도 안 켜면 전체 반)</div>
+      <div id="taskClassPick" class="task-class-pick"></div>
+    </div>
+    <div class="row" style="margin-top:8px">
       <button class="btn btn-teal btn-sm" id="taskAdd">위 설계로 과제 등록</button>
     </div>
     <div class="seqlist" id="taskChips"></div>
@@ -601,8 +620,12 @@
     </div>
     <table><thead><tr><th>이름</th><th>학반</th><th>일시</th><th>정확도</th><th>심박(전→후)</th><th>종합</th></tr></thead>
       <tbody id="taskRows"><tr><td colspan="6" class="empty">과제를 선택하면 완료한 학생이 표시됩니다.</td></tr></tbody></table>
+    </details>
 
-    <h3 style="margin-top:20px">📇 명렬표 등록</h3>
+    <details class="collapsible">
+    <summary>📇 명렬표·성적 처리 (학기 초·성적 낼 때만)</summary>
+
+    <h3 style="margin-top:14px">📇 명렬표 등록</h3>
     <div class="hint">엑셀·한글 명렬표에서 복사해 붙여넣으세요. 한 줄에 한 명, <b>번호 이름</b>(예: 5 김철수) 형식이 가장 좋고 <b>이름만</b> 붙여넣어도 번호가 자동으로 매겨집니다.</div>
     <div class="row" style="margin-top:10px">
       <div class="field"><label>반 이름</label><input type="text" id="rosterClass" placeholder="1-3" style="width:90px"></div>
@@ -725,17 +748,18 @@ const firebaseConfig = {
   <div style="color:#C9C6EE;font-size:15px">카메라로 QR을 찍어 접속하세요 · 화면을 누르면 닫힙니다</div>
 </div>
 <div id="classBoardOverlay">
-  <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px;flex-wrap:wrap">
-    <div style="color:#fff;font-family:'Barlow Condensed';font-weight:700;font-size:clamp(20px,3.6vw,36px);display:flex;align-items:center;gap:12px">🏫
-      <select id="boardClassSelect" style="font-family:'Barlow Condensed';font-weight:700;font-size:clamp(18px,3.2vw,32px);background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:10px;padding:4px 12px"></select>
-      반 실시간 현황
-    </div>
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap">
+    <div style="color:#fff;font-family:'Barlow Condensed';font-weight:700;font-size:clamp(20px,3.6vw,36px)">🏫 실시간 현황</div>
     <button id="boardClose" style="margin-left:auto;background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:10px;padding:9px 18px;font-family:'Barlow Condensed';font-weight:700;font-size:15px;cursor:pointer">✕ 닫기</button>
   </div>
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;background:rgba(255,255,255,.06);border-radius:12px;padding:10px 14px">
-    <button id="boardCtrlStart" style="background:var(--good);color:#0A1128;border:0;border-radius:10px;padding:10px 18px;font-family:'Barlow Condensed';font-weight:700;font-size:clamp(15px,2vw,20px);cursor:pointer">▶ 다같이 시작 (3초 후)</button>
-    <button id="boardCtrlStop" style="background:var(--bad);color:#fff;border:0;border-radius:10px;padding:10px 18px;font-family:'Barlow Condensed';font-weight:700;font-size:clamp(15px,2vw,20px);cursor:pointer">⏹ 전체 정지</button>
-    <span id="boardCtrlMsg" style="color:#C9C6EE;font-size:clamp(12px,1.6vw,15px)"></span>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+    <span style="color:#A8AEE0;font-size:clamp(12px,1.5vw,15px)">반 선택 (여러 반 동시 수업이면 여러 개를 켜세요)</span>
+    <div id="boardClassChips" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:12px 16px">
+    <button id="boardCtrlStart" style="background:#3CBB75;color:#08210F;border:0;border-radius:11px;padding:11px 20px;font-family:'Barlow Condensed';font-weight:700;font-size:clamp(15px,2vw,20px);cursor:pointer;box-shadow:0 3px 12px rgba(60,187,117,.35)">▶ 다같이 시작 (3초 후)</button>
+    <button id="boardCtrlStop" style="background:#F45B69;color:#fff;border:0;border-radius:11px;padding:11px 20px;font-family:'Barlow Condensed';font-weight:700;font-size:clamp(15px,2vw,20px);cursor:pointer;box-shadow:0 3px 12px rgba(244,91,105,.3)">⏹ 전체 정지</button>
+    <span id="boardCtrlMsg" style="color:#DAD8FF;font-size:clamp(12px,1.6vw,15px)"></span>
   </div>
   <div style="overflow-y:auto;flex:1;min-height:0">
     <div class="board-title">🚦 접속 현황 · 실천 순위</div>
@@ -952,11 +976,22 @@ function applyAssignment(id){
   currentTask={id,title:a.title}; updateModeBadge();
   goPage("pgWork");
 }
+/* 과제가 특정 반에 배정됐는지 판단한다.
+   classes가 없거나 비어 있으면 '전체 반' — 예전에 등록된 과제도 그대로 동작한다. */
+function taskHasClass(a,cls){
+  const ks=a&&a.classes?Object.keys(a.classes).filter(k=>a.classes[k]):[];
+  return !ks.length || (!!cls && ks.includes(cls));
+}
+function taskClassLabel(a){
+  const ks=a&&a.classes?Object.keys(a.classes).filter(k=>a.classes[k]):[];
+  return ks.length?ks.join(", "):"전체 반";
+}
 function renderTasks(){
-  // 학생: 과제 카드
+  // 학생: 과제 카드 — 내 반에 배정된 과제만 보인다
   const tc=$("taskCards"); tc.innerHTML="";
+  const myCls=myKey().cls;
   const ids=Object.keys(assignments);
-  ids.forEach(id=>{
+  ids.filter(id=>taskHasClass(assignments[id],myCls)).forEach(id=>{
     const a=assignments[id];
     const d=document.createElement("div"); d.className="task-card";
     d.innerHTML=`<span class="tt">📋 ${a.title}</span><span class="td">${taskDesc(a)}</span>`;
@@ -971,18 +1006,66 @@ function renderTasks(){
   ids.forEach(id=>{
     const a=assignments[id];
     const doneSet=new Set(records.filter(r=>r.taskId===id).map(r=>r.name+"|"+r.cls));
-    tv.insertAdjacentHTML("beforeend",`<option value="${id}">${a.title}</option>`);
+    tv.insertAdjacentHTML("beforeend",`<option value="${id}">${a.title} (${taskClassLabel(a)})</option>`);
     const chip=document.createElement("div"); chip.className="chip";
-    chip.innerHTML=`<span class="ord num">📋</span>${a.title} <span class="hint">완료 ${doneSet.size}명</span><button title="과제 삭제">✕</button>`;
-    chip.querySelector("button").addEventListener("click",()=>{
+    chip.innerHTML=`<span class="ord num">📋</span>${a.title}<span class="task-cls-tag">${taskClassLabel(a)}</span>
+      <span class="hint">완료 ${doneSet.size}명</span>`;
+    const edit=document.createElement("button"); edit.textContent="반"; edit.title="이 과제를 낼 반 바꾸기";
+    edit.addEventListener("click",()=>openTaskClassEditor(id));
+    const del=document.createElement("button"); del.textContent="✕"; del.title="과제 삭제";
+    del.addEventListener("click",()=>{
       if(!confirm(`'${a.title}' 과제를 삭제할까요? (완료 기록은 유지됩니다)`))return;
       delete assignments[id]; renderTasks(); saveAll();
       if(fdb)fmod.remove(fmod.ref(fdb,"assignments/"+id)).catch(()=>{});
     });
+    chip.appendChild(edit); chip.appendChild(del);
     chips.appendChild(chip);
+    if(taskClassEditId===id){
+      const row=document.createElement("div");
+      row.className="task-class-pick"; row.style.cssText="width:100%;margin:4px 0 8px";
+      Object.keys(rosters).forEach(c=>{
+        const b=document.createElement("button");
+        b.className=(a.classes&&a.classes[c])?"on":"";
+        b.textContent=c;
+        b.addEventListener("click",()=>{
+          if(!a.classes)a.classes={};
+          if(a.classes[c])delete a.classes[c]; else a.classes[c]=true;
+          renderTasks(); saveAll();
+          if(fdb)fmod.set(fmod.ref(fdb,"assignments/"+id),a).catch(()=>{});
+        });
+        row.appendChild(b);
+      });
+      const done=document.createElement("button");
+      done.textContent="✓ 완료"; done.style.cssText="background:var(--good);color:#fff;border-color:var(--good)";
+      done.addEventListener("click",()=>{ taskClassEditId=null; renderTasks(); });
+      row.appendChild(done);
+      chips.appendChild(row);
+    }
   });
   if(ids.includes(keep))tv.value=keep;
   renderTaskRows();
+}
+let taskClassEditId=null;
+function openTaskClassEditor(id){
+  taskClassEditId=(taskClassEditId===id)?null:id;
+  renderTasks();
+}
+/* 과제 등록 화면의 '낼 반' 고르기 */
+const newTaskClasses={};
+function renderTaskClassPick(){
+  const box=$("taskClassPick"); if(!box)return;
+  box.innerHTML="";
+  Object.keys(rosters).forEach(c=>{
+    const b=document.createElement("button");
+    b.className=newTaskClasses[c]?"on":"";
+    b.textContent=c;
+    b.addEventListener("click",()=>{
+      if(newTaskClasses[c])delete newTaskClasses[c]; else newTaskClasses[c]=true;
+      renderTaskClassPick();
+    });
+    box.appendChild(b);
+  });
+  if(!Object.keys(rosters).length)box.innerHTML='<span class="hint">명렬표를 먼저 등록하세요.</span>';
 }
 function renderTaskRows(){
   const id=$("taskView").value, tb=$("taskRows");
@@ -1004,11 +1087,14 @@ $("taskAdd").addEventListener("click",()=>{
   const cfg=taskDesigner.cfg();
   if(!cfg.seq.length){alert("위의 '과제 운동설계'에서 운동을 먼저 추가해 주세요.");return;}
   const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  const a={title,...cfg,created:new Date().toISOString().slice(0,10)};
+  const classes={}; Object.keys(newTaskClasses).forEach(c=>{ if(rosters[c])classes[c]=true; });
+  const a={title,...cfg,classes,created:new Date().toISOString().slice(0,10)};
   assignments[id]=a; $("taskTitle").value="";
+  Object.keys(newTaskClasses).forEach(c=>delete newTaskClasses[c]);
+  renderTaskClassPick();
   renderTasks(); saveAll();
   if(fdb)fmod.set(fmod.ref(fdb,"assignments/"+id),a).catch(()=>{});
-  alert(`'${title}' 과제가 등록되었습니다. 학생 앱에 즉시 표시됩니다.`);
+  alert(`'${title}' 과제가 ${taskClassLabel(a)}에 등록되었습니다. 해당 반 학생 앱에 즉시 표시됩니다.`);
 });
 ["workSec","restSec","rounds","difficulty"].forEach(id=>$(id).addEventListener("change",()=>{
   if(currentBattle){
@@ -1701,46 +1787,66 @@ function parseRoster(text){
   });
   return out;
 }
-/* 학년 전체 명렬표(번호·성명·성별 반복 표)를 한 번에 여러 반으로 나눠 파싱한다 */
+/* 학년 전체 명렬표를 한 번에 여러 반으로 나눠 파싱한다.
+   '성명' 열을 기준으로 잡기 때문에, 번호 열이 반마다 있든 맨 왼쪽에 하나만 있든 모두 처리된다. */
 const ROSTER_STATUS_WORDS=["자퇴","전출","위탁","공석","휴학"];
 function parseBulkRoster(text){
   const rows=text.split(/\r?\n/).map(line=>line.split("\t").map(c=>c.trim()));
+  const norm=s=>(s||"").replace(/\s+/g,"");
   const rosterResult={}, excludedResult={};
+  if(!text.includes("\t"))
+    return {rosters:{},excluded:{},error:"칸이 나뉘지 않았습니다 — 엑셀에서 표를 선택해 복사(Ctrl+C)한 뒤 붙여넣어 주세요."};
+  // '성명'이 가장 많이 들어 있는 줄을 헤더 줄로 본다
+  let headerRow=-1, nameCols=[];
   rows.forEach((row,r)=>{
-    const heads=[];
-    row.forEach((cell,c)=>{ if(cell.replace(/\s+/g,"")==="번호")heads.push(c); });
-    if(!heads.length)return; // 번호 헤더가 있는 줄만 반 구획 시작으로 인정
-    heads.forEach(col=>{
-      // 성명 이름이 바로 다음 칸에 있는지 확인 (아니면 헤더 줄이 아닐 가능성이 큼)
-      const nameLabel=(row[col+1]||"").replace(/\s+/g,"");
-      if(nameLabel!=="성명")return;
-      // 반 이름은 이 헤더 줄 바로 위쪽에서 찾는다 (병합된 셀은 보통 맨 왼쪽 칸에 값이 들어있음)
-      let className="";
-      for(let up=r-1; up>=Math.max(0,r-3) && !className; up--){
-        for(let cc=col; cc<=col+2; cc++){
-          const v=(rows[up]&&rows[up][cc])||"";
-          if(v){ className=v.replace(/\(.*?\)\s*$/,"").trim(); break; }
+    const cols=[];
+    row.forEach((cell,c)=>{ if(norm(cell)==="성명")cols.push(c); });
+    if(cols.length>nameCols.length){ nameCols=cols; headerRow=r; }
+  });
+  if(headerRow<0)
+    return {rosters:{},excluded:{},error:"'성명' 열을 찾지 못했습니다 — 머리글(번호·성명·성별) 줄까지 포함해 복사했는지 확인해 주세요."};
+  const hdr=rows[headerRow];
+  const noCols=[]; hdr.forEach((cell,c)=>{ if(norm(cell)==="번호")noCols.push(c); });
+  nameCols.forEach(nameCol=>{
+    // 이 성명 열에 딸린 번호 열 = 왼쪽에서 가장 가까운 번호 열 (없으면 순번을 새로 매김)
+    let noCol=-1;
+    noCols.forEach(c=>{ if(c<nameCol&&(noCol<0||c>noCol))noCol=c; });
+    const sexCol=(norm(hdr[nameCol+1])==="성별")?nameCol+1:-1;
+    // 반 이름은 헤더 줄 위쪽에서 찾는다. '1-1' 형태를 우선 찾고(담임 이름 줄을 건너뛰기 위해),
+    // 없으면 위쪽 첫 비어있지 않은 칸을 쓰되 괄호 안 담임 표기는 떼어낸다.
+    let className="";
+    for(let up=headerRow-1; up>=0 && !className; up--){
+      for(let c=nameCol; c>=Math.max(0,nameCol-2); c--){
+        const v=(rows[up]&&rows[up][c])||"";
+        if(/^\s*\d+\s*[-–—]\s*\d+/.test(v)){ className=norm(v); break; }
+      }
+    }
+    if(!className){
+      for(let up=headerRow-1; up>=0 && !className; up--){
+        for(let c=nameCol; c>=Math.max(0,nameCol-2); c--){
+          const v=(rows[up]&&rows[up][c])||"";
+          if(v && norm(v)!=="담임명" && norm(v)!=="반"){ className=v.replace(/\(.*?\)\s*$/,"").trim(); break; }
         }
       }
-      if(!className)return;
-      const list=[], excluded=[];
-      for(let dr=r+1; dr<rows.length; dr++){
-        const no=(rows[dr][col]||"").trim();
-        const name=(rows[dr][col+1]||"").trim();
-        if(!no && !name)break; // 표 끝
-        if(!name || name==="-" || name==="－")continue; // 빈 자리(결번)는 건너뜀
-        const rawSex=(rows[dr][col+2]||"").trim();
-        if(ROSTER_STATUS_WORDS.includes(rawSex)){
-          // 자퇴·전출 등은 실제 있는 학생이 아니므로 명렬표에는 넣지 않고 번호만 기록해 알려준다
-          excluded.push(`${no||"?"}번(${rawSex})`);
-          continue;
-        }
-        const sex=(rawSex==="남"||rawSex==="여")?rawSex:"";
-        list.push({no:no||String(list.length+1), name, sex});
+    }
+    if(!className)return;
+    const list=[], excluded=[];
+    for(let dr=headerRow+1; dr<rows.length; dr++){
+      const name=(rows[dr][nameCol]||"").trim();
+      const no=noCol>=0?(rows[dr][noCol]||"").trim():"";
+      if(!name && !no)break; // 표 끝
+      if(!name || name==="-" || name==="－")continue; // 빈 자리(결번)는 건너뜀
+      const rawSex=sexCol>=0?(rows[dr][sexCol]||"").trim():"";
+      if(ROSTER_STATUS_WORDS.includes(rawSex)){
+        // 자퇴·전출 등은 실제 있는 학생이 아니므로 명렬표에는 넣지 않고 번호만 기록해 알려준다
+        excluded.push(`${no||"?"}번(${rawSex})`);
+        continue;
       }
-      if(list.length)rosterResult[className]=list;
-      if(excluded.length)excludedResult[className]=excluded;
-    });
+      const sex=(rawSex==="남"||rawSex==="여")?rawSex:"";
+      list.push({no:no||String(list.length+1), name, sex});
+    }
+    if(list.length)rosterResult[className]=list;
+    if(excluded.length)excludedResult[className]=excluded;
   });
   return {rosters:rosterResult, excluded:excludedResult};
 }
@@ -1764,6 +1870,7 @@ function refreshClassUI(){
   renderStats(); refreshBattleUI();
   syncStuId(); // 명렬표가 나중에 도착(서버 동기화)해도 이미 입력된 학번을 다시 찾아본다
   refreshBoardClassSelect();
+  renderTaskClassPick();
 }
 $("rosterAdd").addEventListener("click",()=>{
   const c=$("rosterClass").value.trim();
@@ -1777,10 +1884,10 @@ $("rosterAdd").addEventListener("click",()=>{
 $("bulkRosterAdd").addEventListener("click",()=>{
   const text=$("bulkRosterPaste").value;
   if(!text.trim()){alert("표 내용을 붙여넣어 주세요.");return;}
-  const {rosters:parsed, excluded}=parseBulkRoster(text);
+  const {rosters:parsed, excluded, error}=parseBulkRoster(text);
   const names=Object.keys(parsed);
   if(!names.length){
-    $("bulkRosterResult").innerHTML='<span class="err">인식된 반을 찾지 못했습니다. 번호·성명 열이 포함된 표 전체를 복사했는지 확인해 주세요.</span>';
+    $("bulkRosterResult").innerHTML='<span class="err">'+(error||"인식된 반을 찾지 못했습니다 — 반 이름(1-1 등)이 적힌 줄부터 학생 명단까지 함께 복사했는지 확인해 주세요.")+'</span>';
     return;
   }
   let total=0;
@@ -1821,6 +1928,7 @@ function syncStuId(){
   }
   syncMyInfoFields();
   saveMyId();
+  renderTasks(); // 반이 정해지면 그 반에 배정된 과제 카드만 다시 그린다
 }
 function saveMyId(){
   try{
@@ -1864,8 +1972,7 @@ function recsForClass(cls,todayOnly){
 }
 function renderDashboard(){
   const c=$("viewClass").value;
-  const chips=$("dashChips");
-  if(!c||!rosters[c]){$("dashDone").textContent="0";$("dashUndone").textContent="0";$("dashDiligent").textContent="0";$("dashAvg").textContent="–";chips.innerHTML="";return;}
+  if(!c||!rosters[c]){$("dashDone").textContent="0";$("dashUndone").textContent="0";$("dashDiligent").textContent="0";$("dashAvg").textContent="–";return;}
   const todayOnly=$("dashToday").checked;
   const rs=recsForClass(c,todayOnly);
   const doneNames=new Set(rs.map(r=>r.name));
@@ -1877,15 +1984,6 @@ function renderDashboard(){
   const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
   $("dashDone").textContent=done; $("dashUndone").textContent=undone;
   $("dashDiligent").textContent=diligent; $("dashAvg").textContent=avg==null?"–":avg;
-  chips.innerHTML="";
-  roster.forEach(s=>{
-    const did=doneNames.has(s.name);
-    const dil=rs.some(r=>r.name===s.name&&isDiligent(r));
-    const chip=document.createElement("div"); chip.className="chip";
-    chip.style.borderColor=did?(dil?"var(--good)":"var(--work)"):"var(--line)";
-    chip.innerHTML=`<span class="ord num" style="color:${did?(dil?'var(--good)':'var(--work)'):'var(--muted)'}">${did?(dil?'✅':'○'):'·'}</span>${s.no}. ${s.name}`;
-    chips.appendChild(chip);
-  });
 }
 
 /* ---------- 실시간 학생 진행 신호등 (Firebase presence) ----------
@@ -1934,12 +2032,8 @@ function rankMapFor(cls){
     .forEach((r,i)=>{ map[r.name]=i+1; });
   return map;
 }
-function renderStageRows(){
-  // 학습센터의 작은 표와 학생용 큰 현황판(#bigStageRows)이 항상 같은 내용을 보여주도록 둘 다 채운다.
-  const boxes=["stageRows","bigStageRows"].map(id=>$(id)).filter(Boolean);
-  if(!boxes.length)return;
-  const c=$("viewClass").value;
-  if(!c||!rosters[c]){boxes.forEach(box=>box.innerHTML='<div class="hint">반을 선택하면 표시됩니다.</div>');return;}
+/* 한 반의 신호등 줄들을 만들어 배열로 돌려준다 (작은 표와 큰 현황판이 함께 쓴다) */
+function buildStageRows(c){
   const now=Date.now();
   const clsPresence=presenceData[c]||{};
   const byNo={};
@@ -1950,8 +2044,7 @@ function renderStageRows(){
   });
   const ranks=rankMapFor(c);
   const medals=["🥇","🥈","🥉"];
-  const frag=document.createDocumentFragment();
-  rosters[c].forEach(s=>{
+  return (rosters[c]||[]).map(s=>{
     const p=byNo[parseInt(s.no,10)];
     const stale=!p||(now-(+p.ts||0)>PRESENCE_STALE_MS);
     const stage=stale?0:(p.stage||0);
@@ -1963,9 +2056,33 @@ function renderStageRows(){
     row.className="stage-row"+(stale?" offline":"");
     row.innerHTML=`<span class="no num">${s.no}</span><span class="nm">${s.name}</span>${badge}
       <div class="stage-dots">${dots}</div><span class="stage-label">${stale?"미접속":STAGE_LABELS[stage]}</span>`;
-    frag.appendChild(row);
+    return row;
   });
-  boxes.forEach(box=>{ box.innerHTML=""; box.appendChild(frag.cloneNode(true)); });
+}
+function renderStageRows(){
+  const box=$("stageRows");
+  if(box){
+    const c=$("viewClass").value;
+    if(!c||!rosters[c])box.innerHTML='<div class="hint">반을 선택하면 표시됩니다.</div>';
+    else{ box.innerHTML=""; buildStageRows(c).forEach(r=>box.appendChild(r)); }
+  }
+  renderBoardRows();
+}
+/* 학생용 현황판: 여러 반을 동시에 띄울 수 있다 (한 교사가 두 학급을 합반 수업할 때) */
+let boardClasses=[];
+function renderBoardRows(){
+  const box=$("bigStageRows"); if(!box)return;
+  const active=boardClasses.filter(c=>rosters[c]);
+  if(!active.length){box.innerHTML='<div class="hint" style="color:#C9C6EE">반을 선택하세요.</div>';return;}
+  box.innerHTML="";
+  active.forEach(c=>{
+    if(active.length>1){
+      const head=document.createElement("div");
+      head.className="board-class-head"; head.textContent=c+"반";
+      box.appendChild(head);
+    }
+    buildStageRows(c).forEach(r=>box.appendChild(r));
+  });
 }
 
 /* ---------- 성적 자동 집계 (실천 15점 환산) ---------- */
@@ -2688,14 +2805,6 @@ function srvMsg(t,err){ $("srvStatus").innerHTML=err?`<span class="err">${t}</sp
 function setLive(t,err){ $("liveStatus").innerHTML=err?`<span class="err">${t}</span>`:t; updateSaveStatus(); }
 let fdb=null,fmod=null,fbBooting=false;
 let lastCtrlTs=0;
-function sendControl(cmd,cls,msgElId){
-  const msgEl=$(msgElId||"ctrlMsg");
-  if(!fdb){alert("서버(Firebase)에 연결되어야 사용할 수 있습니다.");return;}
-  if(!cls){if(msgEl)msgEl.innerHTML='<span class="err">먼저 반을 선택하세요.</span>';return;}
-  fmod.set(fmod.ref(fdb,"control"),{cmd,cls,ts:Date.now()})
-    .then(()=>{if(msgEl)msgEl.textContent=(cmd==="start"?`▶ ${cls} 반에 시작 신호를 보냈습니다.`:`⏹ ${cls} 반에 정지 신호를 보냈습니다.`);})
-    .catch(()=>{if(msgEl)msgEl.innerHTML='<span class="err">전송 실패 — 연결을 확인하세요.</span>';});
-}
 window.addEventListener("DOMContentLoaded",()=>{});
 
 
@@ -2751,11 +2860,15 @@ function attachFbListeners(){
   $("liveFeed").style.display="block";
   attachPresenceListener();
   // 교사 수업 통제 신호 수신 (학생)
+  // 신호는 control/{반} 아래에 반별로 따로 저장된다 — 여러 교사가 동시에 다른 반 수업을
+  // 진행해도 서로의 신호를 덮어쓰지 않는다.
   onValue(ref(fdb,"control"),snap=>{
-    const c=snap.val(); if(!c||!c.cmd||!c.ts)return;
+    const all=snap.val(); if(!all)return;
+    const myCls=myKey().cls;
+    const c=(myCls&&all[myCls])||null;
+    if(!c||!c.cmd||!c.ts)return;
     if(c.ts===lastCtrlTs)return; lastCtrlTs=c.ts;
     if(Date.now()-c.ts>15000)return; // 오래된 신호 무시
-    if(c.cls&&c.cls!==myKey().cls)return; // 다른 반으로 보낸 신호는 무시
     if(c.cmd==="start"){
       if(!running && parqPassed && document.querySelector("nav button.on")?.dataset.page==="pgWork"){
         start();
@@ -2799,9 +2912,11 @@ function attachFbListeners(){
       if(!running)toast(`'${currentTask.title}' 과제가 선생님에 의해 변경·삭제되어 자율 실천 모드로 전환됩니다.`,"task","⚠️");
       clearTask();
     }
-    // 새 과제 도착 알림 (첫 동기화·운동 중 제외)
+    // 새 과제 도착 알림 (첫 동기화·운동 중 제외, 내 반에 배정된 것만)
     if(taskSyncedOnce&&!running){
-      const fresh=Object.keys(assignments).filter(id=>!prevIds.includes(id));
+      const myCls=myKey().cls;
+      const fresh=Object.keys(assignments)
+        .filter(id=>!prevIds.includes(id)&&taskHasClass(assignments[id],myCls));
       if(fresh.length){
         const names=fresh.map(id=>assignments[id].title).join(", ");
         toast(`새로운 과제가 도착했습니다: ${names} — 운동 설계 탭에서 [이 과제 하기]를 눌러 수행하세요.`,"task","📋");
@@ -2841,8 +2956,6 @@ function pushRoster(c){
 function removeRosterRemote(c){
   if(fdb)fmod.remove(fmod.ref(fdb,"rosters/"+c)).catch(()=>{});
 }
-$("ctrlStart").addEventListener("click",()=>sendControl("start",$("viewClass").value));
-$("ctrlStop").addEventListener("click",()=>sendControl("stop",$("viewClass").value));
 $("fbSave").addEventListener("click",async()=>{
   saveAll();
   if(!$("fbCfg").value.trim()){setLive("설정이 비어 있습니다.");return;}
@@ -2984,31 +3097,46 @@ function initJoinShare(){
     catch(e){ toast("복사 실패 — 주소를 길게 눌러 직접 복사하세요","task","⚠️"); }
   });
 }
-// 학생용 현황판: 관리 버튼 없이 접속현황+운동순위만 큼직하게 프로젝터에 띄우는 화면.
-// 교시마다 반이 바뀌므로, 화면을 닫지 않고 안에서 바로 반을 바꿀 수 있게 자체 반 선택을 둔다.
+// 학생용 현황판: 관리 버튼 없이 접속현황+순위만 큼직하게 프로젝터에 띄우는 화면.
+// 교시마다 반이 바뀌고 합반 수업도 있으므로, 화면 안에서 반을 여러 개 켜고 끌 수 있게 한다.
 function refreshBoardClassSelect(){
-  const sel=$("boardClassSelect"); if(!sel)return;
-  const keep=sel.value||$("viewClass").value;
-  sel.innerHTML="";
-  Object.keys(rosters).forEach(c=>sel.insertAdjacentHTML("beforeend",`<option value="${c}">${c}</option>`));
-  if(Object.keys(rosters).includes(keep))sel.value=keep;
-}
-function showClassBoard(cls){
-  if(!cls||!rosters[cls])return;
-  $("viewClass").value=cls; // 표시되는 데이터는 항상 viewClass 기준이므로 같이 맞춘다
-  renderStats(); renderDashboard(); renderStageRows();
+  const box=$("boardClassChips"); if(!box)return;
+  box.innerHTML="";
+  Object.keys(rosters).forEach(c=>{
+    const b=document.createElement("button");
+    b.className="board-chip"+(boardClasses.includes(c)?" on":"");
+    b.textContent=c;
+    b.addEventListener("click",()=>{
+      const i=boardClasses.indexOf(c);
+      if(i>=0){ if(boardClasses.length>1)boardClasses.splice(i,1); } // 최소 한 반은 남긴다
+      else boardClasses.push(c);
+      refreshBoardClassSelect(); renderBoardRows();
+    });
+    box.appendChild(b);
+  });
 }
 $("boardBig").addEventListener("click",()=>{
   const c=$("viewClass").value;
-  if(!c||!rosters[c]){alert("먼저 위에서 반을 선택하세요.");return;}
-  refreshBoardClassSelect(); $("boardClassSelect").value=c;
-  showClassBoard(c);
+  const all=Object.keys(rosters);
+  if(!all.length){alert("먼저 명렬표를 등록하세요.");return;}
+  if(!boardClasses.length)boardClasses=[rosters[c]?c:all[0]];
+  refreshBoardClassSelect(); renderBoardRows();
   $("classBoardOverlay").style.display="flex";
 });
-$("boardClassSelect").addEventListener("change",()=>{ showClassBoard($("boardClassSelect").value); });
 $("boardClose").addEventListener("click",()=>{ $("classBoardOverlay").style.display="none"; });
-$("boardCtrlStart").addEventListener("click",()=>sendControl("start",$("boardClassSelect").value,"boardCtrlMsg"));
-$("boardCtrlStop").addEventListener("click",()=>sendControl("stop",$("boardClassSelect").value,"boardCtrlMsg"));
+/* 켜져 있는 모든 반에 같은 시각(ts)으로 신호를 보낸다 — 합반 수업도 동시에 시작된다 */
+function sendControlBoard(cmd){
+  const msgEl=$("boardCtrlMsg");
+  if(!fdb){alert("서버(Firebase)에 연결되어야 사용할 수 있습니다.");return;}
+  const list=boardClasses.filter(c=>rosters[c]);
+  if(!list.length){msgEl.innerHTML='<span class="err">먼저 반을 선택하세요.</span>';return;}
+  const ts=Date.now();
+  Promise.all(list.map(c=>fmod.set(fmod.ref(fdb,"control/"+c),{cmd,cls:c,ts})))
+    .then(()=>{msgEl.textContent=`${cmd==="start"?"▶":"⏹"} ${list.join(", ")} 반에 ${cmd==="start"?"시작":"정지"} 신호를 보냈습니다.`;})
+    .catch(()=>{msgEl.innerHTML='<span class="err">전송 실패 — 연결을 확인하세요.</span>';});
+}
+$("boardCtrlStart").addEventListener("click",()=>sendControlBoard("start"));
+$("boardCtrlStop").addEventListener("click",()=>sendControlBoard("stop"));
 
 loadAll();
 shownLevel=levelIndex(totalPts);
