@@ -544,8 +544,8 @@
       <label class="btn btn-stop btn-sm" style="display:inline-flex;align-items:center;cursor:pointer">📂 기록 CSV 불러오기<input type="file" id="recImport" accept=".csv" style="display:none"></label>
     </div>
     <div class="hint" style="margin:6px 0 8px">다른 기기의 기록은 <b>기록 CSV 불러오기</b>로 합칠 수 있습니다(중복 자동 제거). 세션수가 곧 실천 횟수예요. 이 표를 CSV로 내려받으려면 아래 <b>📊 성적 자동 집계</b>의 CSV 버튼을 이용하세요(같은 내용이 포함되어 있습니다). <b>관리</b> 열의 🗑는 테스트 등으로 잘못 쌓인 특정 학생의 기록만 골라 서버까지 완전히 삭제할 때 씁니다.</div>
-    <table><thead><tr><th>번호</th><th>이름</th><th>세션수</th><th>성실수행</th><th>평균정확도</th><th>최고점수</th><th>퍼펙트·그레이트율</th><th>최근심박</th><th>누적P</th><th>최근 수행</th><th>관리</th></tr></thead>
-      <tbody id="stuRows"><tr><td colspan="11" class="empty">반을 등록하면 학생별 누적 현황이 표시됩니다.</td></tr></tbody></table>
+    <table><thead><tr><th>번호</th><th>이름</th><th>성별</th><th>세션수</th><th>성실수행</th><th>평균정확도</th><th>최고점수</th><th>퍼펙트·그레이트율</th><th>최근심박</th><th>누적P</th><th>최근 수행</th><th>관리</th></tr></thead>
+      <tbody id="stuRows"><tr><td colspan="12" class="empty">반을 등록하면 학생별 누적 현황이 표시됩니다.</td></tr></tbody></table>
 
     <h3 style="margin-top:20px">🖥️ 실시간 수업 현황판</h3>
     <div class="hint" style="margin-bottom:8px">선택한 반의 오늘(또는 최근) 수행 현황을 실시간으로 보여줍니다. TV·프로젝터에 띄워두기 좋아요.</div>
@@ -611,6 +611,16 @@
     </div>
     <textarea id="rosterPaste" rows="6" placeholder="1	김민준&#10;2	이서연&#10;3	박도윤" style="width:100%;background:var(--panel3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:15px;resize:vertical"></textarea>
     <div class="seqlist" id="classChips"></div>
+
+    <div class="step-box" style="margin-top:14px">
+      <div style="font-weight:700;margin-bottom:4px">📑 여러 반 한 번에 등록 (학년 전체 명렬표)</div>
+      <div class="hint" style="margin-bottom:8px">학년 전체 명렬표처럼 <b>번호·성명·성별</b>이 반복되는 표 전체를 엑셀에서 그대로 복사해 아래에 붙여넣으면, 반을 한 줄씩 나눠 등록할 필요 없이 모든 반이 한 번에 등록됩니다. 반 이름은 표의 "1-1(정)"처럼 담임 이름이 붙어 있어도 자동으로 "1-1"만 뽑아 씁니다.</div>
+      <textarea id="bulkRosterPaste" rows="8" placeholder="엑셀에서 반별 명렬표 표 전체를 선택해 복사한 뒤 여기에 붙여넣으세요 (Ctrl+V)" style="width:100%;background:var(--panel3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:14px;resize:vertical"></textarea>
+      <div class="row" style="margin-top:8px">
+        <button class="btn btn-teal btn-sm" id="bulkRosterAdd">표 전체 일괄 등록</button>
+        <span class="hint" id="bulkRosterResult"></span>
+      </div>
+    </div>
 
     <h3 style="margin-top:20px">📊 성적 자동 집계</h3>
     <div class="hint" style="margin-bottom:8px">평가계획서 배점에 맞춰 학생별 원점수를 자동 계산해 CSV로 바로 내려받습니다 — 스프레드시트에서 확인하세요. 실천(15) = 공통과제 완료·성실수행·정확도·꾸준함·향상을 반영한 환산 점수이며, <b>운동계획·자기성찰은 별도 산출 항목</b>입니다(참고용 자동 계산).</div>
@@ -1691,6 +1701,49 @@ function parseRoster(text){
   });
   return out;
 }
+/* 학년 전체 명렬표(번호·성명·성별 반복 표)를 한 번에 여러 반으로 나눠 파싱한다 */
+const ROSTER_STATUS_WORDS=["자퇴","전출","위탁","공석","휴학"];
+function parseBulkRoster(text){
+  const rows=text.split(/\r?\n/).map(line=>line.split("\t").map(c=>c.trim()));
+  const rosterResult={}, excludedResult={};
+  rows.forEach((row,r)=>{
+    const heads=[];
+    row.forEach((cell,c)=>{ if(cell.replace(/\s+/g,"")==="번호")heads.push(c); });
+    if(!heads.length)return; // 번호 헤더가 있는 줄만 반 구획 시작으로 인정
+    heads.forEach(col=>{
+      // 성명 이름이 바로 다음 칸에 있는지 확인 (아니면 헤더 줄이 아닐 가능성이 큼)
+      const nameLabel=(row[col+1]||"").replace(/\s+/g,"");
+      if(nameLabel!=="성명")return;
+      // 반 이름은 이 헤더 줄 바로 위쪽에서 찾는다 (병합된 셀은 보통 맨 왼쪽 칸에 값이 들어있음)
+      let className="";
+      for(let up=r-1; up>=Math.max(0,r-3) && !className; up--){
+        for(let cc=col; cc<=col+2; cc++){
+          const v=(rows[up]&&rows[up][cc])||"";
+          if(v){ className=v.replace(/\(.*?\)\s*$/,"").trim(); break; }
+        }
+      }
+      if(!className)return;
+      const list=[], excluded=[];
+      for(let dr=r+1; dr<rows.length; dr++){
+        const no=(rows[dr][col]||"").trim();
+        const name=(rows[dr][col+1]||"").trim();
+        if(!no && !name)break; // 표 끝
+        if(!name || name==="-" || name==="－")continue; // 빈 자리(결번)는 건너뜀
+        const rawSex=(rows[dr][col+2]||"").trim();
+        if(ROSTER_STATUS_WORDS.includes(rawSex)){
+          // 자퇴·전출 등은 실제 있는 학생이 아니므로 명렬표에는 넣지 않고 번호만 기록해 알려준다
+          excluded.push(`${no||"?"}번(${rawSex})`);
+          continue;
+        }
+        const sex=(rawSex==="남"||rawSex==="여")?rawSex:"";
+        list.push({no:no||String(list.length+1), name, sex});
+      }
+      if(list.length)rosterResult[className]=list;
+      if(excluded.length)excludedResult[className]=excluded;
+    });
+  });
+  return {rosters:rosterResult, excluded:excludedResult};
+}
 function refreshClassUI(){
   const chips=$("classChips"); chips.innerHTML="";
   const vc=$("viewClass");
@@ -1720,6 +1773,25 @@ $("rosterAdd").addEventListener("click",()=>{
   rosters[c]=list;
   $("rosterCount").textContent=`${c}반 ${list.length}명 등록 완료`;
   $("rosterPaste").value=""; refreshClassUI(); saveAll(); pushRoster(c);
+});
+$("bulkRosterAdd").addEventListener("click",()=>{
+  const text=$("bulkRosterPaste").value;
+  if(!text.trim()){alert("표 내용을 붙여넣어 주세요.");return;}
+  const {rosters:parsed, excluded}=parseBulkRoster(text);
+  const names=Object.keys(parsed);
+  if(!names.length){
+    $("bulkRosterResult").innerHTML='<span class="err">인식된 반을 찾지 못했습니다. 번호·성명 열이 포함된 표 전체를 복사했는지 확인해 주세요.</span>';
+    return;
+  }
+  let total=0;
+  names.forEach(c=>{ rosters[c]=parsed[c]; total+=parsed[c].length; pushRoster(c); });
+  let msg=`${names.join(", ")} — 총 ${names.length}개 반 ${total}명 등록 완료`;
+  const excludedNames=Object.keys(excluded);
+  if(excludedNames.length){
+    msg+=" · 제외됨: "+excludedNames.map(c=>`${c}(${excluded[c].join(", ")})`).join(" / ");
+  }
+  $("bulkRosterResult").textContent=msg;
+  $("bulkRosterPaste").value=""; refreshClassUI(); saveAll();
 });
 // 학번(학년1자리+반2자리+번호2자리, 예 10101=1학년 1반 1번) → 명렬표에서 이름을 찾는다
 function stuIdToKey(raw){
@@ -1945,13 +2017,13 @@ function statsFor(name,cls){
 }
 function renderStats(){
   const c=$("viewClass").value, tb=$("stuRows");
-  if(!c||!rosters[c]){tb.innerHTML='<tr><td colspan="11" class="empty">반을 등록하면 학생별 누적 현황이 표시됩니다.</td></tr>';return;}
+  if(!c||!rosters[c]){tb.innerHTML='<tr><td colspan="12" class="empty">반을 등록하면 학생별 누적 현황이 표시됩니다.</td></tr>';return;}
   tb.innerHTML="";
   rosters[c].forEach(s=>{
     const st=statsFor(s.name,c);
     const tr=document.createElement("tr");
     tr.innerHTML=st?
-      `<td class="num">${s.no}</td><td>${s.name}</td>
+      `<td class="num">${s.no}</td><td>${s.name}</td><td class="num">${s.sex||"–"}</td>
        <td class="num" style="color:var(--rest)">${st.n}</td>
        <td class="num" style="color:var(--good)">${st.diligent}</td>
        <td class="num">${st.avgAcc}%</td>
@@ -1959,7 +2031,7 @@ function renderStats(){
        <td class="num" style="color:var(--gold)">${st.gRate==null?"–":st.gRate+"%"}</td>
        <td class="num">${st.hr}</td><td class="num" style="color:var(--purple)">${st.pts}</td><td>${st.date}</td>
        <td class="num"></td>`:
-      `<td class="num">${s.no}</td><td>${s.name}</td>
+      `<td class="num">${s.no}</td><td>${s.name}</td><td class="num">${s.sex||"–"}</td>
        <td class="num" style="color:var(--muted)">0</td><td class="num">0</td><td class="num">–</td><td class="num">–</td>
        <td class="num">–</td><td class="num">–</td><td class="num">0</td><td style="color:var(--muted)">미수행</td>
        <td class="num"></td>`;
