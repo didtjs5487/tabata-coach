@@ -234,6 +234,11 @@
     padding:12px 14px; margin-bottom:10px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
   .task-card .tt{font-weight:700; color:var(--primary); font-size:16px;}
   .task-card .td{color:var(--muted); font-size:13px; flex:1; min-width:180px;}
+  /* STEP 0에서 공통과제 / 자율 실천과제를 눈에 띄게 나누는 소제목 */
+  .pick-group{display:flex; align-items:center; gap:8px; margin:14px 0 8px; font-weight:700;
+    font-size:14px; color:var(--ink);}
+  .pick-group::after{content:""; flex:1; height:1px; background:var(--line);}
+  .pick-group:first-of-type{margin-top:10px;}
   .mode-badge{font-size:13px; font-weight:600; background:var(--panel3); border:1px solid var(--line);
     border-radius:999px; padding:6px 12px;}
   .feed-item{background:var(--panel3); border-left:3px solid var(--primary); border-radius:8px;
@@ -966,17 +971,27 @@ function renderTasks(){
   const tag=document.createElement("div"); tag.className="step-tag";
   tag.textContent="STEP 0 · 무엇을 할까요? (눌러서 선택)";
   tc.appendChild(tag);
-  mine.forEach(id=>{
-    const a=assignments[id];
-    const d=document.createElement("div"); d.className="task-card";
-    d.innerHTML=`<span class="tt">📋 ${a.title}</span><span class="td">${taskDesc(a)}</span>`;
-    const btn=document.createElement("button"); btn.className="btn btn-go btn-sm"; btn.textContent="이 과제 하기";
-    btn.addEventListener("click",()=>applyAssignment(id));
-    d.appendChild(btn); tc.appendChild(d);
-  });
-  // 자율 실천은 항상 고를 수 있게 둔다 (운동 설계 탭에서 만든 구성)
+  const group=t=>{ const g=document.createElement("div"); g.className="pick-group"; g.textContent=t; tc.appendChild(g); };
+
+  group("📋 공통과제 — 선생님이 낸 과제");
+  if(mine.length){
+    mine.forEach(id=>{
+      const a=assignments[id];
+      const d=document.createElement("div"); d.className="task-card";
+      d.innerHTML=`<span class="tt">📋 ${a.title}</span><span class="td">${taskDesc(a)}</span>`;
+      const btn=document.createElement("button"); btn.className="btn btn-go btn-sm"; btn.textContent="이 과제 하기";
+      btn.addEventListener("click",()=>applyAssignment(id));
+      d.appendChild(btn); tc.appendChild(d);
+    });
+  } else {
+    const none=document.createElement("div"); none.className="hint"; none.style.margin="0 0 4px 2px";
+    none.textContent="오늘 우리 반에 배정된 과제가 없습니다.";
+    tc.appendChild(none);
+  }
+
+  group("🌱 자율 실천과제 — 내가 만든 구성 (가산점 +20%)");
   const free=document.createElement("div"); free.className="task-card";
-  free.innerHTML=`<span class="tt">🌱 자율 실천 (가산점 +20%)</span>
+  free.innerHTML=`<span class="tt">🌱 자율 실천</span>
     <span class="td">${seq.length?seq.map(k=>EXNAME[k]).join("→")+` · ${$("workSec").value}/${$("restSec").value}초 × ${$("rounds").value}R`:"운동 설계 탭에서 구성을 먼저 만드세요"}</span>`;
   const fb=document.createElement("button"); fb.className="btn btn-go btn-sm"; fb.textContent="자율로 하기";
   fb.addEventListener("click",()=>{
