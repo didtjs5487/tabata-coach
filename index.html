@@ -305,7 +305,6 @@
       <span class="hint" id="myInfoBadge" style="align-self:center"></span>
     </div>
 
-    <div id="taskCards"></div>
     <h3>② 자율 실천 운동설계</h3>
 
     <div class="step-box" style="margin-top:0">
@@ -389,6 +388,8 @@
       </div>
     </div>
     <div id="workBody" style="display:none">
+    <div id="taskCards"></div>
+    <div id="workSteps" style="display:none">
     <div class="step-tag">STEP 1 · 운동 전 심박수 (안정 시)</div>
     <div class="step-box">
       <div class="row" style="margin-bottom:0">
@@ -498,6 +499,7 @@
         <tbody id="roundRows"></tbody></table>
 
     </div>
+    </div><!-- /workSteps -->
     </div><!-- /workBody -->
   </section>
 
@@ -931,6 +933,10 @@ function confirmTaskBreak(){
   if(ok)clearTask();
   return ok;
 }
+// 무엇을 할지 고르면 심박→운동→심박 단계를 연다
+function showWorkSteps(){
+  const el=$("workSteps"); if(el)el.style.display="block";
+}
 function applyAssignment(id){
   const a=assignments[id]; if(!a)return;
   seq=[...a.seq]; renderSeq();
@@ -938,7 +944,7 @@ function applyAssignment(id){
   $("rounds").value=a.rounds; $("difficulty").value=String(a.diff);
   currentBattle=null;
   currentTask={id,title:a.title}; updateModeBadge();
-  goPage("pgWork");
+  goPage("pgWork"); showWorkSteps();
 }
 /* 과제가 특정 반에 배정됐는지 판단한다.
    classes가 없거나 비어 있으면 '전체 반' — 예전에 등록된 과제도 그대로 동작한다. */
@@ -952,10 +958,15 @@ function taskClassLabel(a){
 }
 function renderTasks(){
   // 학생: 과제 카드 — 내 반에 배정된 과제만 보인다
+  // 학생(운동하기 탭): 오늘 무엇을 할지 고르는 카드들 — 고르면 심박→운동→심박 단계가 열린다
   const tc=$("taskCards"); tc.innerHTML="";
   const myCls=myKey().cls;
   const ids=Object.keys(assignments);
-  ids.filter(id=>taskHasClass(assignments[id],myCls)).forEach(id=>{
+  const mine=ids.filter(id=>taskHasClass(assignments[id],myCls));
+  const tag=document.createElement("div"); tag.className="step-tag";
+  tag.textContent="STEP 0 · 무엇을 할까요? (눌러서 선택)";
+  tc.appendChild(tag);
+  mine.forEach(id=>{
     const a=assignments[id];
     const d=document.createElement("div"); d.className="task-card";
     d.innerHTML=`<span class="tt">📋 ${a.title}</span><span class="td">${taskDesc(a)}</span>`;
@@ -963,6 +974,16 @@ function renderTasks(){
     btn.addEventListener("click",()=>applyAssignment(id));
     d.appendChild(btn); tc.appendChild(d);
   });
+  // 자율 실천은 항상 고를 수 있게 둔다 (운동 설계 탭에서 만든 구성)
+  const free=document.createElement("div"); free.className="task-card";
+  free.innerHTML=`<span class="tt">🌱 자율 실천 (가산점 +20%)</span>
+    <span class="td">${seq.length?seq.map(k=>EXNAME[k]).join("→")+` · ${$("workSec").value}/${$("restSec").value}초 × ${$("rounds").value}R`:"운동 설계 탭에서 구성을 먼저 만드세요"}</span>`;
+  const fb=document.createElement("button"); fb.className="btn btn-go btn-sm"; fb.textContent="자율로 하기";
+  fb.addEventListener("click",()=>{
+    if(!seq.length){alert("운동 설계 탭에서 운동을 먼저 추가해 주세요.");return;}
+    clearTask(); currentBattle=null; updateModeBadge(); showWorkSteps();
+  });
+  free.appendChild(fb); tc.appendChild(free);
   // 교사: 과제 목록 칩 + 완료현황 select
   const chips=$("taskChips"); chips.innerHTML="";
   const tv=$("taskView"); const keep=tv.value;
@@ -1153,7 +1174,7 @@ function renderBattles(){
         applyCfg(b.cfg); clearTask();
         currentBattle={id,role,vs:other}; updateModeBadge();
         alert(`⚔️ vs ${other} 배틀 모드!\n같은 구성으로 대결합니다. 첫 시도 기록이 제출되니 최선을 다하세요!`);
-        goPage("pgWork");
+        goPage("pgWork"); showWorkSteps();
       });
       btns.append(go);
     }
@@ -2894,6 +2915,7 @@ function attachFbListeners(){
     if(Date.now()-c.ts>15000)return; // 오래된 신호 무시
     if(c.cmd==="start"){
       if(!running && parqPassed && document.querySelector("nav button.on")?.dataset.page==="pgWork"){
+        showWorkSteps(); // 아직 고르지 않았어도 선생님 신호가 오면 단계가 보이도록
         start();
       } else if(!running){
         // 운동 탭이 아니거나 준비 안 됨 → 안내
