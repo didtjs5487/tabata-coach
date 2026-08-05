@@ -634,6 +634,18 @@
       </div>
       <textarea id="rosterPaste" rows="5" placeholder="1	김민준	남&#10;2	이서연	여" style="width:100%;background:var(--panel3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:15px;resize:vertical"></textarea>
     </details>
+
+    <details class="collapsible" style="margin-top:12px">
+      <summary>👤 학생 한 명 추가 (전학생)</summary>
+      <div class="hint" style="margin:8px 0">학번을 넣으면 반과 번호가 자동으로 정해집니다. 같은 번호가 이미 있으면 그 자리를 바꿉니다.</div>
+      <div class="row" style="align-items:flex-end">
+        <div class="field"><label>학번</label><input type="text" id="oneStuId" placeholder="10327" maxlength="5" inputmode="numeric" style="width:100px"></div>
+        <div class="field"><label>이름</label><input type="text" id="oneStuName" placeholder="홍길동" style="width:130px"></div>
+        <div class="field"><label>성별</label><select id="oneStuSex"><option value="">선택</option><option value="남">남</option><option value="여">여</option></select></div>
+        <button class="btn btn-teal btn-sm" id="oneStuAdd">추가</button>
+        <span class="hint" id="oneStuMsg"></span>
+      </div>
+    </details>
     </details>
 
     <details class="collapsible">
@@ -2014,6 +2026,31 @@ $("rosterAdd").addEventListener("click",()=>{
   rosters[c]=list;
   $("rosterCount").textContent=`${c}반 ${list.length}명 등록 완료`;
   $("rosterPaste").value=""; refreshClassUI(); saveAll(); pushRoster(c);
+});
+/* 전학생처럼 한 명만 들어올 때 — 학번에서 반·번호를 뽑아 그 반 명렬표에 끼워 넣는다 */
+$("oneStuAdd").addEventListener("click",()=>{
+  const msg=$("oneStuMsg");
+  const raw=($("oneStuId").value||"").replace(/\D/g,"");
+  const name=($("oneStuName").value||"").trim();
+  const sex=$("oneStuSex").value;
+  const key=stuIdToKey(raw);
+  if(!key||raw.length<5){msg.innerHTML='<span class="err">학번 5자리를 정확히 넣어주세요.</span>';return;}
+  if(!name){msg.innerHTML='<span class="err">이름을 넣어주세요.</span>';return;}
+  const c=key.cls;
+  if(!rosters[c])rosters[c]=[];
+  const list=rosters[c];
+  const idx=list.findIndex(s=>parseInt(s.no,10)===key.no);
+  const before=idx>=0?list[idx].name:null;
+  if(idx>=0) list[idx]={no:String(key.no), name, sex};
+  else {
+    list.push({no:String(key.no), name, sex});
+    list.sort((a,b)=>parseInt(a.no,10)-parseInt(b.no,10)); // 명렬표는 번호순 유지
+  }
+  refreshClassUI(); saveAll(); pushRoster(c);
+  msg.innerHTML=before
+    ? `<b style="color:var(--good)">${shortCls(c)}반 ${key.no}번을 ${before} → ${name}(으)로 바꿨습니다.</b>`
+    : `<b style="color:var(--good)">${shortCls(c)}반 ${key.no}번 ${name} 추가 완료 (현재 ${list.length}명)</b>`;
+  $("oneStuId").value=""; $("oneStuName").value=""; $("oneStuSex").value="";
 });
 $("bulkRosterAdd").addEventListener("click",()=>{
   const text=$("bulkRosterPaste").value;
