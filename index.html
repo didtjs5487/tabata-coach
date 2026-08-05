@@ -234,6 +234,11 @@
     padding:12px 14px; margin-bottom:10px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
   .task-card .tt{font-weight:700; color:var(--primary); font-size:16px;}
   .task-card .td{color:var(--muted); font-size:13px; flex:1; min-width:180px;}
+  /* STEP 0에서 공통과제 / 자율 실천과제를 눈에 띄게 나누는 소제목 */
+  .pick-group{display:flex; align-items:center; gap:8px; margin:14px 0 8px; font-weight:700;
+    font-size:14px; color:var(--ink);}
+  .pick-group::after{content:""; flex:1; height:1px; background:var(--line);}
+  .pick-group:first-of-type{margin-top:10px;}
   .mode-badge{font-size:13px; font-weight:600; background:var(--panel3); border:1px solid var(--line);
     border-radius:999px; padding:6px 12px;}
   .feed-item{background:var(--panel3); border-left:3px solid var(--primary); border-radius:8px;
@@ -295,7 +300,6 @@
   <!-- ================= SETUP ================= -->
   <section class="page on" id="pgSetup">
     <h3>① 내 정보</h3>
-    <div class="hint" style="margin-bottom:8px">학번 5자리를 넣으면 이름이 자동으로 뜹니다. <b>학년1자리+반2자리+번호2자리</b> (1학년 1반 1번 → <b>10101</b>). 명단에 없으면 이름만 직접 쓰세요.</div>
     <div class="row">
       <div class="field"><label>학번</label><input type="text" id="stuId" placeholder="10101" maxlength="5" inputmode="numeric" style="width:110px"></div>
       <button class="btn btn-stop btn-sm" id="stuIdReset" style="display:none">🔄 다른 사람이에요</button>
@@ -309,7 +313,7 @@
 
     <div class="step-box" style="margin-top:0">
       <div style="font-weight:700;margin-bottom:4px">⚡ 빠른 운동설계</div>
-      <div class="hint" style="margin-bottom:8px">운동 목적에 맞는 구성을 버튼 하나로 바로 불러옵니다.</div>
+      <div class="hint" style="margin-bottom:8px">목적을 누르면 아래 자율 운동설계에 기본 구성이 채워집니다.</div>
       <div class="presets">
         <button class="btn btn-stop btn-sm" data-preset="basic">기본 전신</button>
         <button class="btn btn-stop btn-sm" data-preset="lower">하체 집중</button>
@@ -320,7 +324,7 @@
 
     <div class="step-box" style="margin-top:10px">
       <div style="font-weight:700;margin-bottom:4px">✏️ 자율 운동설계</div>
-      <div class="hint" style="margin-bottom:8px">운동을 하나씩 골라 순서대로 추가하세요. 아래 ③ 강도 설정의 라운드 수만큼 이 목록을 처음부터 반복합니다.</div>
+      <div class="hint" style="margin-bottom:8px">운동을 순서대로 추가하세요. 라운드 수만큼 이 목록을 처음부터 반복합니다.</div>
       <div class="row" style="margin-bottom:0">
         <div class="field"><label>운동 추가</label>
           <select id="addEx">
@@ -350,25 +354,22 @@
         <button class="btn btn-teal btn-sm" id="addBtn">+ 추가</button>
       </div>
       <div class="seqlist" id="seqList"></div>
+      <div class="row" style="margin-top:10px;margin-bottom:0;align-items:flex-end">
+        <div class="field"><label>운동(초)</label><input type="number" id="workSec" value="20" min="10" max="60"></div>
+        <div class="field"><label>휴식(초)</label><input type="number" id="restSec" value="10" min="5" max="60"></div>
+        <div class="field"><label>라운드</label><input type="number" id="rounds" value="8" min="2" max="16"></div>
+        <input type="hidden" id="difficulty" value="1">
+      </div>
     </div>
 
-    <h3>③ 강도 설정</h3>
-    <div class="row">
-      <div class="field"><label>운동(초)</label><input type="number" id="workSec" value="20" min="10" max="60"></div>
-      <div class="field"><label>휴식(초)</label><input type="number" id="restSec" value="10" min="5" max="60"></div>
-      <div class="field"><label>라운드</label><input type="number" id="rounds" value="8" min="2" max="16"></div>
-      <input type="hidden" id="difficulty" value="1">
+    <div class="row" style="margin-top:12px">
       <button class="btn btn-go" id="toWorkout">운동 시작 →</button>
     </div>
-    <div class="hint"><b>라운드 = 운동+휴식 한 묶음</b>. 운동 20초·휴식 10초·8라운드면 4분이고, 위 운동 목록을 순서대로 반복합니다.</div>
 
     <details class="collapsible" style="margin-top:22px">
-      <summary>④ ⚔️ 친구에게 결투 신청 (배틀)</summary>
-      <div class="hint" style="margin:10px 0 8px"><b>위 ②③에서 만든 구성</b> 그대로 대결합니다. 각자 편할 때 운동하고 종합점수를 비교해요. 🏆 승리 <b>+30P</b> · 무승부 +20P · 참가 +10P (운동 후 심박 기준을 넘어야 포인트가 지급됩니다)</div>
-
+      <summary>③ ⚔️ 친구에게 결투 신청 (배틀)</summary>
       <div class="row" style="margin-top:12px">
-        <div class="field"><label>상대 선택 (우리 반)</label><select id="bOppo"><option value="">선택</option></select></div>
-        <div class="field"><label>또는 직접 입력</label><input type="text" id="bOppoName" placeholder="상대 이름" style="width:110px"></div>
+        <div class="field"><label>상대 (우리 반)</label><select id="bOppo"><option value="">선택</option></select></div>
         <button class="btn btn-go btn-sm" id="bSend">⚔️ 결투 신청</button>
       </div>
       <div class="hint" id="bCfgHint"></div>
@@ -390,13 +391,12 @@
     <div id="workBody" style="display:none">
     <div id="taskCards"></div>
     <div id="workSteps" style="display:none">
-    <div class="step-tag">STEP 1 · 운동 전 심박수 (안정 시)</div>
+    <div class="step-tag">STEP 1 · 운동 전 심박수</div>
     <div class="step-box">
       <div class="row" style="margin-bottom:0">
-        <span class="hint">💓 준비운동 전에 측정하세요. 카메라 측정 또는 직접 입력 후 [확인]</span>
-        <button class="btn btn-teal btn-sm" id="preStart">📷 측정 (8~24초)</button>
-        <button class="btn btn-stop btn-sm" id="preCountBtn">🖐 맥박 세기 (짝과 함께)</button>
-        <div class="field"><label>직접 입력 (BPM)</label><input type="number" id="preManual" placeholder="72" style="width:90px"></div>
+        <button class="btn btn-teal btn-sm" id="preStart">📷 카메라 측정</button>
+        <button class="btn btn-stop btn-sm" id="preCountBtn">🖐 맥박 세기</button>
+        <div class="field"><label>직접 입력</label><input type="number" id="preManual" placeholder="72" style="width:90px"></div>
         <button class="btn btn-stop btn-sm" id="preSave">확인</button>
         <span class="hint" id="preBadge"></span>
       </div>
@@ -415,7 +415,6 @@
       <button class="exit-fs" id="exitFs">✕ 종료</button>
       <div class="center-msg" id="intro">
         <h2>준비되면 시작을 누르세요</h2>
-        <p>전신이 보이게 카메라에서 2~3m 떨어져 주세요. 밝은 곳에서 한 명만 화면에 나와야 정확합니다. <b>플랭크·크런치·레그레이즈·푸쉬업(무릎대고 포함)·버피</b>는 카메라에 <b>옆모습</b>이 보이게 하면 인식이 정확합니다.</p>
       </div>
       <div class="hud" id="hud" style="display:none">
         <div class="top">
@@ -451,13 +450,12 @@
     <div id="hrStep3">
       <div class="step-tag" style="margin-top:20px">STEP 3 · 운동 후 심박수</div>
       <div class="step-box">
-      <h3 style="margin-top:2px">💓 운동 직후 심박수 측정</h3>
-      <div class="hint">운동 후 <b>30초 이내</b>에 측정하세요. <b style="color:var(--good)">120 이상이거나 운동 전보다 +40</b>이면 성실 수행입니다. 폰은 후면 카메라를 손가락으로 덮으세요 — 잘 안 되면 <b>[🖐 맥박 세기]</b>를 쓰면 됩니다.</div>
+      <div class="hint"><b style="color:var(--good)">120 이상</b> 또는 <b style="color:var(--good)">안정 시보다 +40</b>이면 성실 수행</div>
       <div class="row" style="margin-top:10px">
         <div class="field"><label>나이</label><input type="number" id="hrAge" value="16" min="10" max="20" style="width:72px"></div>
-        <button class="btn btn-teal btn-sm" id="hrStart">📷 카메라로 측정 (8~24초)</button>
-        <button class="btn btn-stop btn-sm" id="hrCountBtn">🖐 맥박 세기 (짝과 함께)</button>
-        <div class="field"><label>직접 입력 (BPM)</label><input type="number" id="hrManual" placeholder="예: 162" style="width:100px"></div>
+        <button class="btn btn-teal btn-sm" id="hrStart">📷 카메라 측정</button>
+        <button class="btn btn-stop btn-sm" id="hrCountBtn">🖐 맥박 세기</button>
+        <div class="field"><label>직접 입력</label><input type="number" id="hrManual" placeholder="162" style="width:100px"></div>
         <button class="btn btn-stop btn-sm" id="hrSave">기록에 저장</button>
       </div>
       <div id="hrLive" style="display:none">
@@ -576,9 +574,11 @@
     <div class="seqlist" id="taskChips"></div>
     <div class="row" style="margin-top:6px">
       <div class="field"><label>완료 현황 볼 과제</label><select id="taskView"><option value="">과제를 등록하세요</option></select></div>
+      <div class="field"><label>반</label><select id="taskViewClass"><option value="">전체</option></select></div>
+      <span class="hint" id="taskDoneCount"></span>
     </div>
-    <table><thead><tr><th>이름</th><th>학반</th><th>일시</th><th>정확도</th><th>심박(전→후)</th><th>종합</th></tr></thead>
-      <tbody id="taskRows"><tr><td colspan="6" class="empty">과제를 선택하면 완료한 학생이 표시됩니다.</td></tr></tbody></table>
+    <table><thead><tr><th>번호</th><th>이름</th><th>학반</th><th>일시</th><th>정확도</th><th>심박(전→후)</th><th>종합</th></tr></thead>
+      <tbody id="taskRows"><tr><td colspan="7" class="empty">과제를 선택하면 완료한 학생이 표시됩니다.</td></tr></tbody></table>
     </details>
 
     <details class="collapsible">
@@ -898,7 +898,10 @@ $("addBtn").addEventListener("click",()=>{
 });
 document.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click",()=>{
   if(!confirmTaskBreak())return;
-  seq=[...PRESETS[b.dataset.preset]];renderSeq();
+  // 목적을 고르면 운동 4가지 + 20초/10초 + 2바퀴(=라운드 8) 기본값까지 한 번에 채운다
+  seq=[...PRESETS[b.dataset.preset]];
+  $("workSec").value=20; $("restSec").value=10; $("rounds").value=seq.length*2;
+  renderSeq();
 }));
 
 /* ---------- 공통 과제 ---------- */
@@ -911,8 +914,8 @@ function updateModeBadge(){
   $("modeBadge").innerHTML=currentBattle
     ?`⚔️ 배틀: <b>vs ${currentBattle.vs}</b> — 최선을 다하세요!`
     :currentTask
-    ?`📋 과제 수행 중: <b>${currentTask.title}</b>`
-    :"🌱 자율 실천 모드 — 완료 시 가산점 +20%";
+    ?`📋 과제: <b>${currentTask.title}</b>`
+    :"🌱 자율 실천";
 }
 function clearTask(){ if(currentTask){currentTask=null; updateModeBadge();} }
 function restoreTaskCfg(){
@@ -966,17 +969,27 @@ function renderTasks(){
   const tag=document.createElement("div"); tag.className="step-tag";
   tag.textContent="STEP 0 · 무엇을 할까요? (눌러서 선택)";
   tc.appendChild(tag);
-  mine.forEach(id=>{
-    const a=assignments[id];
-    const d=document.createElement("div"); d.className="task-card";
-    d.innerHTML=`<span class="tt">📋 ${a.title}</span><span class="td">${taskDesc(a)}</span>`;
-    const btn=document.createElement("button"); btn.className="btn btn-go btn-sm"; btn.textContent="이 과제 하기";
-    btn.addEventListener("click",()=>applyAssignment(id));
-    d.appendChild(btn); tc.appendChild(d);
-  });
-  // 자율 실천은 항상 고를 수 있게 둔다 (운동 설계 탭에서 만든 구성)
+  const group=t=>{ const g=document.createElement("div"); g.className="pick-group"; g.textContent=t; tc.appendChild(g); };
+
+  group("📋 공통과제 — 선생님이 낸 과제");
+  if(mine.length){
+    mine.forEach(id=>{
+      const a=assignments[id];
+      const d=document.createElement("div"); d.className="task-card";
+      d.innerHTML=`<span class="tt">📋 ${a.title}</span><span class="td">${taskDesc(a)}</span>`;
+      const btn=document.createElement("button"); btn.className="btn btn-go btn-sm"; btn.textContent="이 과제 하기";
+      btn.addEventListener("click",()=>applyAssignment(id));
+      d.appendChild(btn); tc.appendChild(d);
+    });
+  } else {
+    const none=document.createElement("div"); none.className="hint"; none.style.margin="0 0 4px 2px";
+    none.textContent="오늘 우리 반에 배정된 과제가 없습니다.";
+    tc.appendChild(none);
+  }
+
+  group("🌱 자율 실천과제 — 내가 만든 구성 (가산점 +20%)");
   const free=document.createElement("div"); free.className="task-card";
-  free.innerHTML=`<span class="tt">🌱 자율 실천 (가산점 +20%)</span>
+  free.innerHTML=`<span class="tt">🌱 자율 실천</span>
     <span class="td">${seq.length?seq.map(k=>EXNAME[k]).join("→")+` · ${$("workSec").value}/${$("restSec").value}초 × ${$("rounds").value}R`:"운동 설계 탭에서 구성을 먼저 만드세요"}</span>`;
   const fb=document.createElement("button"); fb.className="btn btn-go btn-sm"; fb.textContent="자율로 하기";
   fb.addEventListener("click",()=>{
@@ -1028,6 +1041,13 @@ function renderTasks(){
     }
   });
   if(ids.includes(keep))tv.value=keep;
+  const tvc=$("taskViewClass");
+  if(tvc){
+    const keepC=tvc.value;
+    tvc.innerHTML='<option value="">전체</option>';
+    classNames().forEach(c=>tvc.insertAdjacentHTML("beforeend",`<option value="${c}">${c}</option>`));
+    if(classNames().includes(keepC))tvc.value=keepC;
+  }
   renderTaskRows();
 }
 let taskClassEditId=null;
@@ -1054,19 +1074,41 @@ function renderTaskClassPick(){
   if(!cs.length)box.innerHTML='<span class="hint">명렬표를 먼저 등록하세요.</span>';
 }
 function renderTaskRows(){
-  const id=$("taskView").value, tb=$("taskRows");
-  if(!id||!assignments[id]){tb.innerHTML='<tr><td colspan="6" class="empty">과제를 선택하면 완료한 학생이 표시됩니다.</td></tr>';return;}
-  const rs=records.filter(r=>r.taskId===id);
-  if(!rs.length){tb.innerHTML='<tr><td colspan="6" class="empty">아직 완료한 학생이 없습니다.</td></tr>';return;}
+  const id=$("taskView").value, tb=$("taskRows"), cnt=$("taskDoneCount");
+  if(cnt)cnt.textContent="";
+  if(!id||!assignments[id]){tb.innerHTML='<tr><td colspan="7" class="empty">과제를 선택하면 완료한 학생이 표시됩니다.</td></tr>';return;}
+  const cls=$("taskViewClass")?$("taskViewClass").value:"";
+  const cell=r=>`<td>${r.date}</td><td class="num">${r.acc}%</td>
+      <td class="num" style="color:${r.hr?(isDiligent(r)?"var(--good)":"var(--bad)"):"inherit"}">${r.hrPre||"–"}→${r.hr||"–"}${isDiligent(r)?" ✅":""}</td>
+      <td class="num" style="color:var(--primary)">${r.score}</td>`;
   tb.innerHTML="";
+  if(cls&&rosters[cls]){
+    // 반을 고르면 그 반 명렬표 전체를 보여주고 누가 아직 안 했는지까지 한눈에 확인한다
+    const done={};
+    records.filter(r=>r.taskId===id&&r.cls===cls).forEach(r=>{ if(!done[r.name])done[r.name]=r; });
+    rosters[cls].forEach(s=>{
+      const r=done[s.name];
+      const tr=document.createElement("tr");
+      tr.innerHTML=r
+        ?`<td class="num">${s.no}</td><td>${s.name}</td><td>${cls}</td>${cell(r)}`
+        :`<td class="num">${s.no}</td><td>${s.name}</td><td>${cls}</td><td colspan="4" style="color:var(--muted)">미완료</td>`;
+      tb.appendChild(tr);
+    });
+    if(cnt)cnt.textContent=`${cls} — ${Object.keys(done).length}/${rosters[cls].length}명 완료`;
+    return;
+  }
+  const rs=records.filter(r=>r.taskId===id);
+  if(!rs.length){tb.innerHTML='<tr><td colspan="7" class="empty">아직 완료한 학생이 없습니다.</td></tr>';return;}
+  const noOf=(name,c)=>{ const s=(rosters[c]||[]).find(x=>x.name===name); return s?s.no:""; };
   rs.forEach(r=>{
     const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${r.name}</td><td>${r.cls}</td><td>${r.date}</td><td class="num">${r.acc}%</td>
-      <td class="num" style="color:${r.hr?(isDiligent(r)?"var(--good)":"var(--bad)"):"inherit"}">${r.hrPre||"–"}→${r.hr||"–"}${isDiligent(r)?" ✅":""}</td><td class="num" style="color:var(--primary)">${r.score}</td>`;
+    tr.innerHTML=`<td class="num">${noOf(r.name,r.cls)}</td><td>${r.name}</td><td>${r.cls}</td>${cell(r)}`;
     tb.appendChild(tr);
   });
+  if(cnt)cnt.textContent=`전체 ${rs.length}건 — 반을 고르면 미완료 학생까지 보입니다`;
 }
 $("taskView").addEventListener("change",renderTaskRows);
+$("taskViewClass")&&$("taskViewClass").addEventListener("change",renderTaskRows);
 $("taskAdd").addEventListener("click",()=>{
   const title=$("taskTitle").value.trim();
   if(!title){alert("과제 제목을 입력하세요.");return;}
@@ -1114,8 +1156,13 @@ function refreshBattleUI(){
   // 상대 선택: 우리 반 명렬표에서 내 이름 제외
   const sel=$("bOppo"); const keep=sel.value;
   sel.innerHTML='<option value="">선택</option>';
+  // 학번(학년+반+번호) + 이름으로 보여준다
+  const g=(me.cls.split("-")[0]||"").trim(), r=(me.cls.split("-")[1]||"").trim();
   (rosters[me.cls]||[]).filter(st=>st.name!==me.name)
-    .forEach(st=>sel.insertAdjacentHTML("beforeend",`<option value="${st.name}">${st.no}. ${st.name}</option>`));
+    .forEach(st=>{
+      const sid=`${g}${String(r).padStart(2,"0")}${String(st.no).padStart(2,"0")}`;
+      sel.insertAdjacentHTML("beforeend",`<option value="${st.name}">${sid} ${st.name}</option>`);
+    });
   if([...sel.options].some(o=>o.value===keep))sel.value=keep;
   updateBCfgHint();
   renderBattles();
@@ -1185,7 +1232,7 @@ $("bSend").addEventListener("click",()=>{
   const me=myKey();
   if(!me.name||!me.cls){alert("운동 설계 탭에서 내 이름·학반을 먼저 입력하세요.");return;}
   if(!fdb){alert("배틀은 서버 연결이 필요합니다. 인터넷을 확인해 주세요.");return;}
-  const oppo=($("bOppoName").value||"").trim()||$("bOppo").value;
+  const oppo=$("bOppo").value;
   if(!oppo){alert("상대를 선택하거나 이름을 입력하세요.");return;}
   if(oppo===me.name){alert("자기 자신에게는 신청할 수 없어요 😄");return;}
   // 위 ②③ 운동설계를 그대로 대결 조건으로 쓴다
@@ -1195,7 +1242,7 @@ $("bSend").addEventListener("click",()=>{
   const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   const b={ch:me, op:{name:oppo,cls:me.cls}, cfg, status:"pending", created:Date.now()};
   fmod.set(fmod.ref(fdb,"battles/"+id),b)
-    .then(()=>{ $("bOppoName").value=""; alert(`⚔️ ${oppo}님에게 결투를 신청했습니다!\n상대가 수락하면 알림이 옵니다.`); })
+    .then(()=>{ $("bOppo").value=""; alert(`⚔️ ${oppo}님에게 결투를 신청했습니다!\n상대가 수락하면 알림이 옵니다.`); })
     .catch(()=>alert("신청 전송 실패 — 인터넷을 확인하세요."));
 });
 async function submitBattleResult(rec){
