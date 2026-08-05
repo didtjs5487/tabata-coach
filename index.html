@@ -295,7 +295,7 @@
   <!-- ================= SETUP ================= -->
   <section class="page on" id="pgSetup">
     <h3>① 내 정보</h3>
-    <div class="hint" style="margin-bottom:8px">학번을 입력하면 성명이 자동으로 표시됩니다. 학번 = <b>학년(1자리)+반(2자리)+번호(2자리)</b>입니다(예: 1학년 1반 1번 → <b>10101</b>). 학반은 학번에서 자동으로 계산되니 따로 입력할 필요가 없습니다 — 명단에 없으면 이름만 직접 입력하세요.</div>
+    <div class="hint" style="margin-bottom:8px">학번 5자리를 넣으면 이름이 자동으로 뜹니다. <b>학년1자리+반2자리+번호2자리</b> (1학년 1반 1번 → <b>10101</b>). 명단에 없으면 이름만 직접 쓰세요.</div>
     <div class="row">
       <div class="field"><label>학번</label><input type="text" id="stuId" placeholder="10101" maxlength="5" inputmode="numeric" style="width:110px"></div>
       <button class="btn btn-stop btn-sm" id="stuIdReset" style="display:none">🔄 다른 사람이에요</button>
@@ -361,28 +361,11 @@
       <input type="hidden" id="difficulty" value="1">
       <button class="btn btn-go" id="toWorkout">운동 시작 →</button>
     </div>
-    <div class="hint"><b>라운드 = "운동 + 휴식" 1묶음</b>입니다. 예를 들어 운동 20초·휴식 10초·8라운드면 총 8번(4분) 운동하며, 위에서 만든 운동 목록을 라운드 수만큼 처음부터 반복합니다(운동이 4개인데 8라운드면 각 운동을 2번씩 수행). 강도 점수는 라운드 수 × 운동시간을 표준 타바타(8라운드×20초)와 비교해 계산됩니다.</div>
+    <div class="hint"><b>라운드 = 운동+휴식 한 묶음</b>. 운동 20초·휴식 10초·8라운드면 4분이고, 위 운동 목록을 순서대로 반복합니다.</div>
 
     <details class="collapsible" style="margin-top:22px">
       <summary>④ ⚔️ 친구에게 결투 신청 (배틀)</summary>
-      <div class="hint" style="margin:10px 0 8px">같은 반 친구에게 결투를 신청하세요! 둘 다 <b>같은 구성</b>으로 운동해서 종합점수가 높은 쪽이 승리합니다. 🏆 승리 <b>+30P</b> · 무승부 +20P · 참가만 해도 +10P. (배틀은 서버 연결이 필요하며, 위 ① 내 정보에 입력한 이름·학반 기준으로 동작합니다)</div>
-
-      <div class="step-box" style="margin-top:10px">
-        <div style="font-weight:700;margin-bottom:4px">⚔️ 대결 운동설계</div>
-        <div class="hint" style="margin-bottom:8px">여기서 만든 구성이 그대로 대결 조건이 됩니다. 두 사람 모두 같은 구성으로 대결해요.</div>
-        <div class="row" style="margin-bottom:8px">
-          <div class="field"><label>운동 추가</label><select id="bAddEx"></select></div>
-          <button class="btn btn-teal btn-sm" id="bAddBtn">+ 추가</button>
-          <button class="btn btn-stop btn-sm" id="bCopyBtn">📥 내 운동설계 불러오기</button>
-        </div>
-        <div class="seqlist" id="bSeqList"></div>
-        <div class="row" style="margin-bottom:0">
-          <div class="field"><label>운동(초)</label><input type="number" id="bWorkSec" value="20" min="10" max="60"></div>
-          <div class="field"><label>휴식(초)</label><input type="number" id="bRestSec" value="10" min="5" max="60"></div>
-          <div class="field"><label>라운드</label><input type="number" id="bRounds" value="8" min="2" max="16"></div>
-          <input type="hidden" id="bDifficulty" value="1">
-        </div>
-      </div>
+      <div class="hint" style="margin:10px 0 8px"><b>위 ②③에서 만든 구성</b> 그대로 대결합니다. 각자 편할 때 운동하고 종합점수를 비교해요. 🏆 승리 <b>+30P</b> · 무승부 +20P · 참가 +10P (운동 후 심박 기준을 넘어야 포인트가 지급됩니다)</div>
 
       <div class="row" style="margin-top:12px">
         <div class="field"><label>상대 선택 (우리 반)</label><select id="bOppo"><option value="">선택</option></select></div>
@@ -468,7 +451,7 @@
       <div class="step-tag" style="margin-top:20px">STEP 3 · 운동 후 심박수</div>
       <div class="step-box">
       <h3 style="margin-top:2px">💓 운동 직후 심박수 측정</h3>
-      <div class="hint">운동이 끝나고 <b>30초 이내</b>에 측정해야 실제 운동 강도가 반영됩니다. 운동 후 심박수가 <b style="color:var(--good)">120 이상이거나, 운동 전보다 40 이상 오르면 성실 수행</b>으로 인정됩니다. <b>스마트폰 권장</b>: 후면 카메라 렌즈를 손가락 끝으로 완전히 덮으세요(플래시가 자동으로 켜집니다). 노트북 웹캠은 플래시가 없어 측정이 잘 안 될 수 있어요 — 그 경우 <b>[🖐 맥박 세기 (짝과 함께)]</b>를 누르면 15초 동안 맥박을 탭해서 자동으로 계산해 줍니다(직접 입력도 가능).</div>
+      <div class="hint">운동 후 <b>30초 이내</b>에 측정하세요. <b style="color:var(--good)">120 이상이거나 운동 전보다 +40</b>이면 성실 수행입니다. 폰은 후면 카메라를 손가락으로 덮으세요 — 잘 안 되면 <b>[🖐 맥박 세기]</b>를 쓰면 됩니다.</div>
       <div class="row" style="margin-top:10px">
         <div class="field"><label>나이</label><input type="number" id="hrAge" value="16" min="10" max="20" style="width:72px"></div>
         <button class="btn btn-teal btn-sm" id="hrStart">📷 카메라로 측정 (8~24초)</button>
@@ -539,66 +522,35 @@
 
   <!-- ================= ADMIN / LEARNING CENTER ================= -->
   <section class="page" id="pgAdmin">
-    <div class="hint" style="margin-bottom:8px">🔒 교사 전용 학습센터입니다. 학생 화면에는 비밀번호 없이는 열리지 않습니다.</div>
     <div class="hint" id="saveStatusLine" style="margin-bottom:12px;font-weight:600">저장 상태 확인 중…</div>
 
-    <div class="admin-group-label">📚 수업 운영</div>
+    <button class="btn btn-go" id="boardBig" style="font-size:18px;padding:16px 24px;width:100%">🖥️ 학생용 화면 크게 보기</button>
+    <div class="hint" style="margin:8px 0 16px">프로젝터용 큰 화면입니다. 반 고르기(여러 반 동시 가능), 실시간 신호등, 다같이 시작·정지가 모두 그 안에 있습니다.</div>
 
-    <h3>📱 학생 접속</h3>
-    <div class="hint" style="margin-bottom:8px">학생들이 아래 QR을 카메라로 찍으면 이 앱에 바로 들어옵니다. TV·프로젝터에 [QR 크게 보기]로 띄워두면 편해요.</div>
-    <div class="row" style="align-items:center">
+    <details class="collapsible">
+    <summary>📱 학생 접속 QR</summary>
+    <div class="row" style="align-items:center;margin-top:10px">
       <canvas id="joinQr" width="180" height="180" style="width:180px;height:180px;background:#fff;border:1px solid var(--line);border-radius:12px;image-rendering:pixelated"></canvas>
       <div style="display:flex;flex-direction:column;gap:8px">
         <div><div class="hint" style="margin-bottom:2px">접속 주소</div><a id="joinUrl" href="#" target="_blank" style="font-weight:700;color:var(--primary);word-break:break-all"></a></div>
         <div class="row" style="margin:0">
-          <button class="btn btn-teal btn-sm" id="qrBig">🔍 QR 크게 보기</button>
+          <button class="btn btn-teal btn-sm" id="qrBig">🔍 크게 보기</button>
           <button class="btn btn-stop btn-sm" id="urlCopy">📋 주소 복사</button>
         </div>
       </div>
     </div>
+    </details>
 
-    <details class="collapsible" open>
-    <summary>🎮 수업 진행 (매 수업 사용)</summary>
+    <details class="collapsible">
+    <summary>📋 공통 과제 내기</summary>
+    <div class="hint" style="margin:10px 0 8px">오늘 수업하는 반에만 내면 됩니다. 다른 반 차례가 오면 등록된 과제의 <b>[반]</b> 버튼으로 그 반을 추가하세요.</div>
 
-    <div class="row" style="margin-top:14px;align-items:flex-end">
-      <button class="btn btn-go" id="boardBig" style="font-size:17px;padding:14px 22px">🖥️ 학생용 화면 크게 보기 (수업 시작·정지)</button>
-      <div class="field"><label>반 선택</label><select id="viewClass"><option value="">반을 등록하세요</option></select></div>
-    </div>
-    <div class="hint" style="margin:6px 0 8px">프로젝터·TV에 띄우는 큰 화면입니다. 그 안에서 <b>여러 반을 동시에</b> 켤 수 있고, <b>다같이 시작·정지</b>도 거기서 누릅니다. 아래 목록은 선생님 손안에서 확인하는 용도예요.</div>
-
-    <h3 style="margin-top:20px">🚦 지금 진행 상황 (실시간)</h3>
-    <div class="hint" style="margin-bottom:8px">선택한 반 학생이 <b>지금 이 순간</b> 어느 단계인지 보여줍니다. 점 5개 = 건강체크·운동전심박·운동중·운동후심박·완료, 2분 이상 신호가 없으면 미접속입니다. 이름 옆 배지는 세션수(실천 횟수) 기준 순위입니다(동률이면 누적P 순).</div>
-    <div id="stageRows" class="stage-rows"></div>
-
-    <h3 style="margin-top:20px">📊 수행 집계</h3>
-    <div class="hint" style="margin-bottom:8px">위 신호등이 <b>지금 상태</b>라면, 이건 실제로 <b>저장된 기록</b> 기준 집계입니다(성실수행·평균점수는 신호등에 없는 정보예요).</div>
-    <div class="row" style="margin-bottom:4px">
-      <label style="display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)"><input type="checkbox" id="dashToday" checked> 오늘 수행만 집계</label>
-    </div>
-    <div class="kpis" id="dashKpis">
-      <div class="kpi"><div class="v num c1" id="dashDone">0</div><div class="k">완료</div></div>
-      <div class="kpi"><div class="v num" style="color:var(--bad)" id="dashUndone">0</div><div class="k">미완료</div></div>
-      <div class="kpi"><div class="v num" style="color:var(--good)" id="dashDiligent">0</div><div class="k">성실수행</div></div>
-      <div class="kpi"><div class="v num c2" id="dashAvg">–</div><div class="k">반 평균 점수</div></div>
-    </div>
-
-    <h3 style="margin-top:20px">📋 학생별 누적 현황</h3>
-    <div class="row">
-      <label class="btn btn-stop btn-sm" style="display:inline-flex;align-items:center;cursor:pointer">📂 기록 CSV 불러오기<input type="file" id="recImport" accept=".csv" style="display:none"></label>
-    </div>
-    <div class="hint" style="margin:6px 0 8px">학기 전체 누적입니다(위 집계와 달리 오늘만이 아니에요). 다른 기기의 기록은 <b>기록 CSV 불러오기</b>로 합칠 수 있습니다(중복 자동 제거). 세션수가 곧 실천 횟수예요. CSV로 내려받으려면 <b>📊 성적 자동 집계</b>의 CSV 버튼을 이용하세요. <b>관리</b> 열의 🗑는 테스트 등으로 잘못 쌓인 특정 학생의 기록만 골라 서버까지 완전히 삭제할 때 씁니다.</div>
-    <table><thead><tr><th>번호</th><th>이름</th><th>성별</th><th>세션수</th><th>성실수행</th><th>평균정확도</th><th>최고점수</th><th>퍼펙트·그레이트율</th><th>최근심박</th><th>누적P</th><th>최근 수행</th><th>관리</th></tr></thead>
-      <tbody id="stuRows"><tr><td colspan="12" class="empty">반을 등록하면 학생별 누적 현황이 표시됩니다.</td></tr></tbody></table>
-
-    <h3 style="margin-top:22px">📋 공통 과제 관리 (차시별 과제 내기)</h3>
-    <div class="hint">과제로 낼 운동 구성을 설계하고 제목을 붙여 <b>반을 골라</b> 등록하세요. 반마다 휴일·시간표가 다르므로, 같은 차시 과제라도 <b>오늘 수업하는 반에만</b> 내면 됩니다. 나중에 다른 반 차례가 오면 등록된 과제의 <b>[반]</b> 버튼으로 그 반을 추가하세요. 학생이 구성을 임의로 바꾸면 자율 모드로 전환되어 과제로 인정되지 않습니다.</div>
-
-    <div class="step-box" style="margin-top:8px">
-      <div style="font-weight:700;margin-bottom:4px">📋 과제 운동설계</div>
+    <div class="step-box">
+      <div style="font-weight:700;margin-bottom:4px">과제 운동설계</div>
       <div class="row" style="margin-bottom:8px">
         <div class="field"><label>운동 추가</label><select id="tAddEx"></select></div>
         <button class="btn btn-teal btn-sm" id="tAddBtn">+ 추가</button>
-        <button class="btn btn-stop btn-sm" id="tCopyBtn">📥 운동 설계 탭 구성 불러오기</button>
+        <button class="btn btn-stop btn-sm" id="tCopyBtn">📥 운동 설계 탭에서 가져오기</button>
       </div>
       <div class="seqlist" id="tSeqList"></div>
       <div class="row" style="margin-bottom:0">
@@ -613,11 +565,11 @@
       <div class="field" style="flex:1;min-width:200px"><label>과제 제목</label><input type="text" id="taskTitle" placeholder="예: 3차시 공통 타바타" style="width:100%"></div>
     </div>
     <div style="margin-top:6px">
-      <div class="hint" style="margin-bottom:4px">이 과제를 낼 반 (누르면 켜짐 / 하나도 안 켜면 전체 반)</div>
+      <div class="hint" style="margin-bottom:4px">낼 반 (안 고르면 전체 반)</div>
       <div id="taskClassPick" class="task-class-pick"></div>
     </div>
     <div class="row" style="margin-top:8px">
-      <button class="btn btn-teal btn-sm" id="taskAdd">위 설계로 과제 등록</button>
+      <button class="btn btn-teal btn-sm" id="taskAdd">이 설계로 과제 등록</button>
     </div>
     <div class="seqlist" id="taskChips"></div>
     <div class="row" style="margin-top:6px">
@@ -628,33 +580,28 @@
     </details>
 
     <details class="collapsible">
-    <summary>📇 명렬표·성적 처리 (학기 초·성적 낼 때만)</summary>
+    <summary>📊 기록 보기 · 성적 내기</summary>
 
-    <h3 style="margin-top:14px">📇 명렬표 등록</h3>
-    <div class="hint">엑셀·한글 명렬표에서 복사해 붙여넣으세요. 한 줄에 한 명, <b>번호 이름</b>(예: 5 김철수) 형식이 가장 좋고 <b>이름만</b> 붙여넣어도 번호가 자동으로 매겨집니다.</div>
-    <div class="row" style="margin-top:10px">
-      <div class="field"><label>반 이름</label><input type="text" id="rosterClass" placeholder="1-3" style="width:90px"></div>
-      <button class="btn btn-teal btn-sm" id="rosterAdd">명렬표 등록</button>
-      <span class="hint" id="rosterCount"></span>
+    <div class="row" style="align-items:flex-end;margin-top:10px">
+      <div class="field"><label>반 선택</label><select id="viewClass"><option value="">반을 등록하세요</option></select></div>
+      <button class="btn btn-teal btn-sm" id="gradeCsv">⬇ 성적 CSV 내려받기</button>
+      <label class="btn btn-stop btn-sm" style="display:inline-flex;align-items:center;cursor:pointer">📂 다른 기기 기록 합치기<input type="file" id="recImport" accept=".csv" style="display:none"></label>
     </div>
-    <textarea id="rosterPaste" rows="6" placeholder="1	김민준&#10;2	이서연&#10;3	박도윤" style="width:100%;background:var(--panel3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:15px;resize:vertical"></textarea>
-    <div class="seqlist" id="classChips"></div>
+    <div class="hint" style="margin:6px 0 10px">성적 CSV에 아래 표 내용이 모두 들어 있습니다(실천 15점 환산 포함).</div>
 
-    <div class="step-box" style="margin-top:14px">
-      <div style="font-weight:700;margin-bottom:4px">📑 여러 반 한 번에 등록 (학년 전체 명렬표)</div>
-      <div class="hint" style="margin-bottom:8px">학년 전체 명렬표처럼 <b>번호·성명·성별</b>이 반복되는 표 전체를 엑셀에서 그대로 복사해 아래에 붙여넣으면, 반을 한 줄씩 나눠 등록할 필요 없이 모든 반이 한 번에 등록됩니다. 반 이름은 표의 "1-1(정)"처럼 담임 이름이 붙어 있어도 자동으로 "1-1"만 뽑아 씁니다.</div>
-      <textarea id="bulkRosterPaste" rows="8" placeholder="엑셀에서 반별 명렬표 표 전체를 선택해 복사한 뒤 여기에 붙여넣으세요 (Ctrl+V)" style="width:100%;background:var(--panel3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:14px;resize:vertical"></textarea>
-      <div class="row" style="margin-top:8px">
-        <button class="btn btn-teal btn-sm" id="bulkRosterAdd">표 전체 일괄 등록</button>
-        <span class="hint" id="bulkRosterResult"></span>
-      </div>
+    <div class="row" style="margin-bottom:6px">
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)"><input type="checkbox" id="dashToday" checked> 오늘 수행만 집계</label>
+    </div>
+    <div class="kpis" id="dashKpis">
+      <div class="kpi"><div class="v num c1" id="dashDone">0</div><div class="k">완료</div></div>
+      <div class="kpi"><div class="v num" style="color:var(--bad)" id="dashUndone">0</div><div class="k">미완료</div></div>
+      <div class="kpi"><div class="v num" style="color:var(--good)" id="dashDiligent">0</div><div class="k">성실수행</div></div>
+      <div class="kpi"><div class="v num c2" id="dashAvg">–</div><div class="k">반 평균 점수</div></div>
     </div>
 
-    <h3 style="margin-top:20px">📊 성적 자동 집계</h3>
-    <div class="hint" style="margin-bottom:8px">평가계획서 배점에 맞춰 학생별 원점수를 자동 계산해 CSV로 바로 내려받습니다 — 스프레드시트에서 확인하세요. 실천(15) = 공통과제 완료·성실수행·정확도·꾸준함·향상을 반영한 환산 점수이며, <b>운동계획·자기성찰은 별도 산출 항목</b>입니다(참고용 자동 계산).</div>
-    <div class="row">
-      <button class="btn btn-stop btn-sm" id="gradeCsv">⬇ 학생별 종합현황+성적 CSV</button>
-    </div>
+    <div class="hint" style="margin:14px 0 6px">아래 표는 학기 전체 누적입니다. <b>관리</b>의 🗑는 잘못 쌓인 기록을 서버까지 지웁니다.</div>
+    <table><thead><tr><th>번호</th><th>이름</th><th>성별</th><th>세션수</th><th>성실수행</th><th>평균정확도</th><th>최고점수</th><th>퍼펙트·그레이트율</th><th>최근심박</th><th>누적P</th><th>최근 수행</th><th>관리</th></tr></thead>
+      <tbody id="stuRows"><tr><td colspan="12" class="empty">반을 등록하면 학생별 누적 현황이 표시됩니다.</td></tr></tbody></table>
 
     <div style="display:none">
       <table><thead><tr><th>일시</th><th>이름</th><th>학반</th><th>구분</th><th>운동구성</th><th>라운드</th><th>정확도</th><th>반복수</th><th>수행시간</th><th>강도</th><th>판정(퍼/그/굿/오/미)</th><th>심박(전→후)</th><th>종합</th><th>획득P</th></tr></thead>
@@ -662,20 +609,36 @@
     </div>
     </details>
 
-    <div class="admin-group-label">⚙️ 앱 설정</div>
     <details class="collapsible">
-      <summary>Firebase 연동 · 관리자 비밀번호 · 데이터 초기화 (수업 중엔 열 필요 없어요)</summary>
+    <summary>📇 명렬표 등록</summary>
+    <div class="hint" style="margin:10px 0 6px">엑셀에서 <b>학년 전체 명렬표를 그대로 복사</b>해 붙여넣으면 모든 반이 한 번에 등록됩니다. 전출·자퇴·공석은 자동으로 빠집니다.</div>
+    <textarea id="bulkRosterPaste" rows="7" placeholder="엑셀에서 표 전체를 선택해 복사한 뒤 여기에 붙여넣으세요 (Ctrl+V)" style="width:100%;background:var(--panel3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:14px;resize:vertical"></textarea>
+    <div class="row" style="margin-top:8px">
+      <button class="btn btn-teal btn-sm" id="bulkRosterAdd">표 전체 일괄 등록</button>
+      <span class="hint" id="bulkRosterResult"></span>
+    </div>
+    <div class="seqlist" id="classChips" style="margin-top:10px"></div>
+
+    <details class="collapsible" style="margin-top:12px">
+      <summary>반 하나만 따로 추가하기</summary>
+      <div class="hint" style="margin:8px 0">한 줄에 한 명, <b>번호 이름 성별</b> 순으로 붙여넣으세요 (예: 5 김철수 남). 번호·성별은 없어도 됩니다.</div>
+      <div class="row">
+        <div class="field"><label>반 이름</label><input type="text" id="rosterClass" placeholder="1-3" style="width:90px"></div>
+        <button class="btn btn-teal btn-sm" id="rosterAdd">등록</button>
+        <span class="hint" id="rosterCount"></span>
+      </div>
+      <textarea id="rosterPaste" rows="5" placeholder="1	김민준	남&#10;2	이서연	여" style="width:100%;background:var(--panel3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:15px;resize:vertical"></textarea>
+    </details>
+    </details>
+
+    <details class="collapsible">
+      <summary>⚙️ 설정 · 백업 (평소엔 열 필요 없어요)</summary>
 
       <h3 style="margin-top:14px">🔥 Firebase 실시간 연동</h3>
-      <div class="hint">모든 기록·명렬표가 <b>Firebase 서버에 저장</b>되어 브라우저 데이터가 지워지거나 기기를 바꿔도 사라지지 않습니다. 학생이 운동을 마치는 <b>즉시</b> 선생님 화면에 실시간으로 나타납니다. 설정은 함께 제공되는 안내에 따라 한 번만 하면 되고, 설정이 저장된 앱을 학생들에게 배포하면 학생은 아무 설정 없이 바로 사용합니다.</div>
+      <div class="hint">기록·명렬표가 서버에 저장되어 기기를 바꿔도 사라지지 않습니다.</div>
       <div class="row" style="margin-top:10px">
-        <div class="field" style="flex:1;min-width:260px"><label>Firebase 설정 붙여넣기 (firebaseConfig)</label>
-          <textarea id="fbCfg" rows="5" placeholder='Firebase 콘솔에서 복사한 설정을 그대로 붙여넣으세요. 예:
-const firebaseConfig = {
-  apiKey: "AIza…",
-  databaseURL: "https://xxx.firebasedatabase.app",
-  projectId: "xxx", …
-};' style="width:100%;background:var(--panel3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:monospace;font-size:13px;resize:vertical"></textarea>
+        <div class="field" style="flex:1;min-width:260px"><label>Firebase 설정 (firebaseConfig)</label>
+          <textarea id="fbCfg" rows="4" placeholder="Firebase 콘솔에서 복사한 설정을 붙여넣으세요" style="width:100%;background:var(--panel3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:monospace;font-size:13px;resize:vertical"></textarea>
         </div>
       </div>
       <div class="row">
@@ -686,22 +649,17 @@ const firebaseConfig = {
       <div id="liveFeed" style="display:none;margin-top:8px;max-height:340px;overflow-y:auto"></div>
 
       <h3 style="margin-top:20px">🔑 관리자 비밀번호</h3>
-      <div class="hint">초기 비밀번호는 <b>1234</b>입니다. 학생 배포 전에 꼭 변경하세요. (앱 내 잠금장치 수준이며 완전한 보안은 아닙니다)</div>
+      <div class="hint">초기 비밀번호는 <b>1234</b>입니다. 학생 배포 전에 꼭 변경하세요.</div>
       <div class="row" style="margin-top:8px">
         <div class="field"><label>새 비밀번호</label><input type="password" id="newPw" style="width:150px"></div>
         <button class="btn btn-teal btn-sm" id="pwBtn">변경</button>
       </div>
 
-      <h3 style="margin-top:20px">📦 전체 세션 원본 백업</h3>
-      <div class="hint">모든 세션의 원본 기록을 CSV로 내려받습니다. 평소엔 볼 필요 없고, 문제 상황 확인이나 전체 백업이 필요할 때만 쓰면 됩니다.</div>
+      <h3 style="margin-top:20px">📦 백업 · 초기화</h3>
+      <div class="hint">초기화는 이 기기의 자료만 지웁니다. 서버 기록은 남아 재연결하면 다시 내려받습니다.</div>
       <div class="row" style="margin-top:8px">
-        <button class="btn btn-teal btn-sm" id="csvBtn">⬇ 전체 기록 CSV 내려받기</button>
-      </div>
-
-      <h3 style="margin-top:20px">🗑 데이터 초기화</h3>
-      <div class="hint">이 기기에 저장된 명렬표·기록·포인트를 삭제합니다. Firebase에 연결되어 있다면 서버의 기록은 유지되며 재연결하면 다시 내려받습니다. 되돌릴 수 없으니 먼저 CSV로 백업하세요.</div>
-      <div class="row" style="margin-top:8px">
-        <button class="btn btn-stop btn-sm" id="wipeBtn" style="color:var(--bad)">🗑 전체 초기화</button>
+        <button class="btn btn-teal btn-sm" id="csvBtn">⬇ 전체 기록 백업 CSV</button>
+        <button class="btn btn-stop btn-sm" id="wipeBtn" style="color:var(--bad)">🗑 이 기기 초기화</button>
       </div>
     </details>
   </section>
@@ -930,6 +888,7 @@ function renderSeq(){
     el.appendChild(c);
   });
   $("seqPreview").textContent="구성: "+seq.map(k=>EXNAME[k]).join(" → ")+" (순환)";
+  if($("bCfgHint"))updateBCfgHint(); // 대결도 이 구성을 그대로 쓴다
 }
 $("addBtn").addEventListener("click",()=>{
   if(!confirmTaskBreak())return;
@@ -1103,6 +1062,7 @@ $("taskAdd").addEventListener("click",()=>{
   alert(`'${title}' 과제가 ${taskClassLabel(a)}에 등록되었습니다. 해당 반 학생 앱에 즉시 표시됩니다.`);
 });
 ["workSec","restSec","rounds","difficulty"].forEach(id=>$(id).addEventListener("change",()=>{
+  if($("bCfgHint"))updateBCfgHint(); // 대결은 이 구성을 그대로 쓰므로 요약도 같이 갱신
   if(currentBattle){
     const ok=confirm(`⚔️ 지금은 배틀(vs ${currentBattle.vs}) 준비 중입니다.\n설정을 바꾸면 배틀 모드가 해제됩니다.\n\n그래도 변경할까요?`);
     if(ok){currentBattle=null;updateModeBadge();}
@@ -1142,10 +1102,10 @@ function refreshBattleUI(){
 function updateBCfgHint(){
   const me=myKey();
   if(!me.name){$("bCfgHint").textContent="⚠️ 먼저 운동 설계 탭에서 내 이름·학반을 입력하세요.";return;}
-  const s=battleDesigner?battleDesigner.seq:seq;
-  $("bCfgHint").textContent=s.length
-    ?`대결 구성: ${s.map(k=>EXNAME[k]).join("→")} · ${$("bWorkSec").value}초/${$("bRestSec").value}초 × ${$("bRounds").value}R`
-    :"⚠️ 위의 대결 운동설계에서 운동을 추가하세요.";
+  // 대결은 위 ②③에서 만든 구성을 그대로 쓴다 (설계 칸을 따로 두지 않는다)
+  $("bCfgHint").textContent=seq.length
+    ?`대결 구성: ${seq.map(k=>EXNAME[k]).join("→")} · ${$("workSec").value}초/${$("restSec").value}초 × ${$("rounds").value}R`
+    :"⚠️ 위 ②에서 운동을 먼저 추가하세요.";
 }
 function battleStatusHtml(b,mineRole){
   const r=b.results||{};
@@ -1207,8 +1167,10 @@ $("bSend").addEventListener("click",()=>{
   const oppo=($("bOppoName").value||"").trim()||$("bOppo").value;
   if(!oppo){alert("상대를 선택하거나 이름을 입력하세요.");return;}
   if(oppo===me.name){alert("자기 자신에게는 신청할 수 없어요 😄");return;}
-  const cfg=battleDesigner.cfg();
-  if(!cfg.seq.length){alert("위의 '대결 운동설계'에서 운동을 먼저 추가해 주세요.");return;}
+  // 위 ②③ 운동설계를 그대로 대결 조건으로 쓴다
+  const cfg={seq:[...seq], work:+$("workSec").value||20, rest:+$("restSec").value||10,
+    rounds:+$("rounds").value||8, diff:1};
+  if(!cfg.seq.length){alert("위 ② 운동설계에서 운동을 먼저 추가해 주세요.");return;}
   const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   const b={ch:me, op:{name:oppo,cls:me.cls}, cfg, status:"pending", created:Date.now()};
   fmod.set(fmod.ref(fdb,"battles/"+id),b)
@@ -1226,8 +1188,10 @@ async function submitBattleResult(rec){
     } else if(b.results&&b.results[role]){
       alert("⚔️ 이미 제출한 배틀입니다. 첫 시도만 인정되어 이번 기록은 배틀에 반영되지 않습니다.");
     } else {
+      // recId를 함께 남긴다 — 나중에 운동 후 심박을 재면 이 기록을 찾아 성실수행 여부(dil)를 채운다
       await fmod.set(fmod.ref(fdb,`battles/${bId}/results/${role}`),
-        {name:rec.name,score:rec.score,acc:rec.acc,date:rec.date});
+        {name:rec.name,score:rec.score,acc:rec.acc,date:rec.date,recId:rec.id||""});
+      rec.battleId=bId; rec.battleRole=role; saveAll();
       const other=role==="c"?"o":"c";
       const oRes=b.results&&b.results[other];
       if(oRes){
@@ -1253,14 +1217,20 @@ function handleBattleEvents(){
     }
     // 결과 확정 → 보상 1회 지급
     if(b.status==="done"&&!seenBattles.includes(id)){
+      const res=(b.results||{})[role]||{};
+      // 아직 운동 후 심박을 안 쟀으면 보류한다 — 측정하면 이 함수가 다시 불려 그때 확정된다
+      if(res.recId&&res.dil===undefined)return;
+      const legacy=!res.recId;                 // 이 규칙 이전에 만들어진 배틀은 그대로 지급
+      const earned=legacy||res.dil===true;     // 심박 기준을 통과해야 포인트 지급
       seenBattles.push(id);
       let msg,reward;
       if(b.winner==="draw"){msg="무승부! 🤝";reward=20;}
       else if(b.winner===role){msg="🏆 승리했습니다!";reward=30;}
       else{msg="아쉽게 패배… 다음에 설욕해요!";reward=10;}
+      if(!earned){reward=0;msg+="\n\n⚠️ 운동 후 심박이 기준(120 이상 또는 운동 전보다 +40)에 미달해 포인트는 지급되지 않았습니다.\n(반복수·정확도 등 운동 기록은 그대로 저장됩니다)";}
       totalPts+=reward; refreshProfile(); saveAll();
       const r=b.results||{};
-      if(!running)alert(`⚔️ 배틀 결과\n${b.ch.name} ${r.c?r.c.score:"-"} : ${r.o?r.o.score:"-"} ${b.op.name}\n\n${msg} +${reward}P`);
+      if(!running)alert(`⚔️ 배틀 결과\n${b.ch.name} ${r.c?r.c.score:"-"} : ${r.o?r.o.score:"-"} ${b.op.name}\n\n${msg} ${reward?"+"+reward+"P":""}`);
     }
   });
 }
@@ -1301,9 +1271,7 @@ function setupMiniDesigner(o){ // o={sel,add,copy,list,work,rest,rounds,diff,onC
     cfg(){return {seq:[...st.seq],work:+$(o.work).value||20,rest:+$(o.rest).value||10,rounds:+$(o.rounds).value||8,diff:$(o.diff).value};}
   };
 }
-let battleDesigner=null,taskDesigner=null;
-battleDesigner=setupMiniDesigner({sel:"bAddEx",add:"bAddBtn",copy:"bCopyBtn",list:"bSeqList",
-  work:"bWorkSec",rest:"bRestSec",rounds:"bRounds",diff:"bDifficulty",onChange:updateBCfgHint});
+let taskDesigner=null;
 taskDesigner=setupMiniDesigner({sel:"tAddEx",add:"tAddBtn",copy:"tCopyBtn",list:"tSeqList",
   work:"tWorkSec",rest:"tRestSec",rounds:"tRounds",diff:"tDifficulty"});
 
@@ -1538,24 +1506,42 @@ let bgmOn=true, bgmTimer=null, bgmStep=0, bgmMode=null;
 // 음계(펜타토닉) — 모드마다 여러 리프를 만들어두고, 라운드가 바뀔 때마다 그중 하나를 무작위로 골라
 // 같은 곡이 8라운드 내내 반복되는 지루함을 줄인다.
 const BGM_WORK_SET=[
-  [0,3,5,7,10,12,10,7],   // 빠른 상행 리프
-  [0,5,3,7,5,10,7,12],    // 당김음 그루브
-  [0,7,5,10,7,3,5,0],     // 펀치 리듬
-  [12,10,7,5,7,10,12,15], // 하이텐션 상승
+  [0,3,5,7,10,12,10,7],    // 빠른 상행 리프
+  [0,5,3,7,5,10,7,12],     // 당김음 그루브
+  [0,7,5,10,7,3,5,0],      // 펀치 리듬
+  [12,10,7,5,7,10,12,15],  // 하이텐션 상승
+  [0,0,7,7,5,5,3,3],       // 또박또박 행진
+  [0,12,7,12,5,12,3,12],   // 옥타브 튕김
+  [0,2,3,5,7,5,3,2],       // 계단 오르내림
+  [7,5,3,0,3,5,7,10],      // V자 반등
+  [0,3,7,3,10,7,12,7],     // 지그재그
+  [0,10,8,7,5,7,8,10],     // 묵직한 훅
+  [5,5,0,0,7,7,3,3],       // 쿵짝 반복
+  [0,7,0,10,0,12,0,15],    // 페달 베이스
 ];
 const BGM_REST_SET=[
   [0,5,7,12],  // 느긋한 아르페지오
   [0,4,7,11],
   [0,7,12,7],
   [2,5,9,12],
+  [0,3,7,10],  // 살짝 어두운 색
+  [0,5,9,12],
+  [7,5,2,0],   // 내려앉는 숨고르기
+  [0,7,5,12],
 ];
 const BGM_CD_SET=[
   [12,12,12],  // 카운트다운 긴장 비트
   [12,14,12],
   [10,12,15],
+  [12,15,19],  // 급상승
+  [15,12,10],
 ];
+// 같은 패턴이라도 조를 옮기면 다른 곡처럼 들린다 (세션마다 무작위)
+const BGM_KEYS=[0,2,3,5,7,-2,-4,-5];
+const BGM_WORK_TONES=[["square","triangle"],["sawtooth","triangle"],["square","sine"],["triangle","triangle"]];
 function pickBgm(set){ return set[Math.floor(Math.random()*set.length)]; }
 let BGM_WORK=BGM_WORK_SET[0], BGM_REST=BGM_REST_SET[0], BGM_CD=BGM_CD_SET[0];
+let bgmKey=0, bgmTone=BGM_WORK_TONES[0];
 function midi(semi){return 220*Math.pow(2,semi/12);}
 function note(freq,dur,vol,type){
   if(!audio)return;
@@ -1570,27 +1556,34 @@ function note(freq,dur,vol,type){
 function bgmTick(){
   if(!bgmOn||!audio)return;
   if(bgmMode==="work"){
-    const s=BGM_WORK[bgmStep%BGM_WORK.length];
-    note(midi(s+12),.14,.12,"square");                 // 멜로디
-    if(bgmStep%2===0) note(midi(s-12),.18,.16,"triangle"); // 베이스
-    if(bgmStep%4===0) note(110,.05,.10,"sawtooth");     // 킥 느낌
+    const s=BGM_WORK[bgmStep%BGM_WORK.length]+bgmKey;
+    note(midi(s+12),.14,.12,bgmTone[0]);                  // 멜로디
+    if(bgmStep%2===0) note(midi(s-12),.18,.16,bgmTone[1]); // 베이스
+    if(bgmStep%4===0) note(110,.05,.10,"sawtooth");        // 킥 느낌
+    // 한 바퀴 돌 때마다 살짝 다른 장식음을 얹어 반복이 덜 지루하게
+    if(bgmStep%8===7) note(midi(s+19),.10,.07,"sine");
   } else if(bgmMode==="rest"){
-    const s=BGM_REST[bgmStep%BGM_REST.length];
+    const s=BGM_REST[bgmStep%BGM_REST.length]+bgmKey;
     note(midi(s),.5,.07,"sine");
   } else if(bgmMode==="cd"){
-    note(midi(BGM_CD[bgmStep%BGM_CD.length]),.1,.13,"square");
+    note(midi(BGM_CD[bgmStep%BGM_CD.length]+bgmKey),.1,.13,"square");
   }
   bgmStep++;
 }
 function startBgm(mode){
   bgmMode=mode; bgmStep=0;
-  if(mode==="work")BGM_WORK=pickBgm(BGM_WORK_SET);
+  if(mode==="work"){
+    BGM_WORK=pickBgm(BGM_WORK_SET);
+    bgmKey=pickBgm(BGM_KEYS);            // 라운드마다 조를 바꿔 같은 패턴도 새롭게 들리게
+    bgmTone=pickBgm(BGM_WORK_TONES);     // 음색도 함께 바꾼다
+  }
   else if(mode==="rest")BGM_REST=pickBgm(BGM_REST_SET);
   else if(mode==="cd")BGM_CD=pickBgm(BGM_CD_SET);
   if(bgmTimer)clearInterval(bgmTimer);
   if(!bgmOn)return;
   try{audio=audio||new (window.AudioContext||window.webkitAudioContext)(); if(audio.state==="suspended")audio.resume();}catch(e){}
-  const bpm = mode==="work"?150 : mode==="rest"?90 : 120;
+  // 운동 템포도 조금씩 흔들어 매번 똑같이 들리지 않게 한다
+  const bpm = mode==="work"?(140+Math.floor(Math.random()*25)) : mode==="rest"?90 : 120;
   bgmTimer=setInterval(bgmTick, 60000/bpm/2); // 8분음표 간격
 }
 function stopBgm(){ if(bgmTimer){clearInterval(bgmTimer);bgmTimer=null;} bgmMode=null; }
@@ -1790,10 +1783,13 @@ function parseRoster(text){
   text.split(/\r?\n/).forEach(line=>{
     const t=line.trim(); if(!t)return;
     const parts=t.split(/[\t,]+|\s+/).filter(Boolean);
+    // 마지막 칸이 남/여면 성별로 본다 (일괄 등록과 성별 처리를 맞춘다)
+    let sex="";
+    if(parts.length>=2 && (parts[parts.length-1]==="남"||parts[parts.length-1]==="여")) sex=parts.pop();
     if(parts.length>=2&&/^\d+$/.test(parts[0]))
-      out.push({no:parts[0], name:parts.slice(1).join(" ")});
+      out.push({no:parts[0], name:parts.slice(1).join(" "), sex});
     else
-      out.push({no:String(out.length+1), name:parts.join(" ")});
+      out.push({no:String(out.length+1), name:parts.join(" "), sex});
   });
   return out;
 }
@@ -2116,20 +2112,29 @@ function practiceScore(name,cls){
   sc=Math.min(Math.round(sc*10)/10,15);
   return {n,task:taskDone?"완료":"미완료",dil,acc:avgAcc,score:sc};
 }
+// 전 학급 성적을 반마다 시트(탭)로 나눠 엑셀 파일 하나로 내보낸다.
+// 구글 드라이브에 올리면 탭이 그대로 살아있는 스프레드시트로 열린다.
 $("gradeCsv").addEventListener("click",()=>{
-  const c=$("viewClass").value;
-  if(!c||!rosters[c]){alert("먼저 반을 선택하세요.");return;}
-  // 반별 현황 + 성적 집계를 한 번에 — 두 표를 따로 내려받을 필요 없이 이 CSV 하나로 충분하다
-  const head="번호,이름,세션수,성실수행,평균정확도(%),최고점수,퍼펙트그레이트율(%),최근심박,누적P,최근수행일,공통과제,실천점수(15점)";
-  const rows=rosters[c].map(s=>{
-    const st=statsFor(s.name,c), g=practiceScore(s.name,c);
-    return [s.no,s.name,st?st.n:0,st?st.diligent:0,st?st.avgAcc:"",st?st.best:"",
-      st&&st.gRate!=null?st.gRate:"",st?st.hr:"",st?st.pts:0,st?st.date:"",
-      g.n?g.task:"",g.n?g.score:""].join(",");
-  });
-  const blob=new Blob(["\uFEFF"+head+"\n"+rows.join("\n")],{type:"text/csv;charset=utf-8"});
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
-  a.download=`학생별종합현황_${c}_${todayStr()}.csv`; a.click(); URL.revokeObjectURL(a.href);
+  const cs=classNames();
+  if(!cs.length){alert("먼저 명렬표를 등록하세요.");return;}
+  const num=v=>(v===""||v==null||!isFinite(v))?v:Number(v);
+  const head=["번호","이름","성별","세션수","성실수행","평균정확도(%)","최고점수",
+    "퍼펙트그레이트율(%)","최근심박","누적P","최근수행일","공통과제","실천점수(15점)"];
+  const sheets=cs.map(c=>({
+    name:c,
+    rows:[head].concat((rosters[c]||[]).map(s=>{
+      const st=statsFor(s.name,c), g=practiceScore(s.name,c);
+      return [num(s.no), s.name, s.sex||"",
+        st?st.n:0, st?st.diligent:0, st?num(st.avgAcc):"", st?num(st.best):"",
+        (st&&st.gRate!=null)?num(st.gRate):"", st?st.hr:"", st?num(st.pts):0, st?st.date:"",
+        g.n?g.task:"", g.n?num(g.score):""];
+    }))
+  }));
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(XLSX.build(sheets));
+  a.download=`타바타_성적_${todayStr()}.xlsx`; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast(`${cs.length}개 반을 시트로 나눠 내려받았습니다 — 구글 드라이브에 올리면 탭으로 열립니다.`,"good","📊");
 });
 
 function statsFor(name,cls){
@@ -2466,7 +2471,10 @@ $("hrSave").addEventListener("click",()=>{
   const cell=rec._row.querySelector(".hr-cell");
   cell.textContent=`${rec.hrPre||"–"}→${bpm}${diligent?" ✅":""}`;
   cell.style.color=diligent?"var(--good)":"var(--bad)";
-  renderStats(); saveAll(); pushRecord(rec); updatePresence(5);
+  // 배틀 기록이면 성실수행 여부를 배틀에도 기록 — 운동 안 하고 이긴 경우 포인트를 막는다
+  if(rec.battleId&&fdb&&fmod)
+    fmod.update(fmod.ref(fdb,`battles/${rec.battleId}/results/${rec.battleRole}`),{dil:diligent}).catch(()=>{});
+  renderStats(); saveAll(); pushRecord(rec); updatePresence(5); handleBattleEvents();
   const rise=(+rec.hrPre)?bpm-(+rec.hrPre):null;
   $("hrMsg").innerHTML=diligent
     ?`✅ <b style="color:var(--good)">성실 수행으로 인정</b>됩니다 (심박 ${bpm}${rise!=null?`, 운동 전 대비 +${rise}`:""}). 기록·CSV에 저장되었습니다.`
@@ -2997,6 +3005,79 @@ $("wipeBtn").addEventListener("click",()=>{
   try{localStorage.removeItem(STORE_KEY);}catch(e){}
   location.reload();
 });
+
+/* ---------- 자체 엑셀(.xlsx) 생성기 (외부 라이브러리 없음, 반마다 시트 하나) ----------
+   xlsx는 XML 몇 개를 zip으로 묶은 형식이다. 압축 없이(stored) 담아도 정상 파일이라
+   압축 라이브러리 없이 만들 수 있다. 구글 스프레드시트도 이 파일을 그대로 열어 탭으로 보여준다. */
+const XLSX=(()=>{
+  const TBL=(()=>{const t=new Uint32Array(256);
+    for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}
+    return t;})();
+  const crc32=b=>{let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=TBL[(c^b[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;};
+  const enc=new TextEncoder();
+  const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  const colName=i=>{let s="";i++;while(i>0){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=(i-m-1)/26;}return s;};
+  const safeName=n=>String(n).replace(/[\[\]:*?\/\\]/g,"-").slice(0,31)||"Sheet";
+  function sheetXml(rows){
+    let x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+    rows.forEach((row,r)=>{
+      x+='<row r="'+(r+1)+'">';
+      row.forEach((v,c)=>{
+        if(v===""||v==null)return;
+        const ref=colName(c)+(r+1);
+        if(typeof v==="number"&&isFinite(v)) x+='<c r="'+ref+'"><v>'+v+'</v></c>';
+        else x+='<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+esc(v)+'</t></is></c>';
+      });
+      x+='</row>';
+    });
+    return x+'</sheetData></worksheet>';
+  }
+  function zip(files){
+    const parts=[], central=[]; let offset=0;
+    files.forEach(f=>{
+      const nb=enc.encode(f.name), crc=crc32(f.data), len=f.data.length;
+      const lh=new Uint8Array(30+nb.length), dv=new DataView(lh.buffer);
+      dv.setUint32(0,0x04034b50,true); dv.setUint16(4,20,true);
+      dv.setUint32(14,crc,true); dv.setUint32(18,len,true); dv.setUint32(22,len,true);
+      dv.setUint16(26,nb.length,true);
+      lh.set(nb,30); parts.push(lh,f.data);
+      const cd=new Uint8Array(46+nb.length), cv=new DataView(cd.buffer);
+      cv.setUint32(0,0x02014b50,true); cv.setUint16(4,20,true); cv.setUint16(6,20,true);
+      cv.setUint32(16,crc,true); cv.setUint32(20,len,true); cv.setUint32(24,len,true);
+      cv.setUint16(28,nb.length,true); cv.setUint32(42,offset,true);
+      cd.set(nb,46); central.push(cd);
+      offset+=lh.length+len;
+    });
+    const cdSize=central.reduce((a,b)=>a+b.length,0);
+    const end=new Uint8Array(22), ev=new DataView(end.buffer);
+    ev.setUint32(0,0x06054b50,true); ev.setUint16(8,files.length,true); ev.setUint16(10,files.length,true);
+    ev.setUint32(12,cdSize,true); ev.setUint32(16,offset,true);
+    return new Blob(parts.concat(central,[end]),
+      {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  }
+  function build(sheets){
+    const files=[], add=(name,str)=>files.push({name,data:enc.encode(str)});
+    let types='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+      +'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+      +'<Default Extension="xml" ContentType="application/xml"/>'
+      +'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>';
+    let wb='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>';
+    let rels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+    sheets.forEach((s,i)=>{
+      const n=i+1;
+      types+='<Override PartName="/xl/worksheets/sheet'+n+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+      wb+='<sheet name="'+esc(safeName(s.name))+'" sheetId="'+n+'" r:id="rId'+n+'"/>';
+      rels+='<Relationship Id="rId'+n+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+n+'.xml"/>';
+      add("xl/worksheets/sheet"+n+".xml", sheetXml(s.rows));
+    });
+    add("[Content_Types].xml", types+'</Types>');
+    add("_rels/.rels",'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
+    add("xl/workbook.xml", wb+'</sheets></workbook>');
+    add("xl/_rels/workbook.xml.rels", rels+'</Relationships>');
+    return zip(files);
+  }
+  return {build};
+})();
 
 /* ---------- 자체 QR 인코더 (외부 라이브러리 없음, byte모드, ECC-L, 버전1~9 자동선택) ---------- */
 const QR=(()=>{
