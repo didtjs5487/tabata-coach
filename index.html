@@ -180,20 +180,24 @@
     flex-direction:column; padding:24px clamp(16px,4vw,48px); overflow-y:auto;}
   .board-title{color:#fff; font-family:"Barlow Condensed"; font-weight:700; font-size:clamp(18px,2.4vw,26px);
     letter-spacing:.5px; margin-bottom:10px;}
-  #classBoardOverlay .stage-rows{gap:9px;}
+  /* 한 반이 26명이라 한 줄로 세우면 화면을 넘긴다 — 화면 폭에 맞춰 여러 칸으로 흘려 담는다 */
+  #classBoardOverlay .stage-rows{display:grid; gap:7px; align-content:start;
+    grid-template-columns:repeat(auto-fill,minmax(300px,1fr));}
+  #classBoardOverlay .board-class-head{grid-column:1/-1;}
   #classBoardOverlay .stage-row{background:rgba(255,255,255,.10); border-color:rgba(255,255,255,.20);
-    box-shadow:0 2px 10px rgba(0,0,0,.18); padding:13px 18px; gap:14px; flex-wrap:wrap;}
+    box-shadow:0 2px 10px rgba(0,0,0,.18); padding:9px 14px; gap:10px; flex-wrap:nowrap; min-width:0;}
   #classBoardOverlay .stage-row.offline{opacity:.5;}
   #classBoardOverlay .no{color:#A8AEE0;}
   /* 큰 화면에서는 이름과 신호등이 멀어지지 않도록, 점을 이름 바로 옆에 두고 단계 이름만 오른쪽으로 민다.
      이름·배지에 고정 너비를 줘서 줄마다 점 위치가 세로로 가지런히 맞는다. */
-  #classBoardOverlay .nm{color:#fff; font-size:clamp(14px,1.6vw,20px); min-width:clamp(76px,8vw,132px);}
-  #classBoardOverlay .stage-dots{margin-left:0;}
-  #classBoardOverlay .stage-label{margin-left:auto;}
-  #classBoardOverlay .stage-dot{width:clamp(15px,1.8vw,24px); height:clamp(15px,1.8vw,24px);
+  #classBoardOverlay .nm{color:#fff; font-size:clamp(13px,1.2vw,17px); min-width:62px; max-width:112px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  #classBoardOverlay .stage-dots{margin-left:0; flex-shrink:0;}
+  #classBoardOverlay .stage-label{margin-left:auto; white-space:nowrap; flex-shrink:0;}
+  #classBoardOverlay .stage-dot{width:15px; height:15px;
     background:rgba(255,255,255,.14); box-shadow:none;}
-  #classBoardOverlay .stage-label{color:#DAD8FF; font-size:clamp(11px,1.2vw,15px); min-width:auto;}
-  #classBoardOverlay .rank-badge{font-size:clamp(12px,1.4vw,15px); padding:3px 10px; color:#C9C6EE; background:rgba(255,255,255,.13);}
+  #classBoardOverlay .stage-label{color:#DAD8FF; font-size:12px; min-width:auto;}
+  #classBoardOverlay .rank-badge{font-size:12px; padding:2px 7px; color:#C9C6EE; background:rgba(255,255,255,.13); min-width:26px;}
   #classBoardOverlay .rank-badge.top1{color:#FFD76A; background:rgba(255,199,60,.22);}
   #classBoardOverlay .rank-badge.top2{color:#DDE2FF; background:rgba(210,218,255,.20);}
   #classBoardOverlay .rank-badge.top3{color:#FFC08A; background:rgba(255,159,28,.22);}
@@ -441,7 +445,8 @@
       <button class="btn btn-go" id="startBtn">시작</button>
       <button class="btn btn-stop" id="stopBtn" disabled>중단</button>
       <button class="btn btn-stop" id="musicBtn">🎵 음악 ON</button>
-      <span class="mode-badge" id="modeBadge">🌱 자율 실천 모드 — 완료 시 가산점 +20%</span>
+      <button class="btn btn-stop" id="musicNext">🔀 음악 바꾸기</button>
+      <span class="mode-badge" id="modeBadge">🌱 자율 실천</span>
       <span class="hint" id="seqPreview"></span>
     </div>
 
@@ -450,12 +455,11 @@
       <div class="step-tag" style="margin-top:20px">STEP 3 · 운동 후 심박수</div>
       <div class="step-box">
       <div class="hint"><b style="color:var(--good)">120 이상</b> 또는 <b style="color:var(--good)">안정 시보다 +40</b>이면 성실 수행</div>
-      <div class="row" style="margin-top:10px">
-        <div class="field"><label>나이</label><input type="number" id="hrAge" value="16" min="10" max="20" style="width:72px"></div>
+      <div class="row" style="margin-bottom:0">
         <button class="btn btn-teal btn-sm" id="hrStart">📷 카메라 측정</button>
         <button class="btn btn-stop btn-sm" id="hrCountBtn">🖐 맥박 세기</button>
-        <div class="field"><label>직접 입력</label><input type="number" id="hrManual" placeholder="162" style="width:100px"></div>
-        <button class="btn btn-stop btn-sm" id="hrSave">기록에 저장</button>
+        <div class="field"><label>직접 입력</label><input type="number" id="hrManual" placeholder="162" style="width:90px"></div>
+        <button class="btn btn-stop btn-sm" id="hrSave">확인</button>
       </div>
       <div id="hrLive" style="display:none">
         <div class="hr-cam-wrap"><video id="hrCam" class="hr-cam" playsinline muted></video><div class="hr-cam-ring"></div><div class="hr-cam-hint">손가락으로 렌즈를 덮으세요</div></div>
@@ -657,11 +661,13 @@
       </div>
 
       <h3 style="margin-top:20px">📦 백업 · 초기화</h3>
-      <div class="hint">초기화는 이 기기의 자료만 지웁니다. 서버 기록은 남아 재연결하면 다시 내려받습니다.</div>
+      <div class="hint">먼저 백업 CSV를 받아두세요. <b>기기 초기화</b>는 이 기기 자료만 지우고 서버 기록은 남습니다(재연결하면 다시 내려받음). <b>수행 기록 전체 삭제</b>는 서버에서도 지워 되돌릴 수 없으며, <b>명렬표와 공통과제는 그대로 유지</b>됩니다.</div>
       <div class="row" style="margin-top:8px">
         <button class="btn btn-teal btn-sm" id="csvBtn">⬇ 전체 기록 백업 CSV</button>
         <button class="btn btn-stop btn-sm" id="wipeBtn" style="color:var(--bad)">🗑 이 기기 초기화</button>
+        <button class="btn btn-stop btn-sm" id="serverWipeBtn" style="color:var(--bad)">☁️🗑 수행 기록 전체 삭제 (서버 포함)</button>
       </div>
+      <div class="hint" id="serverWipeMsg" style="margin-top:6px"></div>
     </details>
   </section>
 </div>
@@ -970,13 +976,24 @@ function renderTasks(){
   tc.appendChild(tag);
   const group=t=>{ const g=document.createElement("div"); g.className="pick-group"; g.textContent=t; tc.appendChild(g); };
 
+  const me=myKey();
   group("📋 공통과제 — 선생님이 낸 과제");
   if(mine.length){
+    // 최근에 낸 과제가 위로 오게
+    mine.sort((a,b)=>String(assignments[b].created||"").localeCompare(String(assignments[a].created||"")));
     mine.forEach(id=>{
       const a=assignments[id];
+      // 내가 이 과제를 언제 했는지 (내 기록에서 찾는다)
+      const done=records.filter(r=>r.taskId===id&&r.name===me.name&&r.cls===me.cls)
+        .sort((x,y)=>String(x.date).localeCompare(String(y.date)))[0];
       const d=document.createElement("div"); d.className="task-card";
-      d.innerHTML=`<span class="tt">📋 ${a.title}</span><span class="td">${taskDesc(a)}</span>`;
-      const btn=document.createElement("button"); btn.className="btn btn-go btn-sm"; btn.textContent="이 과제 하기";
+      d.innerHTML=`<span class="tt">📋 ${a.title}</span>
+        <span class="td">${taskDesc(a)}<br>
+          <span style="color:var(--muted)">부여 ${a.created||"–"}</span> ·
+          ${done?`<b style="color:var(--good)">실행 ${String(done.date).slice(0,10)}</b>`
+                :`<b style="color:var(--bad)">아직 안 함</b>`}</span>`;
+      const btn=document.createElement("button"); btn.className="btn btn-go btn-sm";
+      btn.textContent=done?"다시 하기":"이 과제 하기";
       btn.addEventListener("click",()=>applyAssignment(id));
       d.appendChild(btn); tc.appendChild(d);
     });
@@ -987,15 +1004,27 @@ function renderTasks(){
   }
 
   group("🌱 자율 실천과제 — 내가 만든 구성 (가산점 +20%)");
-  const free=document.createElement("div"); free.className="task-card";
-  free.innerHTML=`<span class="tt">🌱 자율 실천</span>
-    <span class="td">${seq.length?seq.map(k=>EXNAME[k]).join("→")+` · ${$("workSec").value}/${$("restSec").value}초 × ${$("rounds").value}R`:"운동 설계 탭에서 구성을 먼저 만드세요"}</span>`;
-  const fb=document.createElement("button"); fb.className="btn btn-go btn-sm"; fb.textContent="자율로 하기";
-  fb.addEventListener("click",()=>{
-    if(!seq.length){alert("운동 설계 탭에서 운동을 먼저 추가해 주세요.");return;}
-    clearTask(); currentBattle=null; updateModeBadge(); showWorkSteps();
+  const mk=(label,p,meta,primary)=>{
+    const c=document.createElement("div"); c.className="task-card";
+    c.innerHTML=`<span class="tt">${label}</span>
+      <span class="td">${p.seq.length?p.seq.map(k=>EXNAME[k]).join("→")+` · ${p.work}/${p.rest}초 × ${p.rounds}R`:"운동 설계 탭에서 구성을 먼저 만드세요"}${meta?`<br><span style="color:var(--muted)">${meta}</span>`:""}</span>`;
+    const b=document.createElement("button"); b.className="btn btn-go btn-sm"; b.textContent=primary?"이 구성으로 하기":"이걸로 하기";
+    b.addEventListener("click",()=>{
+      if(!p.seq.length){alert("운동 설계 탭에서 운동을 먼저 추가해 주세요.");return;}
+      if(!primary)applyPlan(p);
+      clearTask(); currentBattle=null; updateModeBadge(); showWorkSteps();
+    });
+    c.appendChild(b); tc.appendChild(c);
+  };
+  // 지금 운동 설계 탭에 있는 구성
+  mk("🌱 지금 만든 구성",
+     {seq:[...seq], work:$("workSec").value, rest:$("restSec").value, rounds:$("rounds").value},
+     "", true);
+  // 전에 해본 구성들
+  const curKey=planKey({seq,work:+$("workSec").value,rest:+$("restSec").value,rounds:+$("rounds").value});
+  myPlans.filter(p=>planKey(p)!==curKey).forEach((p,i)=>{
+    mk(`🌱 내 구성 ${i+1}`, p, `만든 날 ${p.made||"–"} · 마지막 실행 ${p.last||"–"} · ${p.n||1}회`, false);
   });
-  free.appendChild(fb); tc.appendChild(free);
   // 교사: 과제 목록 칩 + 완료현황 select
   const chips=$("taskChips"); chips.innerHTML="";
   const tv=$("taskView"); const keep=tv.value;
@@ -1791,6 +1820,25 @@ function computeScores(){
 
 /* ---------- records ---------- */
 const records=[];
+/* 학생이 직접 만든 자율 구성 목록 — 한 번 수행한 구성이 여기에 쌓여 다음에 골라 쓸 수 있다 */
+let myPlans=[];
+const planKey=p=>`${(p.seq||[]).join(",")}|${p.work}|${p.rest}|${p.rounds}`;
+function savePlan(){
+  const p={seq:[...seq], work:+$("workSec").value||20, rest:+$("restSec").value||10,
+    rounds:+$("rounds").value||8};
+  if(!p.seq.length)return;
+  const k=planKey(p);
+  const found=myPlans.find(x=>planKey(x)===k);
+  if(found){ found.last=todayStr(); found.n=(found.n||0)+1; }
+  else { myPlans.unshift({...p, made:todayStr(), last:todayStr(), n:1}); }
+  myPlans=myPlans.slice(0,8); // 너무 길어지지 않게 최근 8개만
+  saveAll();
+}
+function applyPlan(p){
+  seq=[...p.seq];
+  $("workSec").value=p.work; $("restSec").value=p.rest; $("rounds").value=p.rounds;
+  renderSeq();
+}
 function renderRecRow(rec){
   const tb=$("recRows");
   if(tb.querySelector(".empty"))tb.innerHTML="";
@@ -1827,6 +1875,7 @@ function addRecord(s){
   pushRecord(rec);
   submitBattleResult(rec);
   pendingPreHr=null; $("preBadge").textContent=""; $("preManual").value="";
+  if(!currentTask&&!currentBattle)savePlan(); // 자율로 해낸 구성은 목록에 남겨 다음에 바로 고를 수 있게
   clearTask(); renderTasks();
 }
 $("csvBtn").addEventListener("click",()=>{
@@ -2493,6 +2542,28 @@ $("musicBtn").addEventListener("click",()=>{
   else if(phase==="work")startBgm("work"); else if(phase==="rest")startBgm("rest");
   try{localStorage.setItem("tabataBgm",bgmOn?"1":"0");}catch(e){}
 });
+// 지금 나오는 음악이 마음에 안 들면 바로 다른 조합으로 바꾼다 (운동 중에도 눌러도 됨)
+$("musicNext").addEventListener("click",()=>{
+  if(!bgmOn){ toast("먼저 [🎵 음악 ON]을 켜주세요","task","🔇"); return; }
+  const before=BGM_WORK;
+  let guard=0;
+  do{ BGM_WORK=pickBgm(BGM_WORK_SET); }while(BGM_WORK===before && BGM_WORK_SET.length>1 && ++guard<20);
+  BGM_REST=pickBgm(BGM_REST_SET);
+  bgmKey=pickBgm(BGM_KEYS); bgmTone=pickBgm(BGM_WORK_TONES);
+  bgmStep=0;
+  // 운동/휴식 중이면 즉시 새 음악으로 다시 재생
+  if(phase==="work")startBgmKeep("work"); else if(phase==="rest")startBgmKeep("rest");
+  toast("음악을 바꿨습니다 🔀","good","🎵");
+});
+// startBgm은 곡을 새로 뽑지만, 여기서는 방금 고른 곡을 유지한 채 타이머만 다시 건다
+function startBgmKeep(mode){
+  bgmMode=mode; bgmStep=0;
+  if(bgmTimer)clearInterval(bgmTimer);
+  if(!bgmOn)return;
+  try{audio=audio||new (window.AudioContext||window.webkitAudioContext)(); if(audio.state==="suspended")audio.resume();}catch(e){}
+  const bpm = mode==="work"?(140+Math.floor(Math.random()*25)) : mode==="rest"?90 : 120;
+  bgmTimer=setInterval(bgmTick, 60000/bpm/2);
+}
 try{ if(localStorage.getItem("tabataBgm")==="0"){bgmOn=false; $("musicBtn").textContent="🔇 음악 OFF"; $("musicBtn").classList.remove("btn-go"); $("musicBtn").classList.add("btn-stop");} else {$("musicBtn").classList.add("btn-go");$("musicBtn").classList.remove("btn-stop");} }catch(e){}
 document.addEventListener("fullscreenchange",()=>{
   // 시스템 뒤로가기/ESC로 네이티브 전체화면을 빠져나온 경우 CSS도 정리
@@ -2513,14 +2584,14 @@ function isDiligent(rec){
   if(pre&&(post-pre)>=HR_DILIGENT_RISE)return true;
   return false;
 }
+const STUDENT_AGE=16; // 최대심박(220-나이) 계산용 기준값 — 학생마다 입력받을 만큼 정밀한 지표가 아니라 고정
 function hrZoneOf(bpm,age){
   const max=220-age, pct=Math.round(bpm/max*100);
   const zone=pct>=77?"고강도":pct>=64?"중강도":"저강도";
   return {pct,zone};
 }
 function showHr(bpm){
-  const age=+$("hrAge").value||16;
-  const {pct,zone}=hrZoneOf(bpm,age);
+  const {pct,zone}=hrZoneOf(bpm,STUDENT_AGE); // 중·고 체육수업 기준 나이로 고정(입력칸 제거)
   // 미리보기도 최종 저장과 같은 기준으로 판정: 운동 전 심박은 방금 세션의 기록(hrPre)을 우선 쓰고,
   // 없으면 아직 정리 전인 pendingPreHr를 쓴다(둘 다 없으면 절대값만 적용).
   const lastRec=records[records.length-1];
@@ -2866,7 +2937,7 @@ function saveAll(){
   if(!storageOK)return;
   try{
     const recs=records.map(({_row,...r})=>r);
-    localStorage.setItem(STORE_KEY,JSON.stringify({rosters,records:recs,totalPts,fbCfg:$("fbCfg").value,adminPw,assignments,seenBattles}));
+    localStorage.setItem(STORE_KEY,JSON.stringify({rosters,records:recs,totalPts,fbCfg:$("fbCfg").value,adminPw,assignments,seenBattles,myPlans}));
   }catch(e){}
 }
 // 기기 저장 여부 + Firebase 연결 여부를 한 줄로 합쳐 보여준다(이전엔 3곳에 흩어져 있어 헷갈렸음)
@@ -2894,6 +2965,7 @@ function loadAll(){
     if(d.adminPw)adminPw=d.adminPw;
     if(d.assignments)Object.assign(assignments,d.assignments);
     if(Array.isArray(d.seenBattles))seenBattles=d.seenBattles;
+    if(Array.isArray(d.myPlans))myPlans=d.myPlans;
   }catch(e){}
 }
 
@@ -3029,6 +3101,8 @@ function attachFbListeners(){
   });
   onValue(ref(fdb,"rosters"),snap=>{
     const v=snap.val(); if(!v)return;
+    // 서버에서 지운 반이 다른 기기에 계속 남지 않도록 서버 상태를 그대로 반영한다
+    Object.keys(rosters).forEach(k=>{ if(!(k in v))delete rosters[k]; });
     Object.assign(rosters,v);
     refreshClassUI(); saveAll();
   });
@@ -3079,6 +3153,25 @@ $("wipeBtn").addEventListener("click",()=>{
   if(!confirm("정말 초기화할까요?"))return;
   try{localStorage.removeItem(STORE_KEY);}catch(e){}
   location.reload();
+});
+// 학기 초·테스트 후 정리용: 수행 기록만 서버까지 완전히 지운다 (명렬표·과제는 건드리지 않음)
+$("serverWipeBtn").addEventListener("click",async()=>{
+  const msg=$("serverWipeMsg");
+  if(!fdb){alert("서버에 연결된 상태에서만 사용할 수 있습니다.");return;}
+  const n=records.length;
+  if(!confirm(`수행 기록 ${n}건을 서버에서도 완전히 삭제합니다.\n되돌릴 수 없습니다 — 필요하면 먼저 [⬇ 전체 기록 백업 CSV]를 받아두세요.\n\n(명렬표와 공통과제는 그대로 유지됩니다)`))return;
+  if(prompt('정말 지우려면 아래에 "삭제"라고 입력하세요.')!=="삭제"){msg.textContent="취소했습니다.";return;}
+  msg.textContent="삭제 중…";
+  try{
+    await fmod.remove(fmod.ref(fdb,"records"));
+    await fmod.remove(fmod.ref(fdb,"battles")).catch(()=>{});
+    await fmod.remove(fmod.ref(fdb,"presence")).catch(()=>{});
+    await fmod.remove(fmod.ref(fdb,"control")).catch(()=>{});
+    records.length=0; totalPts=0; myPlans=[]; seenBattles=[];
+    saveAll();
+    msg.innerHTML='<b style="color:var(--good)">삭제 완료 — 잠시 후 새로고침됩니다.</b>';
+    setTimeout(()=>location.reload(),1200);
+  }catch(e){ msg.innerHTML='<span class="err">삭제 실패 — 인터넷 연결을 확인하세요.</span>'; }
 });
 
 /* ---------- 자체 엑셀(.xlsx) 생성기 (외부 라이브러리 없음, 반마다 시트 하나) ----------
