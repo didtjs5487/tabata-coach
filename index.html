@@ -302,11 +302,10 @@
     <h3>① 내 정보</h3>
     <div class="row">
       <div class="field"><label>학번</label><input type="text" id="stuId" placeholder="10101" maxlength="5" inputmode="numeric" style="width:110px"></div>
-      <button class="btn btn-stop btn-sm" id="stuIdReset" style="display:none">🔄 다른 사람이에요</button>
-      <span class="hint" id="stuIdHint" style="align-self:center"></span>
-      <div class="field" id="stuNameField"><label>이름 (직접 입력)</label><input type="text" id="stuName" placeholder="홍길동"></div>
+      <div class="field" id="stuNameField"><label>성명</label><input type="text" id="stuName" placeholder="자동으로 표시됩니다"></div>
       <input type="hidden" id="stuClass">
-      <span class="hint" id="myInfoBadge" style="align-self:center"></span>
+      <button class="btn btn-stop btn-sm" id="stuIdReset" style="display:none;align-self:flex-end">🔄 다른 사람</button>
+      <span class="hint" id="stuIdHint" style="align-self:center"></span>
     </div>
 
     <h3>② 자율 실천 운동설계</h3>
@@ -1992,13 +1991,21 @@ function syncStuId(){
   const key=stuIdToKey(raw);
   $("stuClass").value=key?key.cls:"";
   const hit=key?lookupByStuId(raw):null;
+  const nm=$("stuName");
+  // 성명 칸은 항상 보이게 두고, 명단에서 찾으면 이름을 채워 넣는다(직접 못 고치게 잠금)
   if(hit){
-    $("stuName").value=hit.name;
-    $("stuNameField").style.display="none";
+    nm.value=hit.name; nm.readOnly=true;
+    nm.style.color="var(--primary)"; nm.style.fontWeight="700";
     $("stuIdHint").textContent="";
   } else {
-    $("stuNameField").style.display="flex";
-    $("stuIdHint").innerHTML=raw.length>=5?'<span style="color:var(--bad)">명단에 없는 학번입니다 — 이름을 직접 입력하세요</span>':"";
+    // 명단에서 못 찾으면 앞 학생 이름이 남지 않도록 비우고 직접 입력할 수 있게 푼다
+    if(nm.readOnly)nm.value="";
+    nm.readOnly=false; nm.style.color=""; nm.style.fontWeight="";
+    if(raw.length>=5){
+      $("stuIdHint").innerHTML='<span style="color:var(--bad)">명단에 없는 학번 — 성명을 직접 입력하세요</span>';
+    } else {
+      nm.value=""; $("stuIdHint").textContent="";
+    }
   }
   syncMyInfoFields();
   saveMyId();
@@ -2027,7 +2034,6 @@ function resetMyId(){
 }
 function syncMyInfoFields(){
   const name=($("stuName").value||"").trim(), cls=($("stuClass").value||"").trim();
-  $("myInfoBadge").innerHTML=(name&&cls)?`✔ <b style="color:var(--primary)">${cls}반 ${name}</b>`:"";
   refreshBattleUI(); // 결투 신청이 이제 이 탭에 있어 이름·학반이 바뀔 때마다 상대 목록도 갱신
   if(name&&cls){ updatePresence(myStage||0); startPresenceHeartbeat(); } // 신원 확정 즉시 접속 표시 + 주기 신호 시작
 }
