@@ -365,16 +365,15 @@
       </div>
     </div>
 
-    <div class="row" style="margin-top:12px">
-      <button class="btn btn-go" id="toWorkout">운동 시작 →</button>
+    <div class="row" style="margin-top:12px;align-items:flex-end">
+      <div class="field" style="flex:1;min-width:180px"><label>이 운동의 이름</label><input type="text" id="planName" placeholder="예: 하체 집중 4분" style="width:100%"></div>
+      <button class="btn btn-go" id="toWorkout">＋ 운동 추가</button>
     </div>
+    <div class="hint" id="planAddMsg" style="margin-top:6px">이름을 붙여 추가하면 <b>운동하기</b> 탭의 자율 실천 과제 목록에 쌓입니다. 거기서 혼자 하거나 친구에게 결투를 신청할 수 있어요.</div>
 
     <details class="collapsible" style="margin-top:22px">
-      <summary>③ ⚔️ 친구에게 결투 신청 (배틀)</summary>
-      <div class="row" style="margin-top:12px">
-        <div class="field"><label>상대 (우리 반)</label><select id="bOppo"><option value="">선택</option></select></div>
-        <button class="btn btn-go btn-sm" id="bSend">⚔️ 결투 신청</button>
-      </div>
+      <summary>③ ⚔️ 결투 현황</summary>
+      <div class="hint" style="margin:10px 0 8px">결투 신청은 <b>운동하기</b> 탭의 자율 실천 과제에서 <b>[⚔️ 결투]</b>로 보냅니다. 여기서는 주고받은 결투를 확인하고 수락·거절합니다.</div>
       <div class="hint" id="bCfgHint"></div>
       <div id="battleList" style="margin-top:10px"></div>
     </details>
@@ -634,6 +633,18 @@
       </div>
       <textarea id="rosterPaste" rows="5" placeholder="1	김민준	남&#10;2	이서연	여" style="width:100%;background:var(--panel3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:15px;resize:vertical"></textarea>
     </details>
+
+    <details class="collapsible" style="margin-top:12px">
+      <summary>👤 학생 한 명 추가 (전학생)</summary>
+      <div class="hint" style="margin:8px 0">학번을 넣으면 반과 번호가 자동으로 정해집니다. 같은 번호가 이미 있으면 그 자리를 바꿉니다.</div>
+      <div class="row" style="align-items:flex-end">
+        <div class="field"><label>학번</label><input type="text" id="oneStuId" placeholder="10327" maxlength="5" inputmode="numeric" style="width:100px"></div>
+        <div class="field"><label>이름</label><input type="text" id="oneStuName" placeholder="홍길동" style="width:130px"></div>
+        <div class="field"><label>성별</label><select id="oneStuSex"><option value="">선택</option><option value="남">남</option><option value="여">여</option></select></div>
+        <button class="btn btn-teal btn-sm" id="oneStuAdd">추가</button>
+        <span class="hint" id="oneStuMsg"></span>
+      </div>
+    </details>
     </details>
 
     <details class="collapsible">
@@ -717,6 +728,19 @@
   <div id="qrBigUrl" style="color:#fff;font-family:'Barlow Condensed';font-weight:700;font-size:clamp(20px,4vw,34px);letter-spacing:.5px;word-break:break-all;text-align:center"></div>
   <div style="color:#C9C6EE;font-size:15px">카메라로 QR을 찍어 접속하세요 · 화면을 누르면 닫힙니다</div>
 </div>
+<div id="battlePickOverlay" style="display:none;position:fixed;inset:0;z-index:10004;background:rgba(28,32,66,.9);align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--panel);border-radius:18px;padding:20px;width:min(520px,94vw);max-height:86vh;display:flex;flex-direction:column">
+    <div style="font-weight:800;font-size:19px;margin-bottom:4px">⚔️ 결투 신청</div>
+    <div class="hint" id="battlePickCfg" style="margin-bottom:8px"></div>
+    <div class="hint" style="margin-bottom:6px">상대를 <b>여러 명</b> 고를 수 있습니다. 고른 사람마다 각각 결투가 만들어져요.</div>
+    <div id="battlePickList" style="overflow-y:auto;flex:1;min-height:80px;border:1px solid var(--line);border-radius:12px;padding:8px"></div>
+    <div class="row" style="margin:12px 0 0">
+      <button class="btn btn-go btn-sm" id="battlePickSend">⚔️ 신청 보내기</button>
+      <button class="btn btn-stop btn-sm" id="battlePickClose">닫기</button>
+      <span class="hint" id="battlePickMsg"></span>
+    </div>
+  </div>
+</div>
 <div id="classBoardOverlay">
   <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap">
     <div style="color:#fff;font-family:'Barlow Condensed';font-weight:700;font-size:clamp(20px,3.6vw,36px)">🏫 실시간 현황</div>
@@ -799,7 +823,18 @@ $("parqOk").addEventListener("click",()=>{
   $("workBody").style.display="block";
   updatePresence(1);
 });
-$("toWorkout").addEventListener("click",()=>goPage("pgWork"));
+// 이름을 붙여 자율 실천 과제로 추가 → 운동하기 탭 목록에 쌓인다
+$("toWorkout").addEventListener("click",()=>{
+  const msg=$("planAddMsg");
+  if(!seq.length){msg.innerHTML='<span class="err">운동을 하나 이상 추가한 뒤 눌러주세요.</span>';return;}
+  let name=($("planName").value||"").trim();
+  if(!name)name=seq.map(k=>EXNAME[k]).join("·").slice(0,20); // 이름을 안 쓰면 구성으로 자동 작명
+  const p=addPlan(name);
+  $("planName").value="";
+  renderTasks();
+  msg.innerHTML=`<b style="color:var(--good)">'${p.name}' 추가 완료 — 운동하기 탭에서 골라 실천하세요.</b>`;
+  goPage("pgWork");
+});
 
 /* ---------- exercise defs ---------- */
 const EXNAME={squat:"스쿼트",pushup:"푸쉬업",pushupknee:"푸쉬업(무릎대고)",lunge:"런지",jack:"점핑잭",plank:"플랭크",
@@ -951,7 +986,7 @@ function applyAssignment(id){
   seq=[...a.seq]; renderSeq();
   $("workSec").value=a.work; $("restSec").value=a.rest;
   $("rounds").value=a.rounds; $("difficulty").value=String(a.diff);
-  currentBattle=null;
+  currentBattle=null; currentPlanId=null; // 공통과제는 자율 과제 실천 횟수에 넣지 않는다
   currentTask={id,title:a.title}; updateModeBadge();
   goPage("pgWork"); showWorkSteps();
 }
@@ -1004,27 +1039,52 @@ function renderTasks(){
     tc.appendChild(none);
   }
 
-  group("🌱 자율 실천과제 — 내가 만든 구성 (가산점 +20%)");
-  const mk=(label,p,meta,primary)=>{
+  // 받은 결투 신청은 답을 해줘야 하므로 목록 맨 위에 눈에 띄게 둔다
+  const incoming=Object.entries(battles).filter(([id,b])=>b.status==="pending"&&sameP(b.op,me));
+  if(incoming.length){
+    group("⚔️ 받은 결투 신청 — 수락하거나 거절하세요");
+    incoming.forEach(([id,b])=>{
+      const c=document.createElement("div"); c.className="task-card";
+      c.innerHTML=`<span class="tt">⚔️ ${b.ch.name}님의 결투 신청</span>
+        <span class="td">${b.planName?`<b>${b.planName}</b> · `:""}${b.cfg.seq.map(k=>EXNAME[k]).join("→")} · ${b.cfg.work}/${b.cfg.rest}초 × ${b.cfg.rounds}R</span>`;
+      const acc=document.createElement("button"); acc.className="btn btn-go btn-sm"; acc.textContent="수락";
+      acc.addEventListener("click",()=>fmod.update(fmod.ref(fdb,"battles/"+id),{status:"accepted"}).catch(()=>alert("전송 실패")));
+      const dec=document.createElement("button"); dec.className="btn btn-stop btn-sm"; dec.textContent="거절";
+      dec.addEventListener("click",()=>{
+        if(!confirm(`${b.ch.name}님의 결투를 거절할까요?`))return;
+        fmod.update(fmod.ref(fdb,"battles/"+id),{status:"declined"}).catch(()=>{});
+      });
+      c.appendChild(acc); c.appendChild(dec); tc.appendChild(c);
+    });
+  }
+
+  group("🌱 자율 실천과제 — 내가 만든 운동 (가산점 +20%)");
+  if(!myPlans.length){
+    const none=document.createElement("div"); none.className="hint"; none.style.margin="0 0 4px 2px";
+    none.innerHTML="아직 만든 운동이 없습니다. <b>운동 설계</b> 탭에서 구성을 만들고 <b>[＋ 운동 추가]</b>를 누르세요.";
+    tc.appendChild(none);
+  }
+  myPlans.forEach(p=>{
     const c=document.createElement("div"); c.className="task-card";
-    c.innerHTML=`<span class="tt">${label}</span>
-      <span class="td">${p.seq.length?p.seq.map(k=>EXNAME[k]).join("→")+` · ${p.work}/${p.rest}초 × ${p.rounds}R`:"운동 설계 탭에서 구성을 먼저 만드세요"}${meta?`<br><span style="color:var(--muted)">${meta}</span>`:""}</span>`;
-    const b=document.createElement("button"); b.className="btn btn-go btn-sm"; b.textContent=primary?"이 구성으로 하기":"이걸로 하기";
-    b.addEventListener("click",()=>{
-      if(!p.seq.length){alert("운동 설계 탭에서 운동을 먼저 추가해 주세요.");return;}
-      if(!primary)applyPlan(p);
+    c.innerHTML=`<span class="tt">🌱 ${p.name||"내 운동"}</span>
+      <span class="td">${p.seq.map(k=>EXNAME[k]).join("→")} · ${p.work}/${p.rest}초 × ${p.rounds}R<br>
+        <span style="color:var(--muted)">만든 날 ${p.made||"–"} · </span>
+        <b style="color:${p.n?"var(--good)":"var(--muted)"}">${p.n?`${p.n}회 실천`:"아직 안 함"}</b>
+        <span style="color:var(--muted)">${p.last?` · 마지막 ${p.last}`:""}</span></span>`;
+    const go=document.createElement("button"); go.className="btn btn-go btn-sm"; go.textContent="혼자 하기";
+    go.addEventListener("click",()=>{
+      applyPlan(p); currentPlanId=p.id;
       clearTask(); currentBattle=null; updateModeBadge(); showWorkSteps();
     });
-    c.appendChild(b); tc.appendChild(c);
-  };
-  // 지금 운동 설계 탭에 있는 구성
-  mk("🌱 지금 만든 구성",
-     {seq:[...seq], work:$("workSec").value, rest:$("restSec").value, rounds:$("rounds").value},
-     "", true);
-  // 전에 해본 구성들
-  const curKey=planKey({seq,work:+$("workSec").value,rest:+$("restSec").value,rounds:+$("rounds").value});
-  myPlans.filter(p=>planKey(p)!==curKey).forEach((p,i)=>{
-    mk(`🌱 내 구성 ${i+1}`, p, `만든 날 ${p.made||"–"} · 마지막 실행 ${p.last||"–"} · ${p.n||1}회`, false);
+    const duel=document.createElement("button"); duel.className="btn btn-stop btn-sm"; duel.textContent="⚔️ 결투";
+    duel.addEventListener("click",()=>openBattlePick(p));
+    const del=document.createElement("button"); del.className="btn btn-stop btn-sm";
+    del.textContent="✕"; del.title="이 운동 목록에서 지우기"; del.style.color="var(--bad)";
+    del.addEventListener("click",()=>{
+      if(!confirm(`'${p.name}'을(를) 목록에서 지울까요? (지금까지의 운동 기록은 그대로 남습니다)`))return;
+      myPlans=myPlans.filter(x=>x.id!==p.id); saveAll(); renderTasks();
+    });
+    c.appendChild(go); c.appendChild(duel); c.appendChild(del); tc.appendChild(c);
   });
   // 교사: 과제 목록 칩 + 완료현황 select
   const chips=$("taskChips"); chips.innerHTML="";
@@ -1182,29 +1242,65 @@ function applyCfg(cfg){
   $("rounds").value=cfg.rounds; $("difficulty").value=String(cfg.diff);
 }
 function refreshBattleUI(){
-  const me=myKey();
-  // 상대 선택: 우리 반 명렬표에서 내 이름 제외
-  const sel=$("bOppo"); const keep=sel.value;
-  sel.innerHTML='<option value="">선택</option>';
-  // 학번(학년+반+번호) + 이름으로 보여준다
-  const g=(me.cls.split("-")[0]||"").trim(), r=(me.cls.split("-")[1]||"").trim();
-  (rosters[me.cls]||[]).filter(st=>st.name!==me.name)
-    .forEach(st=>{
-      const sid=`${g}${String(r).padStart(2,"0")}${String(st.no).padStart(2,"0")}`;
-      sel.insertAdjacentHTML("beforeend",`<option value="${st.name}">${sid} ${st.name}</option>`);
-    });
-  if([...sel.options].some(o=>o.value===keep))sel.value=keep;
   updateBCfgHint();
   renderBattles();
 }
 function updateBCfgHint(){
   const me=myKey();
-  if(!me.name){$("bCfgHint").textContent="⚠️ 먼저 운동 설계 탭에서 내 이름·학반을 입력하세요.";return;}
-  // 대결은 위 ②③에서 만든 구성을 그대로 쓴다 (설계 칸을 따로 두지 않는다)
-  $("bCfgHint").textContent=seq.length
-    ?`대결 구성: ${seq.map(k=>EXNAME[k]).join("→")} · ${$("workSec").value}초/${$("restSec").value}초 × ${$("rounds").value}R`
-    :"⚠️ 위 ②에서 운동을 먼저 추가하세요.";
+  $("bCfgHint").textContent=me.name?"":"⚠️ 먼저 운동 설계 탭에서 학번을 입력하세요.";
 }
+/* ---------- 결투 상대 고르기 (여러 명 동시 신청) ---------- */
+let battlePickPlan=null;
+function openBattlePick(plan){
+  const me=myKey();
+  if(!me.name||!me.cls){alert("운동 설계 탭에서 학번을 먼저 입력하세요.");return;}
+  if(!fdb){alert("결투는 서버 연결이 필요합니다. 인터넷을 확인해 주세요.");return;}
+  battlePickPlan=plan;
+  $("battlePickCfg").innerHTML=`<b>${plan.name}</b> — ${plan.seq.map(k=>EXNAME[k]).join("→")} · ${plan.work}/${plan.rest}초 × ${plan.rounds}R`;
+  $("battlePickMsg").textContent="";
+  const box=$("battlePickList"); box.innerHTML="";
+  const g=(me.cls.split("-")[0]||"").trim(), r=(me.cls.split("-")[1]||"").trim();
+  const mates=(rosters[me.cls]||[]).filter(st=>st.name!==me.name);
+  if(!mates.length){box.innerHTML='<div class="hint">우리 반 명렬표가 없습니다.</div>';}
+  // 아직 끝나지 않은 결투가 있는 상대에게는 또 보낼 수 없다 (장난으로 몰아 보내기 방지)
+  const busy={};
+  Object.values(battles).forEach(b=>{
+    if(b.status!=="pending"&&b.status!=="accepted")return;
+    if(sameP(b.ch,me))busy[b.op.name]=b.status==="pending"?"신청함 · 응답 대기":"진행 중";
+    else if(sameP(b.op,me))busy[b.ch.name]=b.status==="pending"?"나에게 신청함":"진행 중";
+  });
+  mates.forEach(st=>{
+    const sid=`${g}${String(r).padStart(2,"0")}${String(st.no).padStart(2,"0")}`;
+    const lb=document.createElement("label");
+    const off=busy[st.name];
+    lb.style.cssText="display:flex;align-items:center;gap:8px;padding:7px 6px;border-bottom:1px solid var(--line);cursor:"
+      +(off?"not-allowed":"pointer")+(off?";opacity:.5":"");
+    lb.innerHTML=`<input type="checkbox" class="bpick" value="${st.name}"${off?" disabled":""}>
+      <span class="num" style="color:var(--muted);min-width:48px">${sid}</span><b>${st.name}</b>
+      ${off?`<span class="hint" style="margin-left:auto">${off}</span>`:""}`;
+    box.appendChild(lb);
+  });
+  $("battlePickOverlay").style.display="flex";
+}
+$("battlePickClose").addEventListener("click",()=>{ $("battlePickOverlay").style.display="none"; });
+$("battlePickSend").addEventListener("click",()=>{
+  const me=myKey(), msg=$("battlePickMsg"), p=battlePickPlan;
+  if(!p){msg.innerHTML='<span class="err">운동을 다시 골라주세요.</span>';return;}
+  const picked=[...document.querySelectorAll(".bpick:checked")].map(c=>c.value);
+  if(!picked.length){msg.innerHTML='<span class="err">상대를 한 명 이상 고르세요.</span>';return;}
+  const cfg={seq:[...p.seq], work:p.work, rest:p.rest, rounds:p.rounds, diff:1};
+  msg.textContent="보내는 중…";
+  Promise.all(picked.map(name=>{
+    const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    return fmod.set(fmod.ref(fdb,"battles/"+id),
+      {ch:me, op:{name,cls:me.cls}, cfg, planName:p.name, status:"pending", created:Date.now()});
+  }))
+  .then(()=>{
+    $("battlePickOverlay").style.display="none";
+    alert(`⚔️ ${picked.length}명에게 '${p.name}' 결투를 신청했습니다!\n(${picked.join(", ")})\n상대가 수락하면 알림이 옵니다.`);
+  })
+  .catch(()=>{ msg.innerHTML='<span class="err">전송 실패 — 인터넷을 확인하세요.</span>'; });
+});
 function battleStatusHtml(b,mineRole){
   const r=b.results||{};
   if(b.status==="done"){
@@ -1249,7 +1345,7 @@ function renderBattles(){
       const go=document.createElement("button"); go.className="btn btn-go btn-sm"; go.textContent="배틀 운동 시작";
       go.addEventListener("click",()=>{
         applyCfg(b.cfg); clearTask();
-        currentBattle={id,role,vs:other}; updateModeBadge();
+        currentBattle={id,role,vs:other}; currentPlanId=null; updateModeBadge();
         alert(`⚔️ vs ${other} 배틀 모드!\n같은 구성으로 대결합니다. 첫 시도 기록이 제출되니 최선을 다하세요!`);
         goPage("pgWork"); showWorkSteps();
       });
@@ -1258,23 +1354,6 @@ function renderBattles(){
     d.appendChild(btns); list.appendChild(d);
   });
 }
-$("bSend").addEventListener("click",()=>{
-  const me=myKey();
-  if(!me.name||!me.cls){alert("운동 설계 탭에서 내 이름·학반을 먼저 입력하세요.");return;}
-  if(!fdb){alert("배틀은 서버 연결이 필요합니다. 인터넷을 확인해 주세요.");return;}
-  const oppo=$("bOppo").value;
-  if(!oppo){alert("상대를 선택하거나 이름을 입력하세요.");return;}
-  if(oppo===me.name){alert("자기 자신에게는 신청할 수 없어요 😄");return;}
-  // 위 ②③ 운동설계를 그대로 대결 조건으로 쓴다
-  const cfg={seq:[...seq], work:+$("workSec").value||20, rest:+$("restSec").value||10,
-    rounds:+$("rounds").value||8, diff:1};
-  if(!cfg.seq.length){alert("위 ② 운동설계에서 운동을 먼저 추가해 주세요.");return;}
-  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  const b={ch:me, op:{name:oppo,cls:me.cls}, cfg, status:"pending", created:Date.now()};
-  fmod.set(fmod.ref(fdb,"battles/"+id),b)
-    .then(()=>{ $("bOppo").value=""; alert(`⚔️ ${oppo}님에게 결투를 신청했습니다!\n상대가 수락하면 알림이 옵니다.`); })
-    .catch(()=>alert("신청 전송 실패 — 인터넷을 확인하세요."));
-});
 async function submitBattleResult(rec){
   if(!currentBattle||!fdb)return;
   const {id,role}=currentBattle; const bId=id;
@@ -1822,24 +1901,28 @@ function computeScores(){
 
 /* ---------- records ---------- */
 const records=[];
-/* 학생이 직접 만든 자율 구성 목록 — 한 번 수행한 구성이 여기에 쌓여 다음에 골라 쓸 수 있다 */
+/* 학생이 이름을 붙여 만든 자율 실천 과제 목록 — 운동하기 탭에서 골라 반복 수행한다 */
 let myPlans=[];
-const planKey=p=>`${(p.seq||[]).join(",")}|${p.work}|${p.rest}|${p.rounds}`;
-function savePlan(){
-  const p={seq:[...seq], work:+$("workSec").value||20, rest:+$("restSec").value||10,
-    rounds:+$("rounds").value||8};
-  if(!p.seq.length)return;
-  const k=planKey(p);
-  const found=myPlans.find(x=>planKey(x)===k);
-  if(found){ found.last=todayStr(); found.n=(found.n||0)+1; }
-  else { myPlans.unshift({...p, made:todayStr(), last:todayStr(), n:1}); }
-  myPlans=myPlans.slice(0,8); // 너무 길어지지 않게 최근 8개만
+let currentPlanId=null; // 지금 수행 중인 자율 과제(수행 횟수를 올릴 대상)
+function addPlan(name){
+  const p={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6), name,
+    seq:[...seq], work:+$("workSec").value||20, rest:+$("restSec").value||10,
+    rounds:+$("rounds").value||8, made:todayStr(), last:"", n:0};
+  myPlans.unshift(p);
+  myPlans=myPlans.slice(0,12);
   saveAll();
+  return p;
 }
 function applyPlan(p){
   seq=[...p.seq];
   $("workSec").value=p.work; $("restSec").value=p.rest; $("rounds").value=p.rounds;
   renderSeq();
+}
+// 수행을 마치면 그 과제의 실천 횟수를 올린다
+function countPlanDone(){
+  if(!currentPlanId)return;
+  const p=myPlans.find(x=>x.id===currentPlanId);
+  if(p){ p.n=(p.n||0)+1; p.last=todayStr(); saveAll(); }
 }
 function renderRecRow(rec){
   const tb=$("recRows");
@@ -1877,7 +1960,7 @@ function addRecord(s){
   pushRecord(rec);
   submitBattleResult(rec);
   pendingPreHr=null; $("preBadge").textContent=""; $("preManual").value="";
-  if(!currentTask&&!currentBattle)savePlan(); // 자율로 해낸 구성은 목록에 남겨 다음에 바로 고를 수 있게
+  if(!currentTask)countPlanDone(); // 고른 자율 과제의 실천 횟수를 올린다(결투도 그 과제로 한 것이므로 포함)
   clearTask(); renderTasks();
 }
 $("csvBtn").addEventListener("click",()=>{
@@ -2014,6 +2097,31 @@ $("rosterAdd").addEventListener("click",()=>{
   rosters[c]=list;
   $("rosterCount").textContent=`${c}반 ${list.length}명 등록 완료`;
   $("rosterPaste").value=""; refreshClassUI(); saveAll(); pushRoster(c);
+});
+/* 전학생처럼 한 명만 들어올 때 — 학번에서 반·번호를 뽑아 그 반 명렬표에 끼워 넣는다 */
+$("oneStuAdd").addEventListener("click",()=>{
+  const msg=$("oneStuMsg");
+  const raw=($("oneStuId").value||"").replace(/\D/g,"");
+  const name=($("oneStuName").value||"").trim();
+  const sex=$("oneStuSex").value;
+  const key=stuIdToKey(raw);
+  if(!key||raw.length<5){msg.innerHTML='<span class="err">학번 5자리를 정확히 넣어주세요.</span>';return;}
+  if(!name){msg.innerHTML='<span class="err">이름을 넣어주세요.</span>';return;}
+  const c=key.cls;
+  if(!rosters[c])rosters[c]=[];
+  const list=rosters[c];
+  const idx=list.findIndex(s=>parseInt(s.no,10)===key.no);
+  const before=idx>=0?list[idx].name:null;
+  if(idx>=0) list[idx]={no:String(key.no), name, sex};
+  else {
+    list.push({no:String(key.no), name, sex});
+    list.sort((a,b)=>parseInt(a.no,10)-parseInt(b.no,10)); // 명렬표는 번호순 유지
+  }
+  refreshClassUI(); saveAll(); pushRoster(c);
+  msg.innerHTML=before
+    ? `<b style="color:var(--good)">${shortCls(c)}반 ${key.no}번을 ${before} → ${name}(으)로 바꿨습니다.</b>`
+    : `<b style="color:var(--good)">${shortCls(c)}반 ${key.no}번 ${name} 추가 완료 (현재 ${list.length}명)</b>`;
+  $("oneStuId").value=""; $("oneStuName").value=""; $("oneStuSex").value="";
 });
 $("bulkRosterAdd").addEventListener("click",()=>{
   const text=$("bulkRosterPaste").value;
@@ -3112,7 +3220,7 @@ function attachFbListeners(){
   onValue(ref(fdb,"battles"),snap=>{
     Object.keys(battles).forEach(k=>delete battles[k]);
     Object.assign(battles,snap.val()||{});
-    renderBattles(); handleBattleEvents();
+    renderBattles(); renderTasks(); handleBattleEvents(); // 운동하기의 '받은 결투 신청' 카드도 함께 갱신
   });
   onValue(ref(fdb,"rosters"),snap=>{
     const v=snap.val(); if(!v)return;
