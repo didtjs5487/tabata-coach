@@ -603,8 +603,8 @@
       <div class="field"><label>반</label><select id="taskViewClass"><option value="">전체</option></select></div>
       <span class="hint" id="taskDoneCount"></span>
     </div>
-    <table><thead><tr><th>번호</th><th>이름</th><th>학반</th><th>일시</th><th>정확도</th><th>심박(전→후)</th><th>종합</th></tr></thead>
-      <tbody id="taskRows"><tr><td colspan="7" class="empty">과제를 선택하면 완료한 학생이 표시됩니다.</td></tr></tbody></table>
+    <table><thead><tr><th>번호</th><th>이름</th><th>반</th><th>일시</th><th>구분</th><th>정확도</th><th>심박(전→후)</th><th>종합</th></tr></thead>
+      <tbody id="taskRows"><tr><td colspan="8" class="empty">과제를 선택하면 완료한 학생이 표시됩니다.</td></tr></tbody></table>
     </details>
 
     <details class="collapsible">
@@ -1242,33 +1242,47 @@ function renderTaskClassPick(){
 function renderTaskRows(){
   const id=$("taskView").value, tb=$("taskRows"), cnt=$("taskDoneCount");
   if(cnt)cnt.textContent="";
-  if(!id||!assignments[id]){tb.innerHTML='<tr><td colspan="7" class="empty">과제를 선택하면 완료한 학생이 표시됩니다.</td></tr>';return;}
+  if(!id||!assignments[id]){tb.innerHTML='<tr><td colspan="8" class="empty">과제를 선택하면 완료한 학생이 표시됩니다.</td></tr>';return;}
+  const a=assignments[id];
   const cls=$("taskViewClass")?$("taskViewClass").value:"";
-  const cell=r=>`<td>${r.date}</td><td class="num">${r.acc}%</td>
+  // 그 반에 과제를 낸 날과 수행일을 비교해 당일/보충을 가른다
+  const givenFor=c=>(a.classes&&typeof a.classes[c]==="string")?a.classes[c]:(a.created||"");
+  const whenTag=r=>{
+    const g=givenFor(r.cls);
+    if(!g)return '<td class="num" style="color:var(--muted)">–</td>';
+    return String(r.date).slice(0,10)===g
+      ? '<td class="num" style="color:var(--good)">당일</td>'
+      : '<td class="num" style="color:var(--work)">보충</td>';
+  };
+  const cell=r=>`<td>${r.date}</td>${whenTag(r)}<td class="num">${r.acc}%</td>
       <td class="num" style="color:${r.hr?(isDiligent(r)?"var(--good)":"var(--bad)"):"inherit"}">${r.hrPre||"–"}→${r.hr||"–"}${isDiligent(r)?" ✅":""}</td>
       <td class="num" style="color:var(--primary)">${r.score}</td>`;
   tb.innerHTML="";
   if(cls&&rosters[cls]){
     // 반을 고르면 그 반 명렬표 전체를 보여주고 누가 아직 안 했는지까지 한눈에 확인한다
     const done={};
-    records.filter(r=>r.taskId===id&&r.cls===cls).forEach(r=>{ if(!done[r.name])done[r.name]=r; });
+    records.filter(r=>r.taskId===id&&r.cls===cls)
+      .sort((x,y)=>String(x.date).localeCompare(String(y.date)))
+      .forEach(r=>{ if(!done[r.name])done[r.name]=r; }); // 첫 수행 기준
     rosters[cls].forEach(s=>{
       const r=done[s.name];
       const tr=document.createElement("tr");
       tr.innerHTML=r
-        ?`<td class="num">${s.no}</td><td>${s.name}</td><td>${cls}</td>${cell(r)}`
-        :`<td class="num">${s.no}</td><td>${s.name}</td><td>${cls}</td><td colspan="4" style="color:var(--muted)">미완료</td>`;
+        ?`<td class="num">${s.no}</td><td>${s.name}</td><td>${shortCls(cls)}</td>${cell(r)}`
+        :`<td class="num">${s.no}</td><td>${s.name}</td><td>${shortCls(cls)}</td><td colspan="5" style="color:var(--muted)">미완료</td>`;
       tb.appendChild(tr);
     });
-    if(cnt)cnt.textContent=`${cls} — ${Object.keys(done).length}/${rosters[cls].length}명 완료`;
+    const list=Object.values(done);
+    const on=list.filter(r=>String(r.date).slice(0,10)===givenFor(cls)).length;
+    if(cnt)cnt.textContent=`${shortCls(cls)}반 — ${list.length}/${rosters[cls].length}명 완료 (당일 ${on} · 보충 ${list.length-on})`;
     return;
   }
   const rs=records.filter(r=>r.taskId===id);
-  if(!rs.length){tb.innerHTML='<tr><td colspan="7" class="empty">아직 완료한 학생이 없습니다.</td></tr>';return;}
+  if(!rs.length){tb.innerHTML='<tr><td colspan="8" class="empty">아직 완료한 학생이 없습니다.</td></tr>';return;}
   const noOf=(name,c)=>{ const s=(rosters[c]||[]).find(x=>x.name===name); return s?s.no:""; };
   rs.forEach(r=>{
     const tr=document.createElement("tr");
-    tr.innerHTML=`<td class="num">${noOf(r.name,r.cls)}</td><td>${r.name}</td><td>${r.cls}</td>${cell(r)}`;
+    tr.innerHTML=`<td class="num">${noOf(r.name,r.cls)}</td><td>${r.name}</td><td>${shortCls(r.cls)}</td>${cell(r)}`;
     tb.appendChild(tr);
   });
   if(cnt)cnt.textContent=`전체 ${rs.length}건 — 반을 고르면 미완료 학생까지 보입니다`;
@@ -2423,20 +2437,37 @@ function renderBoardRows(){
 }
 
 /* ---------- 성적 자동 집계 (실천 15점 환산) ---------- */
+/* 실천 15점 환산 — 배정 차시 대비 '이수율'이 기준이라 반별 수업 시수가 달라도 자동으로 보정된다.
+   이수율 9점 + 성실수행 비율 3점 + 평균 정확도 3점.
+   과제를 아직 안 낸 반은 이수율을 매길 수 없으므로 나머지 6점 항목만 계산된다(배정차시 0으로 표시). */
 function practiceScore(name,cls){
   const rs=records.filter(r=>r.name===name&&String(r.cls)===String(cls));
-  if(!rs.length)return {n:0,task:0,dil:0,acc:0,score:0};
+  const mine=lessonList().filter(x=>taskHasClass(x.a,cls)); // 이 반에 배정된 차시들
+  const assigned=mine.length;
+  let done=0,onTime=0,late=0;
+  mine.forEach(x=>{
+    const rec=rs.filter(r=>r.taskId===x.id)
+      .sort((a,b)=>String(a.date).localeCompare(String(b.date)))[0]; // 첫 수행 기준
+    if(!rec)return;
+    done++;
+    const givenAt=(x.a.classes&&typeof x.a.classes[cls]==="string")?x.a.classes[cls]:(x.a.created||"");
+    if(givenAt&&String(rec.date).slice(0,10)===givenAt)onTime++; else late++;
+  });
   const n=rs.length;
-  const taskDone=rs.some(r=>r.taskId); // 공통과제 1회 이상 완료
+  if(!n&&!assigned)return {n:0,assigned:0,done:0,onTime:0,late:0,dil:0,acc:0,rate:0,score:0};
   const dil=rs.filter(isDiligent).length;
-  const avgAcc=Math.round(rs.reduce((a,r)=>a+(+r.acc||0),0)/n);
-  // 15점 환산: 공통과제 완료 5 + 성실수행(최대 4회까지 회당 1.5, 최대6) + 정확도(최대4)
+  const avgAcc=n?Math.round(rs.reduce((a,r)=>a+(+r.acc||0),0)/n):0;
+  const rate=assigned?done/assigned:0;
   let sc=0;
-  sc+=taskDone?5:0;
-  sc+=Math.min(dil*1.5,6);
-  sc+=Math.round(avgAcc/100*4*10)/10;
+  if(assigned){
+    sc+=rate*9;                       // 이수율 9점
+    sc+=Math.min(dil/assigned,1)*3;   // 성실수행 비율 3점 (배정 차시만큼 성실히 했으면 만점)
+  } else {
+    sc+=Math.min(dil/4,1)*3;          // 배정 과제가 없으면 자율 실천 기준으로만
+  }
+  sc+=avgAcc/100*3;                   // 평균 정확도 3점
   sc=Math.min(Math.round(sc*10)/10,15);
-  return {n,task:taskDone?"완료":"미완료",dil,acc:avgAcc,score:sc};
+  return {n,assigned,done,onTime,late,dil,acc:avgAcc,rate:Math.round(rate*100),score:sc};
 }
 // 전 학급 성적을 반마다 시트(탭)로 나눠 엑셀 파일 하나로 내보낸다.
 // 구글 드라이브에 올리면 탭이 그대로 살아있는 스프레드시트로 열린다.
@@ -2444,16 +2475,18 @@ $("gradeCsv").addEventListener("click",()=>{
   const cs=classNames();
   if(!cs.length){alert("먼저 명렬표를 등록하세요.");return;}
   const num=v=>(v===""||v==null||!isFinite(v))?v:Number(v);
-  const head=["번호","이름","성별","세션수","성실수행","평균정확도(%)","최고점수",
-    "퍼펙트그레이트율(%)","최근심박","누적P","최근수행일","공통과제","실천점수(15점)"];
+  const head=["번호","이름","성별","배정차시","이수차시","당일","보충","이수율(%)",
+    "세션수","성실수행","평균정확도(%)","최고점수","퍼펙트그레이트율(%)","최근심박","누적P","최근수행일",
+    "실천점수(15점)"];
   const sheets=cs.map(c=>({
     name:c,
     rows:[head].concat((rosters[c]||[]).map(s=>{
       const st=statsFor(s.name,c), g=practiceScore(s.name,c);
       return [num(s.no), s.name, s.sex||"",
+        g.assigned, g.done, g.onTime, g.late, g.assigned?g.rate:"",
         st?st.n:0, st?st.diligent:0, st?num(st.avgAcc):"", st?num(st.best):"",
         (st&&st.gRate!=null)?num(st.gRate):"", st?st.hr:"", st?num(st.pts):0, st?st.date:"",
-        g.n?g.task:"", g.n?num(g.score):""];
+        num(g.score)];
     }))
   }));
   const a=document.createElement("a");
