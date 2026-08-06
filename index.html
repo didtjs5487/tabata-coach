@@ -1039,6 +1039,25 @@ function renderTasks(){
     tc.appendChild(none);
   }
 
+  // 받은 결투 신청은 답을 해줘야 하므로 목록 맨 위에 눈에 띄게 둔다
+  const incoming=Object.entries(battles).filter(([id,b])=>b.status==="pending"&&sameP(b.op,me));
+  if(incoming.length){
+    group("⚔️ 받은 결투 신청 — 수락하거나 거절하세요");
+    incoming.forEach(([id,b])=>{
+      const c=document.createElement("div"); c.className="task-card";
+      c.innerHTML=`<span class="tt">⚔️ ${b.ch.name}님의 결투 신청</span>
+        <span class="td">${b.planName?`<b>${b.planName}</b> · `:""}${b.cfg.seq.map(k=>EXNAME[k]).join("→")} · ${b.cfg.work}/${b.cfg.rest}초 × ${b.cfg.rounds}R</span>`;
+      const acc=document.createElement("button"); acc.className="btn btn-go btn-sm"; acc.textContent="수락";
+      acc.addEventListener("click",()=>fmod.update(fmod.ref(fdb,"battles/"+id),{status:"accepted"}).catch(()=>alert("전송 실패")));
+      const dec=document.createElement("button"); dec.className="btn btn-stop btn-sm"; dec.textContent="거절";
+      dec.addEventListener("click",()=>{
+        if(!confirm(`${b.ch.name}님의 결투를 거절할까요?`))return;
+        fmod.update(fmod.ref(fdb,"battles/"+id),{status:"declined"}).catch(()=>{});
+      });
+      c.appendChild(acc); c.appendChild(dec); tc.appendChild(c);
+    });
+  }
+
   group("🌱 자율 실천과제 — 내가 만든 운동 (가산점 +20%)");
   if(!myPlans.length){
     const none=document.createElement("div"); none.className="hint"; none.style.margin="0 0 4px 2px";
@@ -1243,12 +1262,22 @@ function openBattlePick(plan){
   const g=(me.cls.split("-")[0]||"").trim(), r=(me.cls.split("-")[1]||"").trim();
   const mates=(rosters[me.cls]||[]).filter(st=>st.name!==me.name);
   if(!mates.length){box.innerHTML='<div class="hint">우리 반 명렬표가 없습니다.</div>';}
+  // 아직 끝나지 않은 결투가 있는 상대에게는 또 보낼 수 없다 (장난으로 몰아 보내기 방지)
+  const busy={};
+  Object.values(battles).forEach(b=>{
+    if(b.status!=="pending"&&b.status!=="accepted")return;
+    if(sameP(b.ch,me))busy[b.op.name]=b.status==="pending"?"신청함 · 응답 대기":"진행 중";
+    else if(sameP(b.op,me))busy[b.ch.name]=b.status==="pending"?"나에게 신청함":"진행 중";
+  });
   mates.forEach(st=>{
     const sid=`${g}${String(r).padStart(2,"0")}${String(st.no).padStart(2,"0")}`;
     const lb=document.createElement("label");
-    lb.style.cssText="display:flex;align-items:center;gap:8px;padding:7px 6px;border-bottom:1px solid var(--line);cursor:pointer";
-    lb.innerHTML=`<input type="checkbox" class="bpick" value="${st.name}">
-      <span class="num" style="color:var(--muted);min-width:48px">${sid}</span><b>${st.name}</b>`;
+    const off=busy[st.name];
+    lb.style.cssText="display:flex;align-items:center;gap:8px;padding:7px 6px;border-bottom:1px solid var(--line);cursor:"
+      +(off?"not-allowed":"pointer")+(off?";opacity:.5":"");
+    lb.innerHTML=`<input type="checkbox" class="bpick" value="${st.name}"${off?" disabled":""}>
+      <span class="num" style="color:var(--muted);min-width:48px">${sid}</span><b>${st.name}</b>
+      ${off?`<span class="hint" style="margin-left:auto">${off}</span>`:""}`;
     box.appendChild(lb);
   });
   $("battlePickOverlay").style.display="flex";
@@ -3191,7 +3220,7 @@ function attachFbListeners(){
   onValue(ref(fdb,"battles"),snap=>{
     Object.keys(battles).forEach(k=>delete battles[k]);
     Object.assign(battles,snap.val()||{});
-    renderBattles(); handleBattleEvents();
+    renderBattles(); renderTasks(); handleBattleEvents(); // 운동하기의 '받은 결투 신청' 카드도 함께 갱신
   });
   onValue(ref(fdb,"rosters"),snap=>{
     const v=snap.val(); if(!v)return;
