@@ -50,13 +50,23 @@
   .field label{font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--muted);}
   select,input{background:var(--panel3); color:var(--ink); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-family:inherit; font-size:16px;}
   input[type=number]{width:92px} input[type=text]{width:140px}
-  .btn{cursor:pointer; border:0; border-radius:12px; font-family:"Barlow Condensed"; font-weight:700; text-transform:uppercase; letter-spacing:1px; font-size:19px; padding:11px 26px;}
+  /* 버튼은 두 가지 크기만 쓴다 — 화면의 주요 동작(.btn)과 보조 동작(.btn-sm) */
+  .btn{cursor:pointer; border:0; border-radius:12px; font-family:"Barlow Condensed"; font-weight:700;
+    text-transform:uppercase; letter-spacing:.8px; font-size:17px; padding:10px 22px; line-height:1.2;}
   .btn-go{background:var(--primary); color:#fff;} .btn-teal{background:var(--primary2); color:#fff;}
   .btn-stop{background:var(--panel3); color:var(--ink); box-shadow:inset 0 0 0 1px var(--line);}
-  .btn-sm{font-size:15px; padding:7px 14px;}
+  .btn-sm{font-size:14px; padding:8px 14px;}
   .btn:disabled{opacity:.4; cursor:not-allowed;}
-  h3{font-family:"Barlow Condensed"; font-size:22px; margin:4px 0 10px; letter-spacing:.5px;}
+  h3{font-family:"Barlow Condensed"; font-size:21px; margin:4px 0 10px; letter-spacing:.5px;}
   .hint{color:var(--muted); font-size:13px; line-height:1.6;}
+
+  /* 심박 측정 카드(STEP 1·3) — 값과 조작을 한 줄로 정돈 */
+  .hr-card{display:flex; flex-wrap:wrap; align-items:center; gap:12px 14px;}
+  .hr-card .hr-actions{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-left:auto;}
+  .hr-card .hr-actions input[type=number]{width:104px; padding:8px 12px; font-size:15px;}
+  .hr-card .hr-lead{display:flex; align-items:baseline; gap:8px; font-family:"Barlow Condensed";
+    font-weight:700; color:var(--muted); font-size:15px; letter-spacing:.5px;}
+  .hr-card .hr-note{flex-basis:100%; margin:0;}
 
   /* sequence builder */
   .seqlist{display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 12px;}
@@ -66,7 +76,15 @@
   .chip .mv{font-size:14px; color:var(--primary); line-height:1;}
   .chip .mv:disabled{color:var(--line); cursor:default;}
   .chip .rm{color:var(--bad);}
-  .presets{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;}
+  .presets{display:flex; gap:8px; flex-wrap:wrap;}
+  /* 운동 목적 고르기 — 고른 항목이 체크된 것처럼 보이게 */
+  .pick-chip{cursor:pointer; font-family:"Barlow Condensed"; font-weight:700; font-size:15px;
+    background:var(--panel3); color:var(--muted); border:1px solid var(--line);
+    border-radius:10px; padding:8px 14px; transition:all .15s;}
+  .pick-chip::before{content:"○ "; font-size:13px;}
+  .pick-chip:hover{color:var(--ink); border-color:var(--primary2);}
+  .pick-chip.on{background:var(--primary); color:#fff; border-color:var(--primary);}
+  .pick-chip.on::before{content:"● ";}
 
   /* stage */
   .stage{position:relative; width:100%; aspect-ratio:4/3; background:#05070f; border-radius:16px; overflow:hidden; border:1px solid var(--line); margin-top:8px;}
@@ -100,10 +118,11 @@
   .stage.fullscreen{position:fixed; inset:0; width:100vw; height:100dvh; aspect-ratio:auto;
     border-radius:0; border:0; margin:0; z-index:9999;}
   .stage.fullscreen video, .stage.fullscreen canvas.ov{object-fit:cover;}
-  .exit-fs{position:absolute; top:14px; right:14px; z-index:20; display:none;
-    background:rgba(0,0,0,.5); color:#fff; border:0; border-radius:10px; padding:8px 14px;
+  /* 운동 중 전체화면에서만 보이는 조작 버튼들 (종료·음악 바꾸기) */
+  .stage-tools{position:absolute; top:14px; right:14px; z-index:20; display:none; gap:8px;}
+  .stage.fullscreen .stage-tools{display:flex;}
+  .exit-fs{background:rgba(0,0,0,.5); color:#fff; border:0; border-radius:10px; padding:8px 14px;
     font-family:"Barlow Condensed",sans-serif; font-weight:700; font-size:16px; cursor:pointer;}
-  .stage.fullscreen .exit-fs{display:block;}
   video,canvas.ov{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1);}
   .hud{position:absolute; inset:0; pointer-events:none; display:flex; flex-direction:column; justify-content:space-between; padding:14px;}
   .hud .top{display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;}
@@ -315,19 +334,16 @@
     <h3>② 자율 실천 운동설계</h3>
 
     <div class="step-box" style="margin-top:0">
-      <div style="font-weight:700;margin-bottom:4px">⚡ 빠른 운동설계</div>
-      <div class="hint" style="margin-bottom:8px">목적을 누르면 아래 자율 운동설계에 기본 구성이 채워집니다.</div>
-      <div class="presets">
-        <button class="btn btn-stop btn-sm" data-preset="basic">기본 전신</button>
-        <button class="btn btn-stop btn-sm" data-preset="lower">하체 집중</button>
-        <button class="btn btn-stop btn-sm" data-preset="upper">상체·코어</button>
-        <button class="btn btn-stop btn-sm" data-preset="cardio">유산소 위주</button>
+      <div class="field" style="margin-bottom:10px">
+        <label>운동 목적 (고르면 구성이 채워집니다)</label>
+        <div class="presets">
+          <button class="pick-chip" data-preset="basic">기본 전신</button>
+          <button class="pick-chip" data-preset="lower">하체 집중</button>
+          <button class="pick-chip" data-preset="upper">상체·코어</button>
+          <button class="pick-chip" data-preset="cardio">유산소 위주</button>
+        </div>
       </div>
-    </div>
-
-    <div class="step-box" style="margin-top:10px">
-      <div style="font-weight:700;margin-bottom:4px">✏️ 자율 운동설계</div>
-      <div class="hint" style="margin-bottom:8px">운동을 순서대로 추가하세요. 라운드 수만큼 이 목록을 처음부터 반복합니다.</div>
+      <div class="hint" style="margin-bottom:8px">직접 골라 순서대로 추가할 수도 있습니다. 라운드 수만큼 이 목록을 처음부터 반복합니다.</div>
       <div class="row" style="margin-bottom:0">
         <div class="field"><label>운동 추가</label>
           <select id="addEx">
@@ -394,27 +410,32 @@
     <div id="taskCards"></div>
     <div id="workSteps" style="display:none">
     <div class="step-tag">STEP 1 · 운동 전 심박수</div>
-    <div class="step-box">
-      <div class="row" style="margin-bottom:0">
-        <button class="btn btn-teal btn-sm" id="preStart">📷 카메라 측정</button>
+    <div class="step-box hr-card">
+      <div class="hr-lead">💓 안정 시 심박수</div>
+      <div class="hr-actions">
+        <button class="btn btn-teal btn-sm" id="preStart">📷 카메라</button>
         <button class="btn btn-stop btn-sm" id="preCountBtn">🖐 맥박 세기</button>
-        <div class="field"><label>직접 입력</label><input type="number" id="preManual" placeholder="72" style="width:90px"></div>
-        <button class="btn btn-stop btn-sm" id="preSave">확인</button>
-        <span class="hint" id="preBadge"></span>
+        <input type="number" id="preManual" placeholder="직접 입력">
+        <button class="btn btn-go btn-sm" id="preSave">확인</button>
       </div>
-      <div id="preLive" style="display:none;margin-top:8px">
+      <span class="hint hr-note" id="preBadge"></span>
+      <div id="preLive" style="display:none;margin-top:8px;flex-basis:100%">
         <div class="hr-cam-wrap"><video id="preCam" class="hr-cam" playsinline muted></video><div class="hr-cam-ring"></div><div class="hr-cam-hint">손가락으로 렌즈를 덮으세요</div></div>
         <canvas id="preWave" width="600" height="70" style="width:100%;height:70px;background:var(--bg);border-radius:10px;margin-top:8px"></canvas>
         <div class="hint" id="preMsg" style="margin-top:6px"></div>
       </div>
     </div>
-    <div class="row" style="margin-top:14px;margin-bottom:0">
+    <div class="row" style="margin-top:14px;margin-bottom:0;align-items:center">
       <div class="step-tag">STEP 2 · 운동</div>
+      <span class="mode-badge" id="modeBadge">🌱 자율 실천</span>
     </div>
     <div class="stage" id="stage">
       <video id="video" playsinline muted></video>
       <canvas class="ov" id="overlay"></canvas>
-      <button class="exit-fs" id="exitFs">✕ 종료</button>
+      <div class="stage-tools">
+        <button class="exit-fs" id="musicNext" title="다른 음악으로 바꾸기">🔀 음악</button>
+        <button class="exit-fs" id="exitFs">✕ 종료</button>
+      </div>
       <div class="center-msg" id="intro">
         <h2>준비되면 시작을 누르세요</h2>
       </div>
@@ -442,30 +463,27 @@
     </div>
     <div class="row" style="margin-top:8px">
       <button class="btn btn-go" id="startBtn">시작</button>
-      <button class="btn btn-stop" id="stopBtn" disabled>중단</button>
       <button class="btn btn-stop" id="musicBtn">🎵 음악 ON</button>
-      <button class="btn btn-stop" id="musicNext">🔀 음악 바꾸기</button>
-      <span class="mode-badge" id="modeBadge">🌱 자율 실천</span>
-      <span class="hint" id="seqPreview"></span>
     </div>
 
     <!-- STEP 3 · 운동 후 심박수 (항상 표시 — 심박수→운동→심박수 순서) -->
     <div id="hrStep3">
       <div class="step-tag" style="margin-top:20px">STEP 3 · 운동 후 심박수</div>
-      <div class="step-box">
-      <div class="hint"><b style="color:var(--good)">120 이상</b> 또는 <b style="color:var(--good)">안정 시보다 +40</b>이면 성실 수행</div>
-      <div class="row" style="margin-bottom:0">
-        <button class="btn btn-teal btn-sm" id="hrStart">📷 카메라 측정</button>
+      <div class="step-box hr-card">
+      <div class="hr-lead">💓 운동 직후 심박수</div>
+      <div class="hr-actions">
+        <button class="btn btn-teal btn-sm" id="hrStart">📷 카메라</button>
         <button class="btn btn-stop btn-sm" id="hrCountBtn">🖐 맥박 세기</button>
-        <div class="field"><label>직접 입력</label><input type="number" id="hrManual" placeholder="162" style="width:90px"></div>
-        <button class="btn btn-stop btn-sm" id="hrSave">확인</button>
+        <input type="number" id="hrManual" placeholder="직접 입력">
+        <button class="btn btn-go btn-sm" id="hrSave">확인</button>
       </div>
-      <div id="hrLive" style="display:none">
+      <div class="hint hr-note"><b style="color:var(--good)">120 이상</b> 또는 <b style="color:var(--good)">안정 시보다 +40</b>이면 성실 수행</div>
+      <div id="hrLive" style="display:none;flex-basis:100%">
         <div class="hr-cam-wrap"><video id="hrCam" class="hr-cam" playsinline muted></video><div class="hr-cam-ring"></div><div class="hr-cam-hint">손가락으로 렌즈를 덮으세요</div></div>
         <canvas id="hrWave" width="600" height="70" style="width:100%;height:70px;background:var(--panel3);border-radius:10px;margin-top:8px"></canvas>
         <div class="hint" id="hrMsg" style="margin-top:6px"></div>
       </div>
-      <div class="kpis" id="hrResult" style="display:none">
+      <div class="kpis" id="hrResult" style="display:none;flex-basis:100%">
         <div class="kpi"><div class="v num c1" id="hrBpm">–</div><div class="k">심박수 (BPM)</div></div>
         <div class="kpi"><div class="v num c2" id="hrPct">–</div><div class="k">최대심박 대비</div></div>
         <div class="kpi"><div class="v num c3" id="hrZone">–</div><div class="k">운동 강도 판정</div></div>
@@ -526,7 +544,7 @@
   <section class="page" id="pgAdmin">
     <div class="hint" id="saveStatusLine" style="margin-bottom:12px;font-weight:600">저장 상태 확인 중…</div>
 
-    <button class="btn btn-go" id="boardBig" style="font-size:18px;padding:16px 24px;width:100%">🖥️ 학생용 화면 크게 보기</button>
+    <button class="btn btn-go" id="boardBig" style="padding:15px 24px;width:100%">🖥️ 학생용 화면 크게 보기</button>
     <div class="hint" style="margin:8px 0 16px">프로젝터용 큰 화면입니다. 반 고르기(여러 반 동시 가능), 실시간 신호등, 다같이 시작·정지가 모두 그 안에 있습니다.</div>
 
     <details class="collapsible">
@@ -930,7 +948,6 @@ function renderSeq(){
     rm.addEventListener("click",()=>{ if(!confirmTaskBreak())return; seq.splice(i,1); renderSeq(); });
     el.appendChild(c);
   });
-  $("seqPreview").textContent="구성: "+seq.map(k=>EXNAME[k]).join(" → ")+" (순환)";
   if($("bCfgHint"))updateBCfgHint(); // 대결도 이 구성을 그대로 쓴다
 }
 $("addBtn").addEventListener("click",()=>{
@@ -942,6 +959,7 @@ document.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click"
   // 목적을 고르면 운동 4가지 + 20초/10초 + 2바퀴(=라운드 8) 기본값까지 한 번에 채운다
   seq=[...PRESETS[b.dataset.preset]];
   $("workSec").value=20; $("restSec").value=10; $("rounds").value=seq.length*2;
+  document.querySelectorAll("[data-preset]").forEach(x=>x.classList.toggle("on",x===b));
   renderSeq();
 }));
 
@@ -2612,7 +2630,7 @@ async function start(){
   try{await setup();}catch(e){$("startBtn").disabled=false;return;}
   $("intro").style.display="none"; $("hud").style.display="flex";
   enterFullscreen();
-  running=true; $("stopBtn").disabled=false; loop();
+  running=true; loop();
   updatePresence(3); startPresenceHeartbeat();
   phase="ready"; curEx=seq[0]; setUI();
   let c=3; $("timerBig").textContent=c; $("timerBox").className="timer rest";
@@ -2624,7 +2642,7 @@ async function start(){
 }
 function stopAll(){
   running=false; if(rafId)cancelAnimationFrame(rafId); if(tickId)clearInterval(tickId);
-  $("stopBtn").disabled=true; $("startBtn").disabled=false;
+  $("startBtn").disabled=false;
   $("nextPreview").style.display="none";
   exitFullscreen();
   ctx.clearRect(0,0,overlay.width,overlay.height); phase="idle";
@@ -2652,7 +2670,6 @@ function exitFullscreen(){
 }
 $("exitFs").addEventListener("click",stopAll);
 $("startBtn").addEventListener("click",start);
-$("stopBtn").addEventListener("click",stopAll);
 $("musicBtn").addEventListener("click",()=>{
   bgmOn=!bgmOn;
   $("musicBtn").textContent=bgmOn?"🎵 음악 ON":"🔇 음악 OFF";
