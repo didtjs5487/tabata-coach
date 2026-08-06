@@ -582,17 +582,23 @@
     </div>
 
     <div class="row" style="margin-top:8px">
-      <div class="field" style="flex:1;min-width:200px"><label>과제 제목</label><input type="text" id="taskTitle" placeholder="예: 3차시 공통 타바타" style="width:100%"></div>
+      <div class="field"><label>차시</label><input type="number" id="taskLesson" min="1" max="60" style="width:80px"></div>
+      <div class="field" style="flex:1;min-width:180px"><label>과제 제목</label><input type="text" id="taskTitle" placeholder="예: 공통 타바타" style="width:100%"></div>
     </div>
     <div style="margin-top:6px">
-      <div class="hint" style="margin-bottom:4px">낼 반 (안 고르면 전체 반)</div>
+      <div class="hint" style="margin-bottom:4px">오늘 이 차시를 수업한 반만 고르세요 (안 고르면 전체 반). 다른 반은 그 반 차례가 왔을 때 아래 <b>[반]</b>으로 추가하면 됩니다.</div>
       <div id="taskClassPick" class="task-class-pick"></div>
     </div>
     <div class="row" style="margin-top:8px">
       <button class="btn btn-teal btn-sm" id="taskAdd">이 설계로 과제 등록</button>
     </div>
     <div class="seqlist" id="taskChips"></div>
-    <div class="row" style="margin-top:6px">
+
+    <h3 style="margin-top:18px">📈 반별 차시 진도</h3>
+    <div class="hint" style="margin-bottom:6px">반마다 수업 시수가 달라도 어디까지 나갔는지 한눈에 보입니다. 칸의 숫자는 <b>완료 인원 / 전체</b>이고, 아직 안 낸 차시는 <b>–</b>입니다.</div>
+    <div style="overflow-x:auto"><table id="lessonGrid"><tbody><tr><td class="empty">과제를 등록하면 표시됩니다.</td></tr></tbody></table></div>
+
+    <div class="row" style="margin-top:16px">
       <div class="field"><label>완료 현황 볼 과제</label><select id="taskView"><option value="">과제를 등록하세요</option></select></div>
       <div class="field"><label>반</label><select id="taskViewClass"><option value="">전체</option></select></div>
       <span class="hint" id="taskDoneCount"></span>
@@ -1016,7 +1022,54 @@ function taskHasClass(a,cls){
 }
 function taskClassLabel(a){
   const ks=a&&a.classes?Object.keys(a.classes).filter(k=>a.classes[k]):[];
-  return ks.length?ks.join(", "):"전체 반";
+  return ks.length?ks.map(shortCls).join(", ")+"반":"전체 반";
+}
+/* ---------- 차시 진도 ---------- */
+// 다음 차시 번호 = 지금까지 낸 과제 중 가장 큰 차시 + 1
+function nextLessonNo(){
+  const ns=Object.values(assignments).map(a=>+a.lesson||0);
+  return (ns.length?Math.max(...ns):0)+1;
+}
+// 차시 순으로 정렬된 과제 목록 (차시가 없는 예전 과제는 등록순으로 뒤에)
+function lessonList(){
+  return Object.entries(assignments)
+    .map(([id,a])=>({id,a,no:+a.lesson||0}))
+    .sort((x,y)=>(x.no-y.no)||String(x.a.created||"").localeCompare(String(y.a.created||"")));
+}
+// 어떤 반이 그 과제를 몇 명 마쳤는지
+function taskDoneCount(id,cls){
+  const names=new Set(records.filter(r=>r.taskId===id&&r.cls===cls).map(r=>r.name));
+  return names.size;
+}
+// 한 반이 지금 몇 차시까지 배정받았고 오늘 것을 몇 명이 끝냈는지
+function classProgress(c){
+  const mine=lessonList().filter(x=>taskHasClass(x.a,c));
+  if(!mine.length)return null;
+  const cur=mine[mine.length-1];
+  const total=(rosters[c]||[]).length;
+  return {no:cur.no||mine.length, title:cur.a.title, done:taskDoneCount(cur.id,c), total, count:mine.length};
+}
+function renderLessonGrid(){
+  const tb=$("lessonGrid"); if(!tb)return;
+  const cs=classNames(), ls=lessonList();
+  if(!cs.length||!ls.length){
+    tb.innerHTML='<tbody><tr><td class="empty">명렬표와 과제를 등록하면 표시됩니다.</td></tr></tbody>';return;
+  }
+  let h='<thead><tr><th>반</th>';
+  ls.forEach(x=>h+=`<th style="white-space:nowrap">${x.no?x.no+"차시":"–"}<br><span class="hint" style="font-weight:400">${x.a.title}</span></th>`);
+  h+='</tr></thead><tbody>';
+  cs.forEach(c=>{
+    const total=(rosters[c]||[]).length;
+    h+=`<tr><td><b>${shortCls(c)}반</b></td>`;
+    ls.forEach(x=>{
+      if(!taskHasClass(x.a,c)){ h+='<td class="num" style="color:var(--line)">–</td>'; return; }
+      const d=taskDoneCount(x.id,c);
+      const col=d===0?"var(--bad)":(d>=total?"var(--good)":"var(--work)");
+      h+=`<td class="num" style="color:${col};font-weight:700">${d}/${total}</td>`;
+    });
+    h+='</tr>';
+  });
+  tb.innerHTML=h+'</tbody>';
 }
 function renderTasks(){
   // 학생: 과제 카드 — 내 반에 배정된 과제만 보인다
@@ -1111,9 +1164,10 @@ function renderTasks(){
   ids.forEach(id=>{
     const a=assignments[id];
     const doneSet=new Set(records.filter(r=>r.taskId===id).map(r=>r.name+"|"+r.cls));
-    tv.insertAdjacentHTML("beforeend",`<option value="${id}">${a.title} (${taskClassLabel(a)})</option>`);
+    const lv=a.lesson?`${a.lesson}차시 · `:"";
+    tv.insertAdjacentHTML("beforeend",`<option value="${id}">${lv}${a.title} (${taskClassLabel(a)})</option>`);
     const chip=document.createElement("div"); chip.className="chip";
-    chip.innerHTML=`<span class="ord num">📋</span>${a.title}<span class="task-cls-tag">${taskClassLabel(a)}</span>
+    chip.innerHTML=`<span class="ord num">${a.lesson?a.lesson+"차시":"📋"}</span>${a.title}<span class="task-cls-tag">${taskClassLabel(a)}</span>
       <span class="hint">완료 ${doneSet.size}명</span>`;
     const edit=document.createElement("button"); edit.textContent="반"; edit.title="이 과제를 낼 반 바꾸기";
     edit.addEventListener("click",()=>openTaskClassEditor(id));
@@ -1131,10 +1185,12 @@ function renderTasks(){
       classNames().forEach(c=>{
         const b=document.createElement("button");
         b.className=(a.classes&&a.classes[c])?"on":"";
-        b.textContent=c;
+        b.textContent=shortCls(c);
+        b.title=(a.classes&&typeof a.classes[c]==="string")?`부여 ${a.classes[c]}`:c;
         b.addEventListener("click",()=>{
           if(!a.classes)a.classes={};
-          if(a.classes[c])delete a.classes[c]; else a.classes[c]=true;
+          // 반마다 낸 날짜를 따로 남긴다 (시수가 달라 같은 차시라도 날짜가 다름)
+          if(a.classes[c])delete a.classes[c]; else a.classes[c]=todayStr();
           renderTasks(); saveAll();
           if(fdb)fmod.set(fmod.ref(fdb,"assignments/"+id),a).catch(()=>{});
         });
@@ -1156,6 +1212,8 @@ function renderTasks(){
     if(classNames().includes(keepC))tvc.value=keepC;
   }
   renderTaskRows();
+  renderLessonGrid();
+  if($("taskLesson")&&!$("taskLesson").value)$("taskLesson").placeholder=String(nextLessonNo());
   if($("boardTaskSelect"))refreshBoardTaskSelect(); // 과제가 바뀌면 현황판 선택칸도 갱신
 }
 let taskClassEditId=null;
@@ -1223,14 +1281,16 @@ $("taskAdd").addEventListener("click",()=>{
   const cfg=taskDesigner.cfg();
   if(!cfg.seq.length){alert("위의 '과제 운동설계'에서 운동을 먼저 추가해 주세요.");return;}
   const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  const classes={}; Object.keys(newTaskClasses).forEach(c=>{ if(rosters[c])classes[c]=true; });
-  const a={title,...cfg,classes,created:new Date().toISOString().slice(0,10)};
-  assignments[id]=a; $("taskTitle").value="";
+  // 반마다 낸 날짜가 다르므로 true 대신 부여한 날짜를 넣는다 (예전 자료의 true도 그대로 인식됨)
+  const classes={}; Object.keys(newTaskClasses).forEach(c=>{ if(rosters[c])classes[c]=todayStr(); });
+  const lesson=+$("taskLesson").value||nextLessonNo();
+  const a={title,lesson,...cfg,classes,created:todayStr()};
+  assignments[id]=a; $("taskTitle").value=""; $("taskLesson").value="";
   Object.keys(newTaskClasses).forEach(c=>delete newTaskClasses[c]);
   renderTaskClassPick();
   renderTasks(); saveAll();
   if(fdb)fmod.set(fmod.ref(fdb,"assignments/"+id),a).catch(()=>{});
-  alert(`'${title}' 과제가 ${taskClassLabel(a)}에 등록되었습니다. 해당 반 학생 앱에 즉시 표시됩니다.`);
+  alert(`${lesson}차시 '${title}' 과제가 ${taskClassLabel(a)}에 등록되었습니다. 해당 반 학생 앱에 즉시 표시됩니다.`);
 });
 ["workSec","restSec","rounds","difficulty"].forEach(id=>$(id).addEventListener("change",()=>{
   if($("bCfgHint"))updateBCfgHint(); // 대결은 이 구성을 그대로 쓰므로 요약도 같이 갱신
@@ -2348,11 +2408,16 @@ function renderBoardRows(){
   if(!active.length){box.innerHTML='<div class="hint" style="color:#C9C6EE">반을 선택하세요.</div>';return;}
   box.innerHTML="";
   active.forEach(c=>{
-    if(active.length>1){
-      const head=document.createElement("div");
-      head.className="board-class-head"; head.textContent=shortCls(c)+"반";
-      box.appendChild(head);
-    }
+    // 반이 하나여도 진도(몇 차시까지, 오늘 것 몇 명 완료)는 항상 보여준다
+    const p=classProgress(c);
+    const head=document.createElement("div");
+    head.className="board-class-head";
+    head.innerHTML=`${shortCls(c)}반`+(p
+      ? ` <span style="color:#DAD8FF;font-weight:400">· ${p.no}차시 「${p.title}」 진행 중 —
+          <b style="color:${p.done>=p.total?"#7CE0A8":(p.done?"#FFD76A":"#FF9BA5")}">${p.done}/${p.total}명 완료</b>
+          <span style="opacity:.7">(누적 ${p.count}차시)</span></span>`
+      : ` <span style="color:#A8AEE0;font-weight:400">· 배정된 과제 없음</span>`);
+    box.appendChild(head);
     buildStageRows(c).forEach(r=>box.appendChild(r));
   });
 }
