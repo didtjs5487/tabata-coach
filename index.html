@@ -92,6 +92,23 @@
   .step-tag{display:inline-block; font-family:"Barlow Condensed"; font-weight:700; font-size:16px;
     letter-spacing:.5px; color:#fff; background:var(--primary); padding:5px 14px; border-radius:999px;}
   .step-box{background:var(--panel3); border:1px solid var(--line); border-radius:12px; padding:12px; margin-top:8px;}
+  /* ✍️ 자기성찰 */
+  .rf-scale{display:flex; gap:6px; flex-wrap:wrap;}
+  .rf-scale button{flex:1; min-width:62px; display:flex; flex-direction:column; align-items:center; gap:2px;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:8px 4px; cursor:pointer;
+    font-size:22px; color:var(--ink); line-height:1.1;}
+  .rf-scale button span{font-size:11px; color:var(--muted); font-weight:600;}
+  .rf-scale button.on{border-color:var(--primary); background:rgba(124,108,255,.18);}
+  .rf-scale button.on span{color:var(--ink);}
+  .rf-q{margin-top:12px;}
+  .rf-q > label{display:block; font-weight:700; font-size:14px; margin-bottom:4px;}
+  .rf-q textarea{width:100%; background:var(--panel); color:var(--ink); border:1px solid var(--line);
+    border-radius:10px; padding:9px; font-family:inherit; font-size:14px; resize:vertical;}
+  .rf-sum{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;}
+  .rf-sum div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:7px 11px; font-size:13px;}
+  .rf-sum b{font-size:16px;}
+  .rf-text{white-space:pre-wrap; background:var(--panel3); border:1px solid var(--line);
+    border-radius:10px; padding:10px; margin:6px 0; font-size:14px; line-height:1.5;}
   #levelupOverlay{position:fixed; inset:0; z-index:10000; display:none; align-items:center; justify-content:center;
     background:rgba(43,49,96,.55); backdrop-filter:blur(4px); opacity:0; transition:opacity .35s;}
   #levelupOverlay.show{opacity:1;}
@@ -516,6 +533,26 @@
       <table><thead><tr><th>라운드</th><th>운동</th><th>반복/유지</th><th>정확도</th><th>판정 (퍼·그·굿·오·미)</th></tr></thead>
         <tbody id="roundRows"></tbody></table>
 
+      <div class="step-box" id="reflectBox" style="margin-top:18px">
+        <div style="font-weight:700">✍️ 오늘의 성찰</div>
+        <div class="hint" style="margin:2px 0 10px">한 줄이면 충분해요. 위 기록을 보면서 쓰면 좋습니다.</div>
+        <div class="hint" style="margin-bottom:5px">오늘 운동 강도는 어땠나요?</div>
+        <div class="rf-scale" id="rfFeel">
+          <button type="button" data-v="1">😣<span>너무 힘듦</span></button>
+          <button type="button" data-v="2">😥<span>힘듦</span></button>
+          <button type="button" data-v="3">🙂<span>알맞음</span></button>
+          <button type="button" data-v="4">😄<span>여유</span></button>
+          <button type="button" data-v="5">💪<span>더 가능</span></button>
+        </div>
+        <div class="rf-q"><label>잘된 점 · 아쉬운 점</label>
+          <textarea id="rfGood" rows="2" placeholder="예: 스쿼트 자세가 지난번보다 안정됐다"></textarea></div>
+        <div class="rf-q"><label>다음에 바꿀 점</label>
+          <textarea id="rfNext" rows="2" placeholder="예: 플랭크에서 허리가 내려가지 않게 버티기"></textarea></div>
+        <div class="row" style="margin:10px 0 0">
+          <button class="btn btn-teal btn-sm" id="rfSave">성찰 저장</button>
+          <span class="hint" id="rfMsg"></span>
+        </div>
+      </div>
     </div>
     </div><!-- /workSteps -->
     </div><!-- /workBody -->
@@ -538,6 +575,29 @@
     </div>
     <table><thead><tr><th>일시</th><th>구분</th><th>운동구성</th><th>정확도</th><th>판정(퍼·그·굿·오·미)</th><th>심박(전→후)</th><th>종합</th><th>획득P</th></tr></thead>
       <tbody id="mineRows"><tr><td colspan="8" class="empty">아직 기록이 없습니다.</td></tr></tbody></table>
+
+    <div class="step-box" id="finalRfBox" style="margin-top:22px">
+      <div style="font-weight:700;font-size:16px">🏁 단원 마무리 성찰</div>
+      <div class="hint" style="margin:2px 0 10px">모든 수업이 끝난 뒤 <b>한 번</b> 작성합니다. 저장한 뒤에도 언제든 고칠 수 있어요.</div>
+      <div class="hint" style="margin-bottom:4px">내 기록 요약 — 이 숫자를 보면서 써 보세요</div>
+      <div class="rf-sum" id="frSummary"></div>
+
+      <div class="rf-q"><label>1. 이 단원에서 내 체력은 어떻게 달라졌나요?</label>
+        <textarea id="fr1" rows="3" placeholder="위 '초기 → 최근' 점수와 심박 변화를 근거로 써 보세요"></textarea></div>
+      <div class="rf-q"><label>2. 가장 크게 나아진 점과 그 이유는?</label>
+        <textarea id="fr2" rows="3" placeholder="어떤 운동이, 무엇 때문에 좋아졌나요?"></textarea></div>
+      <div class="rf-q"><label>3. 가장 어려웠던 운동과 그것을 이겨내려 한 방법은?</label>
+        <textarea id="fr3" rows="3" placeholder="힘들었던 동작, 그때 내가 시도한 방법"></textarea></div>
+      <div class="rf-q"><label>4. 세운 계획대로 실천했나요? 못 했다면 이유는?</label>
+        <textarea id="fr4" rows="3" placeholder="솔직하게 써도 괜찮아요. 이유를 아는 것이 중요합니다"></textarea></div>
+      <div class="rf-q"><label>5. 수업이 끝난 뒤 스스로 이어갈 운동 계획은?</label>
+        <textarea id="fr5" rows="3" placeholder="언제, 무엇을, 얼마나 할지 구체적으로"></textarea></div>
+
+      <div class="row" style="margin:12px 0 0">
+        <button class="btn btn-go btn-sm" id="frSave">🏁 마무리 성찰 저장</button>
+        <span class="hint" id="frMsg"></span>
+      </div>
+    </div>
   </section>
 
   <!-- ================= ADMIN / LEARNING CENTER ================= -->
@@ -663,6 +723,18 @@
     </details>
 
     <details class="collapsible">
+    <summary>✍️ 자기성찰 모아보기</summary>
+    <div class="hint" style="margin:10px 0 8px">학생이 운동 뒤 쓴 <b>수시 성찰</b>과 단원이 끝나고 쓴 <b>마무리 성찰</b>입니다. 이름을 누르면 전문이 펼쳐집니다.</div>
+    <div class="row" style="align-items:flex-end">
+      <div class="field"><label>반 선택</label><select id="rfViewClass"><option value="">반을 등록하세요</option></select></div>
+      <button class="btn btn-teal btn-sm" id="rfExport">⬇ 성찰 엑셀 내려받기</button>
+    </div>
+    <table><thead><tr><th>번호</th><th>이름</th><th>수시 성찰</th><th>평균 체감강도</th><th>마무리 성찰</th><th>최근 작성</th></tr></thead>
+      <tbody id="rfRows"><tr><td colspan="6" class="empty">반을 고르면 학생별 성찰 현황이 표시됩니다.</td></tr></tbody></table>
+    <div id="rfDetail" style="margin-top:10px"></div>
+    </details>
+
+    <details class="collapsible">
     <summary>📇 명렬표 등록</summary>
     <div class="hint" style="margin:10px 0 6px">엑셀에서 <b>학년 전체 명렬표를 그대로 복사</b>해 붙여넣으면 모든 반이 한 번에 등록됩니다. 전출·자퇴·공석은 자동으로 빠집니다.</div>
     <textarea id="bulkRosterPaste" rows="7" placeholder="엑셀에서 표 전체를 선택해 복사한 뒤 여기에 붙여넣으세요 (Ctrl+V)" style="width:100%;background:var(--panel3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:14px;resize:vertical"></textarea>
@@ -781,7 +853,7 @@
   <div style="background:var(--panel);border-radius:18px;padding:20px;width:min(520px,94vw);max-height:86vh;display:flex;flex-direction:column">
     <div style="font-weight:800;font-size:19px;margin-bottom:4px">⚔️ 결투 신청</div>
     <div class="hint" id="battlePickCfg" style="margin-bottom:8px"></div>
-    <div class="hint" style="margin-bottom:6px">상대를 <b>여러 명</b> 고를 수 있습니다. 고른 사람마다 각각 결투가 만들어져요.</div>
+    <div class="hint" style="margin-bottom:6px">상대를 <b>여러 명</b> 고를 수 있습니다. 상대가 수락하면 <b>양쪽이 동시에 시작</b>합니다.</div>
     <div id="battlePickList" style="overflow-y:auto;flex:1;min-height:80px;border:1px solid var(--line);border-radius:12px;padding:8px"></div>
     <div class="row" style="margin:12px 0 0">
       <button class="btn btn-go btn-sm" id="battlePickSend">⚔️ 신청 보내기</button>
@@ -789,6 +861,13 @@
       <span class="hint" id="battlePickMsg"></span>
     </div>
   </div>
+</div>
+<div id="battleCdOverlay" style="display:none;position:fixed;inset:0;z-index:10006;background:rgba(20,22,48,.96);flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center">
+  <div id="battleCdVs" style="font-size:clamp(20px,5vw,30px);font-weight:800;color:var(--gold)">⚔️ vs</div>
+  <div id="battleCdNum" class="num" style="font-size:clamp(90px,26vw,190px);font-weight:900;color:var(--primary);line-height:1">10</div>
+  <div style="color:#C9C6EE;font-size:clamp(14px,3.4vw,18px);font-weight:700">함께 시작합니다 — 자리를 잡고 준비하세요!</div>
+  <div class="hint" id="battleCdMsg" style="max-width:420px"></div>
+  <button class="btn btn-stop btn-sm" id="battleCdCancel" style="margin-top:10px;color:var(--bad)">⛔ 배틀 종료</button>
 </div>
 <div id="classBoardOverlay">
   <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap">
@@ -1135,22 +1214,31 @@ function renderTasks(){
     tc.appendChild(none);
   }
 
-  // 받은 결투 신청은 답을 해줘야 하므로 목록 맨 위에 눈에 띄게 둔다
-  const incoming=Object.entries(battles).filter(([id,b])=>b.status==="pending"&&sameP(b.op,me));
-  if(incoming.length){
-    group("⚔️ 받은 결투 신청 — 수락하거나 거절하세요");
-    incoming.forEach(([id,b])=>{
+  // 진행 중인 결투는 답·종료를 바로 할 수 있어야 하므로 목록 맨 위에 눈에 띄게 둔다
+  const live=liveBattlesFor(me);
+  if(live.length){
+    group("⚔️ 결투 — 수락하면 양쪽이 동시에 시작합니다");
+    live.forEach(([id,b])=>{
+      const iAmC=sameP(b.ch,me), other=iAmC?b.op.name:b.ch.name;
       const c=document.createElement("div"); c.className="task-card";
-      c.innerHTML=`<span class="tt">⚔️ ${b.ch.name}님의 결투 신청</span>
-        <span class="td">${b.planName?`<b>${b.planName}</b> · `:""}${b.cfg.seq.map(k=>EXNAME[k]).join("→")} · ${b.cfg.work}/${b.cfg.rest}초 × ${b.cfg.rounds}R</span>`;
-      const acc=document.createElement("button"); acc.className="btn btn-go btn-sm"; acc.textContent="수락";
-      acc.addEventListener("click",()=>fmod.update(fmod.ref(fdb,"battles/"+id),{status:"accepted"}).catch(()=>alert("전송 실패")));
-      const dec=document.createElement("button"); dec.className="btn btn-stop btn-sm"; dec.textContent="거절";
-      dec.addEventListener("click",()=>{
-        if(!confirm(`${b.ch.name}님의 결투를 거절할까요?`))return;
-        fmod.update(fmod.ref(fdb,"battles/"+id),{status:"declined"}).catch(()=>{});
-      });
-      c.appendChild(acc); c.appendChild(dec); tc.appendChild(c);
+      const state=b.status==="pending"
+        ? (iAmC?'<span style="color:var(--gold)">상대의 응답을 기다리는 중…</span>'
+               :'<b style="color:var(--gold)">수락하면 함께 시작합니다</b>')
+        : '<b style="color:var(--good)">수락됨 — 함께 시작합니다</b>';
+      c.innerHTML=`<span class="tt">⚔️ vs ${other}</span>
+        <span class="td">${b.planName?`<b>${b.planName}</b> · `:""}${b.cfg.seq.map(k=>EXNAME[k]).join("→")} · ${b.cfg.work}/${b.cfg.rest}초 × ${b.cfg.rounds}R<br>${state}</span>`;
+      if(b.status==="pending"&&!iAmC){
+        const acc=document.createElement("button"); acc.className="btn btn-go btn-sm"; acc.textContent="수락";
+        acc.addEventListener("click",()=>acceptBattle(id)); c.appendChild(acc);
+      } else if(b.status==="accepted"){
+        const go=document.createElement("button"); go.className="btn btn-go btn-sm"; go.textContent="지금 시작";
+        go.addEventListener("click",()=>enterBattle(id,b)); c.appendChild(go);
+      }
+      const end=document.createElement("button"); end.className="btn btn-stop btn-sm";
+      end.textContent=b.status==="pending"?(iAmC?"신청 취소":"거절"):"⛔ 배틀 종료";
+      end.style.color="var(--bad)";
+      end.addEventListener("click",()=>endBattle(id,other));
+      c.appendChild(end); tc.appendChild(c);
     });
   }
 
@@ -1177,7 +1265,11 @@ function renderTasks(){
     const del=document.createElement("button"); del.className="btn btn-stop btn-sm";
     del.textContent="✕"; del.title="이 운동 목록에서 지우기"; del.style.color="var(--bad)";
     del.addEventListener("click",()=>{
-      if(!confirm(`'${p.name}'을(를) 목록에서 지울까요? (지금까지의 운동 기록은 그대로 남습니다)`))return;
+      // 이 운동으로 걸려 있는 결투를 같이 정리한다 — 안 그러면 상대 화면에 배틀이 영영 남는다
+      const linked=liveBattlesFor(me).filter(([id,b])=>b.planName===p.name);
+      const warn=linked.length?`\n\n⚔️ 이 운동으로 진행 중인 결투 ${linked.length}건도 함께 종료됩니다.`:"";
+      if(!confirm(`'${p.name}'을(를) 목록에서 지울까요? (지금까지의 운동 기록은 그대로 남습니다)`+warn))return;
+      linked.forEach(([id])=>removeBattle(id));
       myPlans=myPlans.filter(x=>x.id!==p.id); saveAll(); renderTasks();
     });
     c.appendChild(go); c.appendChild(duel); c.appendChild(del); tc.appendChild(c);
@@ -1362,6 +1454,87 @@ function refreshBattleUI(){
   updateBCfgHint();
   renderBattles();
 }
+/* 아직 끝나지 않은 내 결투 목록 (신청 대기 + 수락됨·내 기록 미제출) */
+function liveBattlesFor(me){
+  return Object.entries(battles).filter(([id,b])=>{
+    if(!b||!b.cfg)return false;
+    if(b.status!=="pending"&&b.status!=="accepted")return false;
+    const iAmC=sameP(b.ch,me), iAmO=sameP(b.op,me);
+    if(!iAmC&&!iAmO)return false;
+    if(b.status==="accepted"&&b.results&&b.results[iAmC?"c":"o"])return false; // 나는 이미 제출함
+    return true;
+  }).sort((a,b)=>(b[1].created||0)-(a[1].created||0));
+}
+/* 배틀을 통째로 지운다 — 양쪽 목록에서 사라지고 서로 다시 신청할 수 있게 된다 */
+function removeBattle(id){
+  if(currentBattle&&currentBattle.id===id){currentBattle=null;updateModeBadge();}
+  if(battleCd&&battleCd.id===id)cancelBattleCd();
+  if(fdb)fmod.remove(fmod.ref(fdb,"battles/"+id)).catch(()=>alert("전송 실패 — 인터넷을 확인하세요."));
+}
+function endBattle(id,other){
+  if(!confirm(`⚔️ ${other}님과의 배틀을 종료할까요?\n\n양쪽 목록에서 사라지고, 언제든 다시 신청할 수 있습니다.\n(이미 한 운동 기록은 그대로 남습니다)`))return;
+  removeBattle(id);
+}
+/* 수락 = 잠시 뒤 함께 시작할 시각을 정하는 것. 양쪽 앱이 이 시각에 맞춰 카운트다운한다. */
+const BATTLE_LEAD_MS=12000; // 자리 잡을 시간
+function acceptBattle(id){
+  if(!fdb){alert("서버 연결이 필요합니다.");return;}
+  fmod.update(fmod.ref(fdb,"battles/"+id),{status:"accepted",startAt:Date.now()+BATTLE_LEAD_MS})
+    .catch(()=>alert("전송 실패 — 인터넷을 확인하세요."));
+}
+/* 배틀 구성을 내 화면에 적용하고 운동하기로 이동 */
+function enterBattle(id,b){
+  const me=myKey(); const role=sameP(b.ch,me)?"c":"o";
+  currentBattle={id,role,vs:role==="c"?b.op.name:b.ch.name};
+  applyCfg(b.cfg); clearTask(); currentPlanId=null; updateModeBadge();
+  goPage("pgWork"); showWorkSteps();
+}
+/* ---------- 동시 시작 카운트다운 ---------- */
+let battleCd=null; // {id,timer,lastBeep}
+function cancelBattleCd(){
+  if(battleCd){clearInterval(battleCd.timer);battleCd=null;}
+  $("battleCdOverlay").style.display="none";
+}
+$("battleCdCancel").addEventListener("click",()=>{
+  if(!battleCd)return cancelBattleCd();
+  const id=battleCd.id, b=battles[id]; const me=myKey();
+  endBattle(id,b?(sameP(b.ch,me)?b.op.name:b.ch.name):"상대");
+});
+function checkBattleAutoStart(){
+  if(running)return;
+  const me=myKey(); if(!me.name)return;
+  const now=Date.now();
+  const hit=Object.entries(battles).find(([id,b])=>{
+    if(!b||b.status!=="accepted"||!b.startAt)return false;
+    const iAmC=sameP(b.ch,me), iAmO=sameP(b.op,me);
+    if(!iAmC&&!iAmO)return false;
+    if(b.results&&b.results[iAmC?"c":"o"])return false;
+    return b.startAt>now-20000; // 20초 넘게 지난 신호는 무시(앱을 늦게 켠 경우)
+  });
+  if(!hit){ if(battleCd)cancelBattleCd(); return; }
+  const [id,b]=hit;
+  if(battleCd&&battleCd.id===id)return; // 이미 카운트다운 중
+  if(battleCd)cancelBattleCd();
+  enterBattle(id,b);
+  $("battleCdVs").textContent=`⚔️ vs ${currentBattle.vs}`;
+  $("battleCdMsg").textContent=parqPassed?"":"⚠️ 건강체크를 아직 안 했어요 — 카운트다운이 끝나면 직접 [시작]을 눌러야 합니다.";
+  $("battleCdOverlay").style.display="flex";
+  battleCd={id,timer:null,lastBeep:99};
+  const tick=()=>{
+    if(!battleCd)return;
+    const left=Math.ceil((b.startAt-Date.now())/1000);
+    if(left>0){
+      $("battleCdNum").textContent=left;
+      if(left<=3&&left!==battleCd.lastBeep){battleCd.lastBeep=left;beep(700,.1);}
+      return;
+    }
+    cancelBattleCd();
+    if(running)return;
+    if(!parqPassed){toast("건강체크를 마치고 [시작]을 눌러주세요","task","🩺");return;}
+    start({auto:true});
+  };
+  battleCd.timer=setInterval(tick,200); tick();
+}
 function updateBCfgHint(){
   const me=myKey();
   $("bCfgHint").textContent=me.name?"":"⚠️ 먼저 운동 설계 탭에서 학번을 입력하세요.";
@@ -1430,7 +1603,7 @@ function battleStatusHtml(b,mineRole){
   if(b.status==="declined")return `<span style="color:var(--muted)">거절됨</span>`;
   if(b.status==="accepted"){
     const meDone=r[mineRole], otherDone=r[mineRole==="c"?"o":"c"];
-    return meDone?`내 기록 제출 완료 ✔ — 상대 대기 중…`:(otherDone?`⚠️ 상대는 이미 완료! 어서 도전하세요`:`수락됨 — 운동을 시작하세요`);
+    return meDone?`내 기록 제출 완료 ✔ — 상대 대기 중…`:(otherDone?`⚠️ 상대는 이미 완료! 어서 도전하세요`:`<b style="color:var(--good)">수락됨 — 함께 시작합니다</b>`);
   }
   return `<span style="color:var(--gold)">응답 대기 중…</span>`;
 }
@@ -1448,25 +1621,23 @@ function renderBattles(){
     d.innerHTML=`<span class="tt">⚔️ vs ${other}</span>
       <span class="td">${b.cfg.seq.map(k=>EXNAME[k]).join("→")} · ${b.cfg.work}/${b.cfg.rest}초 × ${b.cfg.rounds}R<br>${battleStatusHtml(b,role)}</span>`;
     const btns=document.createElement("span");
+    const mineDone=b.results&&b.results[role];
     if(b.status==="pending"&&!iAmC){
       const acc=document.createElement("button"); acc.className="btn btn-go btn-sm"; acc.textContent="수락";
-      acc.addEventListener("click",()=>fmod.update(fmod.ref(fdb,"battles/"+id),{status:"accepted"}).catch(()=>alert("전송 실패")));
-      const dec=document.createElement("button"); dec.className="btn btn-stop btn-sm"; dec.textContent="거절"; dec.style.marginLeft="6px";
-      dec.addEventListener("click",()=>fmod.update(fmod.ref(fdb,"battles/"+id),{status:"declined"}).catch(()=>{}));
-      btns.append(acc,dec);
-    } else if(b.status==="pending"&&iAmC){
-      const cx=document.createElement("button"); cx.className="btn btn-stop btn-sm"; cx.textContent="신청 취소";
-      cx.addEventListener("click",()=>fmod.remove(fmod.ref(fdb,"battles/"+id)).catch(()=>{}));
-      btns.append(cx);
-    } else if(b.status==="accepted"&&!(b.results&&b.results[role])){
-      const go=document.createElement("button"); go.className="btn btn-go btn-sm"; go.textContent="배틀 운동 시작";
-      go.addEventListener("click",()=>{
-        applyCfg(b.cfg); clearTask();
-        currentBattle={id,role,vs:other}; currentPlanId=null; updateModeBadge();
-        alert(`⚔️ vs ${other} 배틀 모드!\n같은 구성으로 대결합니다. 첫 시도 기록이 제출되니 최선을 다하세요!`);
-        goPage("pgWork"); showWorkSteps();
-      });
+      acc.addEventListener("click",()=>acceptBattle(id));
+      btns.append(acc);
+    } else if(b.status==="accepted"&&!mineDone){
+      const go=document.createElement("button"); go.className="btn btn-go btn-sm"; go.textContent="지금 시작";
+      go.addEventListener("click",()=>enterBattle(id,b));
       btns.append(go);
+    }
+    // 어느 쪽이든, 끝나지 않은 배틀은 언제나 스스로 종료할 수 있어야 한다
+    if((b.status==="pending"||(b.status==="accepted"&&!mineDone))){
+      const end=document.createElement("button"); end.className="btn btn-stop btn-sm";
+      end.textContent=b.status==="pending"?(iAmC?"신청 취소":"거절"):"⛔ 배틀 종료";
+      end.style.marginLeft="6px"; end.style.color="var(--bad)";
+      end.addEventListener("click",()=>endBattle(id,other));
+      btns.append(end);
     }
     d.appendChild(btns); list.appendChild(d);
   });
@@ -1507,7 +1678,8 @@ function handleBattleEvents(){
     // 새 결투 신청 알림 (상대일 때)
     if(b.status==="pending"&&iAmO&&!notifiedBattles.has(id)){
       notifiedBattles.add(id);
-      if(!running)alert(`⚔️ ${b.ch.name}님이 결투를 신청했습니다!\n배틀 탭에서 수락/거절할 수 있어요.`);
+      // 확인창은 화면을 막아 카운트다운을 가리므로 토스트로 알린다
+      if(!running)toast(`${b.ch.name}님의 결투 신청! 운동하기 맨 위에서 수락하세요`,"task","⚔️");
     }
     // 결과 확정 → 보상 1회 지급
     if(b.status==="done"&&!seenBattles.includes(id)){
@@ -2071,6 +2243,7 @@ function addRecord(s){
     score:s.score, pts:s.pts
   };
   records.push(rec);
+  lastRec=rec;          // 결과 화면의 '오늘의 성찰'을 이 세션에 묶는다
   renderRecRow(rec);
   renderStats();
   saveAll();
@@ -2186,13 +2359,14 @@ function parseBulkRoster(text){
 }
 function refreshClassUI(){
   const chips=$("classChips"); chips.innerHTML="";
-  const vc=$("viewClass");
-  const keepV=vc.value;
-  vc.innerHTML="";
+  const vc=$("viewClass"), rc=$("rfViewClass");
+  const keepV=vc.value, keepR=rc.value;
+  vc.innerHTML=""; rc.innerHTML="";
   const names=classNames();
-  if(!names.length) vc.innerHTML='<option value="">반을 등록하세요</option>';
+  if(!names.length){ vc.innerHTML='<option value="">반을 등록하세요</option>'; rc.innerHTML='<option value="">반을 등록하세요</option>'; }
   names.forEach(c=>{
     vc.insertAdjacentHTML("beforeend",`<option>${c}</option>`);
+    rc.insertAdjacentHTML("beforeend",`<option>${c}</option>`);
     const chip=document.createElement("div"); chip.className="chip";
     chip.innerHTML=`<span class="ord num">${c}</span>${rosters[c].length}명<button title="반 삭제">✕</button>`;
     chip.querySelector("button").addEventListener("click",()=>{
@@ -2201,7 +2375,8 @@ function refreshClassUI(){
     chips.appendChild(chip);
   });
   if(names.includes(keepV))vc.value=keepV;
-  renderStats(); refreshBattleUI();
+  if(names.includes(keepR))rc.value=keepR;
+  renderStats(); refreshBattleUI(); renderReflectAdmin();
   syncStuId(); // 명렬표가 나중에 도착(서버 동기화)해도 이미 입력된 학번을 다시 찾아본다
   refreshBoardClassSelect();
   renderTaskClassPick();
@@ -2522,17 +2697,19 @@ $("gradeCsv").addEventListener("click",()=>{
     "①과제제출","②심박","③정확도","④자율실천","⑤향상","만족개수","실천점수(20점)",
     "배정차시","이수차시","당일","보충","이수율(%)",
     "세션수",`심박달성(≥${rubric.hr})`,"심박달성률(%)","평균정확도(%)","질적자율실천",
-    "초기평균","최근평균","향상률(%)","최고점수","퍼펙트그레이트율(%)","최근심박","누적P","최근수행일"];
+    "초기평균","최근평균","향상률(%)","최고점수","퍼펙트그레이트율(%)","최근심박","누적P","최근수행일",
+    "㉰수시성찰(회)","㉰마무리성찰"];
   const sheets=cs.map(c=>({
     name:c,
     rows:[head].concat((rosters[c]||[]).map(s=>{
-      const st=statsFor(s.name,c), g=practiceScore(s.name,c);
+      const st=statsFor(s.name,c), g=practiceScore(s.name,c), rf=reflectOf(s.name,c);
       return [num(s.no), s.name, s.sex||"",
         OX(g.items[0]),OX(g.items[1]),OX(g.items[2]),OX(g.items[3]),OX(g.items[4]),g.met,num(g.score),
         g.assigned, g.done, g.onTime, g.late, g.assigned?g.rate:"",
         g.n, g.dil, g.n?Math.round(g.dil/g.n*100):"", g.n?g.acc:"", g.selfGood,
         g.first!=null?g.first:"", g.last!=null?g.last:"", g.gain!=null?g.gain:"",
-        st?num(st.best):"", (st&&st.gRate!=null)?num(st.gRate):"", st?st.hr:"", st?num(st.pts):0, st?st.date:""];
+        st?num(st.best):"", (st&&st.gRate!=null)?num(st.gRate):"", st?st.hr:"", st?num(st.pts):0, st?st.date:"",
+        logCount(rf), hasFinal(rf)?"작성":"미작성"];
     }))
   }));
   const a=document.createElement("a");
@@ -2540,6 +2717,166 @@ $("gradeCsv").addEventListener("click",()=>{
   a.download=`타바타_성적_${todayStr()}.xlsx`; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
   toast(`${cs.length}개 반을 시트로 나눠 내려받았습니다 — 구글 드라이브에 올리면 탭으로 열립니다.`,"good","📊");
+});
+
+/* =================== ✍️ 자기성찰 (평가계획서 ㉰) ===================
+   수시 성찰: 운동을 마친 결과 화면에서 자기 수치를 보며 바로 쓴다.
+   마무리 성찰: 모든 차시가 끝난 뒤 '내 기록' 탭에서 단원 전체를 돌아보며 한 번 쓴다.
+   저장 위치 reflections/{반}/{이름} = {logs:{...수시}, final:{...마무리}}          */
+const reflections={};                 // Firebase /reflections 미러
+let lastRec=null;                     // 방금 끝낸 세션 (수시 성찰을 이 기록에 붙인다)
+const FEEL_LABEL={1:"너무 힘듦",2:"힘듦",3:"알맞음",4:"여유",5:"더 가능"};
+function reflectOf(name,cls){ return (reflections[cls]||{})[name]||null; }
+function myReflect(){ const me=myKey(); return me.name?reflectOf(me.name,me.cls):null; }
+function logCount(rf){ return rf&&rf.logs?Object.keys(rf.logs).length:0; }
+function hasFinal(rf){ return !!(rf&&rf.final&&[1,2,3,4,5].some(i=>(rf.final["q"+i]||"").trim())); }
+function avgFeel(rf){
+  const vs=Object.values((rf&&rf.logs)||{}).map(l=>+l.feel).filter(v=>v>=1&&v<=5);
+  return vs.length?Math.round(vs.reduce((a,b)=>a+b,0)/vs.length*10)/10:null;
+}
+function reflectRef(me,sub){ return fmod.ref(fdb,`reflections/${me.cls}/${me.name}`+(sub?"/"+sub:"")); }
+// 파이어베이스 규칙에 reflections 노드가 없으면 권한 오류가 난다 — 원인을 정확히 알려준다
+function reflectErr(e){
+  const m=String((e&&(e.code||e.message))||"");
+  return /permission|PERMISSION/.test(m)
+    ? "저장 권한이 없습니다 — 선생님께 알려주세요 (Firebase 규칙에 reflections 추가 필요)"
+    : "전송 실패 — 인터넷을 확인하세요.";
+}
+
+/* ---------- 수시 성찰 (결과 화면) ---------- */
+let rfFeel=0;
+$("rfFeel").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b)return;
+  rfFeel=+b.dataset.v;
+  [...$("rfFeel").children].forEach(x=>x.classList.toggle("on",x===b));
+});
+function resetReflectForm(){
+  rfFeel=0; [...$("rfFeel").children].forEach(x=>x.classList.remove("on"));
+  $("rfGood").value=""; $("rfNext").value=""; $("rfMsg").textContent="";
+  $("rfSave").disabled=false; $("rfSave").textContent="성찰 저장";
+}
+$("rfSave").addEventListener("click",()=>{
+  const me=myKey(), msg=$("rfMsg");
+  if(!me.name){msg.innerHTML='<span class="err">운동 설계 탭에서 학번을 먼저 입력하세요.</span>';return;}
+  const good=$("rfGood").value.trim(), next=$("rfNext").value.trim();
+  if(!rfFeel&&!good&&!next){msg.innerHTML='<span class="err">한 가지라도 남겨 주세요.</span>';return;}
+  const key=(lastRec&&lastRec.id)||Date.now().toString(36);
+  const entry={date:(lastRec&&lastRec.date)||todayStr(), feel:rfFeel||"",
+    good, next, score:(lastRec&&lastRec.score)||"", acc:(lastRec&&lastRec.acc)||""};
+  if(!reflections[me.cls])reflections[me.cls]={};
+  if(!reflections[me.cls][me.name])reflections[me.cls][me.name]={};
+  if(!reflections[me.cls][me.name].logs)reflections[me.cls][me.name].logs={};
+  reflections[me.cls][me.name].logs[key]=entry;   // 오프라인이어도 화면엔 반영
+  if(!fdb){msg.textContent="이 기기에만 저장됨 (인터넷 연결 시 전송)";return;}
+  msg.textContent="저장 중…";
+  fmod.set(reflectRef(me,"logs/"+key),entry)
+    .then(()=>{ msg.innerHTML='<b style="color:var(--good)">저장되었습니다 ✔</b>';
+      $("rfSave").disabled=true; $("rfSave").textContent="저장 완료"; toast("오늘의 성찰이 저장되었습니다","good","✍️"); })
+    .catch(e=>{ msg.innerHTML='<span class="err">'+reflectErr(e)+'</span>'; });
+});
+
+/* ---------- 마무리 성찰 (내 기록 탭) ---------- */
+function renderFinalReflect(){
+  const me=myKey(), box=$("finalRfBox");
+  if(!me.name){ $("frSummary").innerHTML='<div class="hint">운동 설계 탭에서 학번을 입력하면 내 요약이 표시됩니다.</div>'; return; }
+  const g=practiceScore(me.name,me.cls);
+  const st=statsFor(me.name,me.cls);
+  const cell=(k,v)=>`<div><div class="hint">${k}</div><b class="num">${v}</b></div>`;
+  $("frSummary").innerHTML=
+    cell("수행한 세션",g.n+"회")
+    +cell("공통과제 이수",g.assigned?`${g.done}/${g.assigned}차시`:"–")
+    +cell("초기 → 최근 점수",(g.first!=null?`${g.first} → ${g.last}`:"–"))
+    +cell("평균 정확도",g.n?g.acc+"%":"–")
+    +cell("심박 기준 달성",g.n?`${g.dil}회`:"–")
+    +cell("최근 심박(전→후)",st&&st.hr?st.hr:"–");
+  const rf=myReflect(), f=(rf&&rf.final)||null;
+  if(f&&!box.dataset.filled){ [1,2,3,4,5].forEach(i=>{ $("fr"+i).value=f["q"+i]||""; }); box.dataset.filled="1"; }
+  $("frMsg").innerHTML=f&&f.date?`<span style="color:var(--good)">${f.date}에 저장함 — 고쳐 쓸 수 있어요</span>`:"";
+}
+$("frSave").addEventListener("click",()=>{
+  const me=myKey(), msg=$("frMsg");
+  if(!me.name){msg.innerHTML='<span class="err">운동 설계 탭에서 학번을 먼저 입력하세요.</span>';return;}
+  const f={date:todayStr()};
+  let filled=0;
+  [1,2,3,4,5].forEach(i=>{ const v=$("fr"+i).value.trim(); f["q"+i]=v; if(v)filled++; });
+  if(!filled){msg.innerHTML='<span class="err">한 문항이라도 써 주세요.</span>';return;}
+  if(filled<5&&!confirm(`${5-filled}개 문항이 비어 있습니다.\n이대로 저장할까요? (나중에 이어서 쓸 수 있습니다)`))return;
+  if(!reflections[me.cls])reflections[me.cls]={};
+  if(!reflections[me.cls][me.name])reflections[me.cls][me.name]={};
+  reflections[me.cls][me.name].final=f;
+  if(!fdb){msg.textContent="이 기기에만 저장됨 (인터넷 연결 시 전송)";return;}
+  msg.textContent="저장 중…";
+  fmod.set(reflectRef(me,"final"),f)
+    .then(()=>{ msg.innerHTML='<b style="color:var(--good)">마무리 성찰이 저장되었습니다 ✔</b>';
+      toast("단원 마무리 성찰이 제출되었습니다","good","🏁"); })
+    .catch(e=>{ msg.innerHTML='<span class="err">'+reflectErr(e)+'</span>'; });
+});
+
+/* ---------- 교사: 성찰 모아보기 ---------- */
+let rfOpen="";
+function renderReflectAdmin(){
+  const cls=$("rfViewClass").value, tb=$("rfRows"); tb.innerHTML="";
+  $("rfDetail").innerHTML="";
+  const list=rosters[cls]||[];
+  if(!cls||!list.length){ tb.innerHTML='<tr><td colspan="6" class="empty">반을 고르면 학생별 성찰 현황이 표시됩니다.</td></tr>'; return; }
+  list.forEach(s=>{
+    const rf=reflectOf(s.name,cls), nLog=logCount(rf), fin=hasFinal(rf), fe=avgFeel(rf);
+    const last=Object.values((rf&&rf.logs)||{}).map(l=>l.date||"").sort().slice(-1)[0]
+      ||((rf&&rf.final&&rf.final.date)||"");
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td class="num">${s.no||""}</td>
+      <td><b style="cursor:pointer;color:var(--primary)">${s.name}</b></td>
+      <td class="num" style="color:${nLog?"var(--good)":"var(--muted)"}">${nLog}회</td>
+      <td class="num">${fe!=null?fe:"–"}</td>
+      <td class="num" style="color:${fin?"var(--good)":"var(--bad)"}">${fin?"작성 ✔":"미작성"}</td>
+      <td class="num" style="color:var(--muted)">${last?String(last).slice(0,10):"–"}</td>`;
+    tr.querySelector("b").addEventListener("click",()=>{ rfOpen=(rfOpen===s.name?"":s.name); showReflectDetail(cls,s.name); });
+    tb.appendChild(tr);
+  });
+  if(rfOpen)showReflectDetail(cls,rfOpen);
+}
+function showReflectDetail(cls,name){
+  const box=$("rfDetail");
+  if(rfOpen!==name){box.innerHTML="";return;}
+  const rf=reflectOf(name,cls);
+  if(!rf){box.innerHTML=`<div class="step-box"><b>${name}</b> — 아직 작성한 성찰이 없습니다.</div>`;return;}
+  const logs=Object.values(rf.logs||{}).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const esc=t=>String(t||"").replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]));
+  let h=`<div class="step-box"><div style="font-weight:700;font-size:16px;margin-bottom:8px">✍️ ${cls}반 ${name}</div>`;
+  h+=`<div class="hint" style="margin-bottom:4px">수시 성찰 ${logs.length}회</div>`;
+  h+=logs.length?logs.map(l=>`<div class="rf-text"><b class="num" style="color:var(--muted)">${esc(l.date)}</b>
+      ${l.feel?` · 체감 ${l.feel}(${FEEL_LABEL[l.feel]||""})`:""}${l.score?` · 종합 ${l.score}점`:""}
+      ${l.good?`<br>👍 ${esc(l.good)}`:""}${l.next?`<br>🎯 ${esc(l.next)}`:""}</div>`).join("")
+    :'<div class="hint">아직 없습니다.</div>';
+  const f=rf.final;
+  h+=`<div class="hint" style="margin:12px 0 4px">🏁 단원 마무리 성찰${f&&f.date?` (${esc(f.date)})`:""}</div>`;
+  const Q=["이 단원에서 내 체력은 어떻게 달라졌나요?","가장 크게 나아진 점과 그 이유는?",
+    "가장 어려웠던 운동과 이겨내려 한 방법은?","계획대로 실천했나요? 못 했다면 이유는?","앞으로 이어갈 운동 계획은?"];
+  h+=hasFinal(rf)?Q.map((q,i)=>`<div class="rf-text"><b>${i+1}. ${q}</b><br>${esc(f["q"+(i+1)])||'<span style="color:var(--muted)">(미작성)</span>'}</div>`).join("")
+    :'<div class="hint">아직 작성하지 않았습니다.</div>';
+  box.innerHTML=h+"</div>";
+}
+$("rfViewClass").addEventListener("change",()=>{ rfOpen=""; renderReflectAdmin(); });
+$("rfExport").addEventListener("click",()=>{
+  const cs=classNames();
+  if(!cs.length){alert("먼저 명렬표를 등록하세요.");return;}
+  const head=["번호","이름","수시성찰(회)","평균체감강도","마무리성찰",
+    "① 체력 변화","② 나아진 점","③ 어려웠던 운동","④ 계획 실천","⑤ 앞으로의 계획","수시 성찰 전문"];
+  const sheets=cs.map(c=>({
+    name:c,
+    rows:[head].concat((rosters[c]||[]).map(s=>{
+      const rf=reflectOf(s.name,c), f=(rf&&rf.final)||{}, fe=avgFeel(rf);
+      const logs=Object.values((rf&&rf.logs)||{}).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+      const all=logs.map(l=>`[${String(l.date).slice(0,10)}${l.feel?" 체감"+l.feel:""}] ${l.good||""}${l.next?" → "+l.next:""}`).join("\n");
+      return [s.no==null?"":Number(s.no), s.name, logs.length, fe==null?"":fe, hasFinal(rf)?"작성":"미작성",
+        f.q1||"", f.q2||"", f.q3||"", f.q4||"", f.q5||"", all];
+    }))
+  }));
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(XLSX.build(sheets));
+  a.download=`타바타_자기성찰_${todayStr()}.xlsx`; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast(`${cs.length}개 반의 성찰을 시트로 나눠 내려받았습니다.`,"good","✍️");
 });
 
 function statsFor(name,cls){
@@ -2611,6 +2948,7 @@ function renderMine(){
   $("mineHr").textContent=last&&(last.hrPre||last.hr)?`${last.hrPre||"–"}→${last.hr||"–"}`:"–";
   $("mineDil").textContent=rs.filter(isDiligent).length;
   renderMineTrend(rs,name,cls);
+  renderFinalReflect(); // 기록이 없어도 마무리 성찰 칸은 보여야 하므로 아래 early return보다 먼저 부른다
   if(!rs.length){tb.innerHTML='<tr><td colspan="8" class="empty">아직 기록이 없습니다.</td></tr>';return;}
   tb.innerHTML="";
   rs.slice().reverse().forEach(r=>{
@@ -2752,22 +3090,25 @@ function finish(){
   $("result").style.display="block";
   setTimeout(()=>{try{$("hrStep3").scrollIntoView({behavior:"smooth",block:"start"});}catch(e){}},200); // 운동 직후 STEP 3 심박 측정으로 안내
   addRecord(s); beep(1200,.3);
+  resetReflectForm(); // 세션마다 새로 쓰도록 비운다 (addRecord가 lastRec을 채운 뒤에 호출)
   if(prevBest>0&&s.score>prevBest) toast(`신기록! 종합점수 ${prevBest}점 → ${s.score}점`,"best","🏅");
 }
 
 /* ---------- start/stop ---------- */
-async function start(){
+async function start(opts){
+  // 배틀 동시 시작처럼 이미 확인을 마친 자동 시작은 확인창을 건너뛴다(그래야 양쪽이 같은 순간에 출발한다)
+  const auto=!!(opts&&opts.auto===true);
   if(!seq.length){alert("운동 구성이 비어 있습니다. 운동 설계에서 추가해 주세요.");goPage("pgSetup");return;}
   // 학번 오타로 다른 학생 이름에 기록이 쌓이는 사고를 막기 위해, 시작 전 내 정보를 한 번 확인시킨다.
-  {
+  if(!auto){
     const me=myKey();
     if(!me.name){ if(!confirm("아직 이름이 입력되지 않았습니다. '이름없음'으로 기록됩니다.\n운동 설계 탭에서 학번을 입력하는 것을 권장합니다.\n\n이대로 시작할까요?")){goPage("pgSetup");return;} }
     else if(!confirm(`아래 정보로 기록됩니다. 맞나요?\n\n   ${me.cls?me.cls+"반 ":""}${me.name}\n\n[확인] 시작 · [취소] 학번 다시 입력`)){goPage("pgSetup");return;}
   }
-  if(!currentTask&&!currentBattle&&Object.keys(assignments).length){
+  if(!auto&&!currentTask&&!currentBattle&&Object.keys(assignments).length){
     if(!confirm("🌱 자율 실천 모드로 시작합니다 (완료 시 가산점 +20%).\n\n📋 선생님 과제로 수행하려면 [취소]를 누르고 운동 설계에서 과제 카드를 선택하세요.\n\n자율 실천으로 시작할까요?"))return;
   }
-  if(pendingPreHr==null&&!confirm("운동 전 심박수를 아직 측정하지 않았습니다.\n측정 없이 시작할까요?"))return;
+  if(!auto&&pendingPreHr==null&&!confirm("운동 전 심박수를 아직 측정하지 않았습니다.\n측정 없이 시작할까요?"))return;
   $("startBtn").disabled=true; $("result").style.display="none";
   roundIdx=0; log=[];
   workSec=+$("workSec").value||20; restSec=+$("restSec").value||10; totalRounds=+$("rounds").value||8;
@@ -2859,7 +3200,7 @@ document.addEventListener("fullscreenchange",()=>{
    문서의 "심박수 개인차를 고려해 미달 시 감점보다 가산 조건으로 운영" 취지에 따라,
    회복이 빠르거나 측정이 늦어진 학생을 위해 상승폭 인정을 켤 수 있게 했다. */
 const RUBRIC_DEFAULT={
-  hr:130,        // 항목2 심박 기준(bpm)
+  hr:120,        // 항목2 심박 기준(bpm) — 계획서 문구는 130이나 현장 판단으로 120 적용
   useRise:true,  // 운동 전 대비 +40도 인정할지
   rise:40,
   doneRate:80,   // 항목1 공통과제 이수율(%) 합격선
@@ -3421,7 +3762,14 @@ function attachFbListeners(){
   onValue(ref(fdb,"battles"),snap=>{
     Object.keys(battles).forEach(k=>delete battles[k]);
     Object.assign(battles,snap.val()||{});
-    renderBattles(); renderTasks(); handleBattleEvents(); // 운동하기의 '받은 결투 신청' 카드도 함께 갱신
+    renderBattles(); renderTasks(); handleBattleEvents(); // 운동하기의 결투 카드도 함께 갱신
+    checkBattleAutoStart();                               // 수락된 배틀이 있으면 동시 시작 카운트다운
+  });
+  onValue(ref(fdb,"reflections"),snap=>{
+    const v=snap.val()||{};
+    Object.keys(reflections).forEach(k=>{ if(!(k in v))delete reflections[k]; });
+    Object.assign(reflections,v);
+    renderReflectAdmin(); renderFinalReflect();
   });
   onValue(ref(fdb,"rosters"),snap=>{
     const v=snap.val(); if(!v)return;
@@ -3483,12 +3831,13 @@ $("serverWipeBtn").addEventListener("click",async()=>{
   const msg=$("serverWipeMsg");
   if(!fdb){alert("서버에 연결된 상태에서만 사용할 수 있습니다.");return;}
   const n=records.length;
-  if(!confirm(`수행 기록 ${n}건을 서버에서도 완전히 삭제합니다.\n되돌릴 수 없습니다 — 필요하면 먼저 [⬇ 전체 기록 백업 CSV]를 받아두세요.\n\n(명렬표와 공통과제는 그대로 유지됩니다)`))return;
+  if(!confirm(`수행 기록 ${n}건과 학생들이 쓴 자기성찰을 서버에서도 완전히 삭제합니다.\n되돌릴 수 없습니다 — 필요하면 먼저 [⬇ 전체 기록 백업 CSV]와 [⬇ 성찰 엑셀]을 받아두세요.\n\n(명렬표와 공통과제는 그대로 유지됩니다)`))return;
   if(prompt('정말 지우려면 아래에 "삭제"라고 입력하세요.')!=="삭제"){msg.textContent="취소했습니다.";return;}
   msg.textContent="삭제 중…";
   try{
     await fmod.remove(fmod.ref(fdb,"records"));
     await fmod.remove(fmod.ref(fdb,"battles")).catch(()=>{});
+    await fmod.remove(fmod.ref(fdb,"reflections")).catch(()=>{});
     await fmod.remove(fmod.ref(fdb,"presence")).catch(()=>{});
     await fmod.remove(fmod.ref(fdb,"control")).catch(()=>{});
     records.length=0; totalPts=0; myPlans=[]; seenBattles=[];
