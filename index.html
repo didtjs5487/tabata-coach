@@ -109,6 +109,24 @@
   .rf-sum b{font-size:16px;}
   .rf-text{white-space:pre-wrap; background:var(--panel3); border:1px solid var(--line);
     border-radius:10px; padding:10px; margin:6px 0; font-size:14px; line-height:1.5;}
+  /* 📐 운동 계획 점검 */
+  .pc-q{margin-top:12px;}
+  .pc-q > label{display:block; font-weight:700; font-size:14px; margin-bottom:5px;}
+  .pc-q textarea{width:100%; background:var(--panel); color:var(--ink); border:1px solid var(--line);
+    border-radius:10px; padding:9px; font-family:inherit; font-size:14px; resize:vertical;}
+  .pc-opts{display:flex; gap:6px; flex-wrap:wrap;}
+  .pc-opts button{background:var(--panel); border:1px solid var(--line); border-radius:999px;
+    padding:7px 13px; cursor:pointer; color:var(--ink); font-size:13.5px; font-weight:600; font-family:inherit;}
+  .pc-opts button.on{border-color:var(--primary); background:rgba(124,108,255,.22); color:#fff;}
+  .pc-item{display:flex; gap:9px; align-items:flex-start; padding:9px 10px; margin-bottom:6px;
+    background:var(--panel); border:1px solid var(--line); border-left-width:4px; border-radius:10px;}
+  .pc-item.ok{border-left-color:var(--good);} .pc-item.no{border-left-color:var(--gold);}
+  .pc-item .ic{font-size:16px; line-height:1.35;}
+  .pc-item .tx{flex:1; font-size:13.5px; line-height:1.45;}
+  .pc-item .tx b{display:block; font-size:14px; margin-bottom:1px;}
+  .pc-item .tx span{color:var(--muted);}
+  .pc-item.no .tx span{color:var(--gold);}
+  .pc-score{font-weight:800; font-size:15px; margin:2px 0 8px;}
   #levelupOverlay{position:fixed; inset:0; z-index:10000; display:none; align-items:center; justify-content:center;
     background:rgba(43,49,96,.55); backdrop-filter:blur(4px); opacity:0; transition:opacity .35s;}
   #levelupOverlay.show{opacity:1;}
@@ -396,6 +414,44 @@
         <div class="field"><label>라운드</label><input type="number" id="rounds" value="8" min="2" max="16"></div>
         <input type="hidden" id="difficulty" value="1">
       </div>
+    </div>
+
+    <div class="step-box" id="planCheckBox" style="margin-top:14px">
+      <div style="font-weight:700;font-size:16px">📐 운동 계획 점검</div>
+      <div class="hint" style="margin:2px 0 12px">아래를 고르면 <b>내 계획이 알맞은지 바로 확인</b>됩니다. 초록불이 많아지도록 구성을 고쳐 보세요.</div>
+
+      <div class="pc-q"><label>① 내 운동 목표는?</label>
+        <div class="pc-opts" id="pcGoal">
+          <button type="button" data-v="fat">🔥 체중 감량</button>
+          <button type="button" data-v="str">💪 근력 증가</button>
+          <button type="button" data-v="car">🫁 심폐지구력 향상</button>
+          <button type="button" data-v="fit">⚖️ 기초 체력 유지</button>
+        </div></div>
+
+      <div class="pc-q"><label>② 요즘 내 체력 수준은?</label>
+        <div class="pc-opts" id="pcLevel">
+          <button type="button" data-v="low">평소 운동을 거의 안 함</button>
+          <button type="button" data-v="mid">가끔 함 (주 1~2회)</button>
+          <button type="button" data-v="high">자주 함 (주 3회 이상)</button>
+        </div></div>
+
+      <div class="pc-q"><label>③ 운동할 때 아프거나 조심할 곳이 있나요? <span style="font-weight:400;color:var(--muted)">(여러 개 선택 가능)</span></label>
+        <div class="pc-opts" id="pcCare">
+          <button type="button" data-v="none">없음</button>
+          <button type="button" data-v="knee">무릎</button>
+          <button type="button" data-v="back">허리</button>
+          <button type="button" data-v="wrist">손목</button>
+        </div></div>
+
+      <div class="hint" style="margin:14px 0 6px">✅ 내 계획 점검표 — 위 선택과 운동 구성을 견주어 자동으로 확인합니다</div>
+      <div id="pcList"><div class="hint">①②③을 먼저 고르세요.</div></div>
+
+      <div class="row" style="margin-top:12px;margin-bottom:0">
+        <div class="field"><label>주 몇 회 할까요?</label><input type="number" id="pcFreq" value="3" min="1" max="7" style="width:80px"></div>
+        <div class="field"><label>목표 실천 횟수</label><input type="number" id="pcTarget" value="10" min="1" max="60" style="width:90px"></div>
+      </div>
+      <div class="pc-q" style="margin-top:10px"><label>④ 이 구성을 고른 이유는?</label>
+        <textarea id="pcReason" rows="2" placeholder="예: 체중을 줄이고 싶어서 온몸을 쓰는 유산소 동작을 많이 넣었다"></textarea></div>
     </div>
 
     <div class="row" style="margin-top:12px;align-items:flex-end">
@@ -723,6 +779,18 @@
     </details>
 
     <details class="collapsible">
+    <summary>📐 운동 계획 보기</summary>
+    <div class="hint" style="margin:10px 0 8px">학생이 <b>운동 설계</b>에서 점검표를 채우며 만든 계획입니다. 이름을 누르면 계획 전문과 점검 결과가 펼쳐집니다.</div>
+    <div class="row" style="align-items:flex-end">
+      <div class="field"><label>반 선택</label><select id="pvClass"><option value="">반을 등록하세요</option></select></div>
+      <button class="btn btn-teal btn-sm" id="pvExport">⬇ 계획 엑셀 내려받기</button>
+    </div>
+    <table><thead><tr><th>번호</th><th>이름</th><th>계획 수</th><th>대표 계획</th><th>목표</th><th>점검</th><th>이유 작성</th></tr></thead>
+      <tbody id="pvRows"><tr><td colspan="7" class="empty">반을 고르면 학생별 계획이 표시됩니다.</td></tr></tbody></table>
+    <div id="pvDetail" style="margin-top:10px"></div>
+    </details>
+
+    <details class="collapsible">
     <summary>✍️ 자기성찰 모아보기</summary>
     <div class="hint" style="margin:10px 0 8px">학생이 운동 뒤 쓴 <b>수시 성찰</b>과 단원이 끝나고 쓴 <b>마무리 성찰</b>입니다. 이름을 누르면 전문이 펼쳐집니다.</div>
     <div class="row" style="align-items:flex-end">
@@ -1042,6 +1110,9 @@ function exerciseArt(k){
 
 /* ---------- sequence builder ---------- */
 let seq=["squat","pushup","jack","plank"];
+// 계획 점검(㉮)의 선택 상태. renderSeq()가 초기화 중에 renderPlanCheck()를 부르므로
+// 여기서 미리 선언해 둔다 (아래쪽에 두면 초기화 전 접근 오류가 난다).
+let pcGoal="", pcLevel="", pcCare=[];
 const PRESETS={basic:["squat","pushup","jack","plank"],lower:["squat","lunge","sidelunge","jumpsquat"],
   upper:["pushup","crunch","plank","legraise"],cardio:["jack","highknee","mtclimber","burpee"]};
 function renderSeq(){
@@ -1059,6 +1130,7 @@ function renderSeq(){
     el.appendChild(c);
   });
   if($("bCfgHint"))updateBCfgHint(); // 대결도 이 구성을 그대로 쓴다
+  if($("pcList"))renderPlanCheck();  // 구성이 바뀌면 계획 점검도 다시 본다
 }
 $("addBtn").addEventListener("click",()=>{
   if(!confirmTaskBreak())return;
@@ -1270,7 +1342,7 @@ function renderTasks(){
       const warn=linked.length?`\n\n⚔️ 이 운동으로 진행 중인 결투 ${linked.length}건도 함께 종료됩니다.`:"";
       if(!confirm(`'${p.name}'을(를) 목록에서 지울까요? (지금까지의 운동 기록은 그대로 남습니다)`+warn))return;
       linked.forEach(([id])=>removeBattle(id));
-      myPlans=myPlans.filter(x=>x.id!==p.id); saveAll(); renderTasks();
+      myPlans=myPlans.filter(x=>x.id!==p.id); saveAll(); renderTasks(); removePlanRemote(p.id);
     });
     c.appendChild(go); c.appendChild(duel); c.appendChild(del); tc.appendChild(c);
   });
@@ -2196,11 +2268,34 @@ let currentPlanId=null; // 지금 수행 중인 자율 과제(수행 횟수를 �
 function addPlan(name){
   const p={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6), name,
     seq:[...seq], work:+$("workSec").value||20, rest:+$("restSec").value||10,
-    rounds:+$("rounds").value||8, made:todayStr(), last:"", n:0};
+    rounds:+$("rounds").value||8, made:todayStr(), last:"", n:0,
+    // 계획 점검 내용을 함께 남긴다 — 이것이 곧 학생의 '운동 계획서'가 된다
+    goal:pcGoal, level:pcLevel, care:[...pcCare],
+    freq:+$("pcFreq").value||0, target:+$("pcTarget").value||0,
+    reason:($("pcReason").value||"").trim()};
   myPlans.unshift(p);
   myPlans=myPlans.slice(0,12);
   saveAll();
+  pushPlan(p);
   return p;
+}
+// 학생 기기에만 있으면 교사가 채점할 수 없으므로 계획서를 서버에 올린다
+function pushPlan(p){
+  if(!fdb)return;
+  const me=myKey(); if(!me.name)return;
+  const ev=evaluatePlan({seq:p.seq,work:p.work,rest:p.rest,rounds:p.rounds,
+    goal:p.goal,level:p.level,care:p.care});
+  fmod.set(fmod.ref(fdb,`plans/${me.cls}/${me.name}/${p.id}`),{
+    name:p.name, seq:p.seq.join(","), work:p.work, rest:p.rest, rounds:p.rounds,
+    made:p.made, goal:p.goal||"", level:p.level||"", care:(p.care||[]).join(","),
+    freq:p.freq||0, target:p.target||0, reason:p.reason||"",
+    met:ev.met, checks:ev.items.map(i=>i.ok?"1":"0").join("")
+  }).catch(()=>{});
+}
+function removePlanRemote(id){
+  if(!fdb)return;
+  const me=myKey(); if(!me.name)return;
+  fmod.remove(fmod.ref(fdb,`plans/${me.cls}/${me.name}/${id}`)).catch(()=>{});
 }
 function applyPlan(p){
   seq=[...p.seq];
@@ -2359,14 +2454,15 @@ function parseBulkRoster(text){
 }
 function refreshClassUI(){
   const chips=$("classChips"); chips.innerHTML="";
-  const vc=$("viewClass"), rc=$("rfViewClass");
-  const keepV=vc.value, keepR=rc.value;
-  vc.innerHTML=""; rc.innerHTML="";
+  const vc=$("viewClass"), rc=$("rfViewClass"), pv=$("pvClass");
+  const keepV=vc.value, keepR=rc.value, keepP=pv.value;
+  vc.innerHTML=""; rc.innerHTML=""; pv.innerHTML="";
   const names=classNames();
-  if(!names.length){ vc.innerHTML='<option value="">반을 등록하세요</option>'; rc.innerHTML='<option value="">반을 등록하세요</option>'; }
+  if(!names.length){ const e='<option value="">반을 등록하세요</option>'; vc.innerHTML=e; rc.innerHTML=e; pv.innerHTML=e; }
   names.forEach(c=>{
     vc.insertAdjacentHTML("beforeend",`<option>${c}</option>`);
     rc.insertAdjacentHTML("beforeend",`<option>${c}</option>`);
+    pv.insertAdjacentHTML("beforeend",`<option>${c}</option>`);
     const chip=document.createElement("div"); chip.className="chip";
     chip.innerHTML=`<span class="ord num">${c}</span>${rosters[c].length}명<button title="반 삭제">✕</button>`;
     chip.querySelector("button").addEventListener("click",()=>{
@@ -2376,7 +2472,8 @@ function refreshClassUI(){
   });
   if(names.includes(keepV))vc.value=keepV;
   if(names.includes(keepR))rc.value=keepR;
-  renderStats(); refreshBattleUI(); renderReflectAdmin();
+  if(names.includes(keepP))pv.value=keepP;
+  renderStats(); refreshBattleUI(); renderReflectAdmin(); renderPlanAdmin();
   syncStuId(); // 명렬표가 나중에 도착(서버 동기화)해도 이미 입력된 학번을 다시 찾아본다
   refreshBoardClassSelect();
   renderTaskClassPick();
@@ -2717,6 +2814,231 @@ $("gradeCsv").addEventListener("click",()=>{
   a.download=`타바타_성적_${todayStr()}.xlsx`; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
   toast(`${cs.length}개 반을 시트로 나눠 내려받았습니다 — 구글 드라이브에 올리면 탭으로 열립니다.`,"good","📊");
+});
+
+/* =================== 📐 운동 계획 점검 (평가계획서 ㉮) ===================
+   학생이 목표·체력수준·주의사항을 고르면, 지금 만든 구성이 그에 맞는지 5가지로 되짚어 준다.
+   점수를 매기는 것이 목적이 아니라 '계획할 때 무엇을 따져야 하는지'를 몸에 익히게 하는 장치다. */
+const EX_PART={squat:"하체",lunge:"하체",sidelunge:"하체",jumpsquat:"하체",
+  pushup:"상체",pushupknee:"상체", crunch:"코어",legraise:"코어",plank:"코어",
+  jack:"유산소",highknee:"유산소",mtclimber:"유산소",burpee:"유산소"};
+const GOAL_LABEL={fat:"체중 감량",str:"근력 증가",car:"심폐지구력 향상",fit:"기초 체력 유지"};
+const LEVEL_LABEL={low:"평소 운동 거의 안 함",mid:"가끔 함",high:"자주 함"};
+const CARE_LABEL={none:"없음",knee:"무릎",back:"허리",wrist:"손목"};
+// 아픈 곳에 부담이 큰 동작 — 무리한 구성을 미리 걸러 준다
+const CARE_RISK={
+  knee:["jumpsquat","lunge","sidelunge","burpee","highknee"],
+  back:["legraise","crunch","burpee"],
+  wrist:["pushup","pushupknee","plank","mtclimber","burpee"]
+};
+
+// 받침 유무에 따라 조사를 골라 준다 — 학생이 읽는 문장이라 '런지은(는)' 같은 표기를 피한다
+function josaOf(word,withB,noB){
+  const s=String(word||"").trim(); if(!s)return withB;
+  const c=s.charCodeAt(s.length-1);
+  const has=(c>=0xAC00&&c<=0xD7A3)?((c-0xAC00)%28!==0):true;
+  return has?withB:noB;
+}
+function josa(word,withB,noB){ return word+josaOf(word,withB,noB); }
+
+function evaluatePlan(cfg){
+  const {seq:sq,work,rest,rounds,goal,level,care}=cfg;
+  const n=sq.length||1;
+  const parts=sq.map(k=>EX_PART[k]||"기타");
+  const kinds=[...new Set(parts)];
+  const cardio=parts.filter(p=>p==="유산소").length;
+  const power=parts.filter(p=>p==="하체"||p==="상체"||p==="코어").length;
+  const totalSec=(work+rest)*rounds, totalMin=Math.round(totalSec/60*10)/10;
+  const items=[];
+
+  // ① 목표에 맞는 운동으로 구성했는가
+  if(goal==="fat"||goal==="car"){
+    const need=Math.ceil(n/2), ok=cardio>=need&&(goal!=="car"||rounds>=6);
+    items.push({ok, t:"목표에 맞는 운동인가?",
+      d:ok?`${GOAL_LABEL[goal]}에는 온몸을 크게 쓰는 유산소 동작이 좋아요 — 지금 ${cardio}/${n}개로 충분합니다.`
+          :cardio<need?`${GOAL_LABEL[goal]}이 목표라면 유산소 동작(점핑잭·하이니·마운틴클라이머·버피)이 절반은 필요해요. 지금 ${cardio}/${n}개 — ${need-cardio}개 더 넣어 보세요.`
+          :`유산소 구성은 좋아요. 다만 심폐지구력은 오래 이어가야 늘어요 — 라운드를 6 이상으로 올려 보세요 (지금 ${rounds}).`});
+  } else if(goal==="str"){
+    const need=Math.ceil(n/2), ok=power>=need;
+    items.push({ok, t:"목표에 맞는 운동인가?",
+      d:ok?`근력 증가에는 버티고 밀고 앉는 동작이 좋아요 — 지금 ${power}/${n}개로 충분합니다.`
+          :`근력이 목표라면 하체·상체·코어 동작이 절반은 필요해요. 지금 ${power}/${n}개 — ${need-power}개 더 넣어 보세요.`});
+  } else if(goal==="fit"){
+    const ok=kinds.length>=3;
+    items.push({ok, t:"목표에 맞는 운동인가?",
+      d:ok?`기초 체력에는 골고루가 답이에요 — ${kinds.join("·")} ${kinds.length}종류를 담았습니다.`
+          :`기초 체력이 목표라면 여러 부위를 고루 써야 해요. 지금 ${kinds.join("·")||"없음"} ${kinds.length}종류 — 3종류 이상으로 늘려 보세요.`});
+  } else items.push({ok:false,t:"목표에 맞는 운동인가?",d:"먼저 ① 운동 목표를 골라 주세요."});
+
+  // ② 몸을 고르게 썼는가
+  {
+    const ok=kinds.length>=3;
+    const miss=["하체","상체","코어","유산소"].filter(p=>!kinds.includes(p));
+    items.push({ok, t:"몸을 고르게 썼는가?",
+      d:ok?`${kinds.join("·")} — 한쪽에 치우치지 않았어요.`
+          :`지금은 ${kinds.join("·")||"없음"}뿐이에요. ${miss.slice(0,2).join("·")} 동작을 더하면 균형이 잡힙니다.`});
+  }
+
+  // ③ 강도가 내 체력 수준에 맞는가
+  {
+    let ok=true, d="";
+    const ratio=Math.round(work/Math.max(rest,1)*10)/10;
+    if(level==="low"){
+      ok=work<=20&&rest>=10&&rounds<=8;
+      d=ok?`운동을 자주 안 한다면 짧게·충분히 쉬며 시작하는 게 맞아요 — ${work}초/${rest}초 × ${rounds}R 적절합니다.`
+          :`아직 운동이 익숙하지 않다면 무리예요. <b>운동 20초 이하 · 휴식 10초 이상 · 라운드 8 이하</b>로 낮춰 보세요 (지금 ${work}/${rest}초 × ${rounds}R).`;
+    } else if(level==="mid"){
+      ok=work>=20&&work<=30&&rounds>=6&&rounds<=12;
+      d=ok?`가끔 운동하는 수준에 알맞아요 — ${work}초/${rest}초 × ${rounds}R (운동:휴식 ${ratio}:1).`
+          :`체력 '가끔 함'에는 <b>운동 20~30초 · 라운드 6~12</b>가 알맞아요 (지금 ${work}초 × ${rounds}R).`;
+    } else if(level==="high"){
+      ok=rounds>=8&&work>=20;
+      d=ok?`자주 운동하는 만큼 충분한 자극이에요 — ${work}초 × ${rounds}R.`
+          :`평소 운동을 자주 한다면 이 정도는 가벼워요. <b>운동 20초 이상 · 라운드 8 이상</b>으로 올려 보세요 (지금 ${work}초 × ${rounds}R).`;
+    } else { ok=false; d="먼저 ② 내 체력 수준을 골라 주세요."; }
+    items.push({ok,t:"강도가 내 체력에 맞는가?",d});
+  }
+
+  // ④ 운동 시간이 적절한가
+  {
+    const ok=totalSec>=180&&totalSec<=600;
+    items.push({ok, t:"운동 시간이 적절한가?",
+      d:ok?`총 ${totalMin}분 — 타바타로 알맞은 길이예요.`
+          :totalSec<180?`총 ${totalMin}분은 너무 짧아요. 라운드를 늘려 <b>3분 이상</b>으로 만들어 보세요.`
+                       :`총 ${totalMin}분은 길어요. 라운드를 줄여 <b>10분 이내</b>로 맞추면 끝까지 자세가 유지됩니다.`});
+  }
+
+  // ⑤ 아픈 곳에 무리가 가지 않는가
+  {
+    const active=(care||[]).filter(c=>c&&c!=="none");
+    if(!(care||[]).length){
+      items.push({ok:false,t:"내 몸 상태를 고려했는가?",d:"먼저 ③ 조심할 곳을 골라 주세요. (없으면 '없음')"});
+    } else if(!active.length){
+      items.push({ok:true,t:"내 몸 상태를 고려했는가?",d:"아픈 곳이 없다고 했어요. 그래도 아프면 바로 멈추세요."});
+    } else {
+      const bad=[];
+      active.forEach(c=>sq.forEach(k=>{ if((CARE_RISK[c]||[]).includes(k)&&!bad.includes(k))bad.push(k); }));
+      const ok=!bad.length;
+      items.push({ok, t:"내 몸 상태를 고려했는가?",
+        d:ok?`${active.map(c=>CARE_LABEL[c]).join("·")}에 부담되는 동작을 넣지 않았어요. 잘했습니다.`
+            :(()=>{ const parts=active.map(c=>CARE_LABEL[c]).join("·"), moves=bad.map(k=>EXNAME[k]).join("·");
+                return `${josa(parts,"이","가")} 아프다면 <b>${moves}</b>${josaOf(moves,"은","는")} 무리예요. 빼거나 다른 동작으로 바꿔 보세요.`; })()});
+    }
+  }
+  const met=items.filter(i=>i.ok).length;
+  return {items,met,kinds,cardio,power,totalMin};
+}
+
+function renderPlanCheck(){
+  const box=$("pcList");
+  if(!pcGoal||!pcLevel||!pcCare.length){
+    box.innerHTML='<div class="hint">①②③을 먼저 고르세요. 고르는 대로 점검 결과가 나타납니다.</div>';
+    return;
+  }
+  if(!seq.length){ box.innerHTML='<div class="hint">위에서 운동을 하나 이상 추가하면 점검이 시작됩니다.</div>'; return; }
+  const ev=evaluatePlan({seq,work:+$("workSec").value||20,rest:+$("restSec").value||10,
+    rounds:+$("rounds").value||8, goal:pcGoal, level:pcLevel, care:pcCare});
+  const col=ev.met>=4?"var(--good)":ev.met>=2?"var(--gold)":"var(--bad)";
+  box.innerHTML=`<div class="pc-score" style="color:${col}">${ev.met} / 5 항목 확인됨`
+    +ev.items.map(i=>`<div class="pc-item ${i.ok?"ok":"no"}"><span class="ic">${i.ok?"✅":"🔸"}</span>
+      <span class="tx"><b>${i.t}</b><span>${i.d}</span></span></div>`).join("")
+    +`</div>`;
+}
+function bindPcChips(id,multi){
+  $(id).addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b)return;
+    const v=b.dataset.v;
+    if(!multi){
+      if(id==="pcGoal")pcGoal=v; else pcLevel=v;
+      [...$(id).children].forEach(x=>x.classList.toggle("on",x===b));
+    } else {
+      if(v==="none")pcCare=pcCare.includes("none")?[]:["none"];
+      else { pcCare=pcCare.filter(c=>c!=="none");
+        pcCare=pcCare.includes(v)?pcCare.filter(c=>c!==v):pcCare.concat(v); }
+      [...$(id).children].forEach(x=>x.classList.toggle("on",pcCare.includes(x.dataset.v)));
+    }
+    renderPlanCheck();
+  });
+}
+bindPcChips("pcGoal",false); bindPcChips("pcLevel",false); bindPcChips("pcCare",true);
+["workSec","restSec","rounds"].forEach(id=>$(id).addEventListener("input",renderPlanCheck));
+
+/* ---------- 교사: 운동 계획 보기 ---------- */
+const plans={};   // Firebase /plans 미러 {반:{이름:{계획id:{...}}}}
+let pvOpen="";
+function plansOf(name,cls){ const o=(plans[cls]||{})[name]||{}; return Object.entries(o).map(([id,v])=>({id,...v})); }
+function bestPlan(list){ return list.slice().sort((a,b)=>(+b.met||0)-(+a.met||0))[0]||null; }
+function renderPlanAdmin(){
+  const cls=$("pvClass").value, tb=$("pvRows"); tb.innerHTML=""; $("pvDetail").innerHTML="";
+  const list=rosters[cls]||[];
+  if(!cls||!list.length){ tb.innerHTML='<tr><td colspan="7" class="empty">반을 고르면 학생별 계획이 표시됩니다.</td></tr>'; return; }
+  list.forEach(s=>{
+    const ps=plansOf(s.name,cls), b=bestPlan(ps);
+    const withReason=ps.filter(p=>(p.reason||"").trim()).length;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td class="num">${s.no||""}</td>
+      <td><b style="cursor:pointer;color:var(--primary)">${s.name}</b></td>
+      <td class="num" style="color:${ps.length?"var(--good)":"var(--muted)"}">${ps.length}</td>
+      <td>${b?b.name:"–"}</td>
+      <td>${b&&b.goal?GOAL_LABEL[b.goal]||"–":"–"}</td>
+      <td class="num" style="color:${b?((+b.met>=4)?"var(--good)":(+b.met>=2)?"var(--gold)":"var(--bad)"):"var(--muted)"}">${b?b.met+"/5":"–"}</td>
+      <td class="num" style="color:${withReason?"var(--good)":"var(--bad)"}">${withReason?withReason+"건":"없음"}</td>`;
+    tr.querySelector("b").addEventListener("click",()=>{ pvOpen=(pvOpen===s.name?"":s.name); showPlanDetail(cls,s.name); });
+    tb.appendChild(tr);
+  });
+  if(pvOpen)showPlanDetail(cls,pvOpen);
+}
+function showPlanDetail(cls,name){
+  const box=$("pvDetail");
+  if(pvOpen!==name){box.innerHTML="";return;}
+  const ps=plansOf(name,cls);
+  const esc=t=>String(t||"").replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]));
+  if(!ps.length){box.innerHTML=`<div class="step-box"><b>${esc(name)}</b> — 아직 만든 계획이 없습니다.</div>`;return;}
+  let h=`<div class="step-box"><div style="font-weight:700;font-size:16px;margin-bottom:8px">📐 ${esc(cls)}반 ${esc(name)} — 계획 ${ps.length}개</div>`;
+  ps.sort((a,b)=>String(b.made).localeCompare(String(a.made))).forEach(p=>{
+    const sq=String(p.seq||"").split(",").filter(Boolean);
+    const ev=evaluatePlan({seq:sq,work:+p.work||20,rest:+p.rest||10,rounds:+p.rounds||8,
+      goal:p.goal,level:p.level,care:String(p.care||"").split(",").filter(Boolean)});
+    h+=`<div class="rf-text"><b>${esc(p.name)}</b> <span style="color:var(--muted)">${esc(p.made)}</span>
+      <br>${sq.map(k=>EXNAME[k]||k).join("→")} · ${p.work}/${p.rest}초 × ${p.rounds}R (총 ${ev.totalMin}분)
+      <br>목표 <b>${GOAL_LABEL[p.goal]||"–"}</b> · 체력 <b>${LEVEL_LABEL[p.level]||"–"}</b>
+       · 주의 <b>${String(p.care||"").split(",").filter(Boolean).map(c=>CARE_LABEL[c]||c).join("·")||"–"}</b>
+      <br>주 ${p.freq||"–"}회 · 목표 ${p.target||"–"}회 실천
+      ${p.reason?`<br>💬 ${esc(p.reason)}`:'<br><span style="color:var(--bad)">💬 이유 미작성</span>'}
+      <br><b style="color:${ev.met>=4?"var(--good)":ev.met>=2?"var(--gold)":"var(--bad)"}">점검 ${ev.met}/5</b>
+      ${ev.items.map(i=>`<br>${i.ok?"✅":"🔸"} ${i.t}`).join("")}</div>`;
+  });
+  box.innerHTML=h+"</div>";
+}
+$("pvClass").addEventListener("change",()=>{ pvOpen=""; renderPlanAdmin(); });
+$("pvExport").addEventListener("click",()=>{
+  const cs=classNames();
+  if(!cs.length){alert("먼저 명렬표를 등록하세요.");return;}
+  const head=["번호","이름","계획수","대표 계획명","운동 구성","운동(초)","휴식(초)","라운드","총 시간(분)",
+    "목표","체력 수준","주의할 곳","주 실천 계획(회)","목표 실천(회)","고른 이유",
+    "①목표적합","②균형","③강도적합","④시간적정","⑤안전고려","점검 통과(5점만점)"];
+  const OX=b=>b?"○":"×";
+  const sheets=cs.map(c=>({
+    name:c,
+    rows:[head].concat((rosters[c]||[]).map(s=>{
+      const ps=plansOf(s.name,c), p=bestPlan(ps);
+      if(!p)return [s.no==null?"":Number(s.no), s.name, 0,"","","","","","","","","","","","","","","","","",""];
+      const sq=String(p.seq||"").split(",").filter(Boolean);
+      const ev=evaluatePlan({seq:sq,work:+p.work||20,rest:+p.rest||10,rounds:+p.rounds||8,
+        goal:p.goal,level:p.level,care:String(p.care||"").split(",").filter(Boolean)});
+      return [s.no==null?"":Number(s.no), s.name, ps.length, p.name, sq.map(k=>EXNAME[k]||k).join("→"),
+        Number(p.work), Number(p.rest), Number(p.rounds), ev.totalMin,
+        GOAL_LABEL[p.goal]||"", LEVEL_LABEL[p.level]||"",
+        String(p.care||"").split(",").filter(Boolean).map(x=>CARE_LABEL[x]||x).join("·"),
+        Number(p.freq)||"", Number(p.target)||"", p.reason||"",
+        ...ev.items.map(i=>OX(i.ok)), ev.met];
+    }))
+  }));
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(XLSX.build(sheets));
+  a.download=`타바타_운동계획_${todayStr()}.xlsx`; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast(`${cs.length}개 반의 운동 계획을 내려받았습니다.`,"good","📐");
 });
 
 /* =================== ✍️ 자기성찰 (평가계획서 ㉰) ===================
@@ -3765,6 +4087,12 @@ function attachFbListeners(){
     renderBattles(); renderTasks(); handleBattleEvents(); // 운동하기의 결투 카드도 함께 갱신
     checkBattleAutoStart();                               // 수락된 배틀이 있으면 동시 시작 카운트다운
   });
+  onValue(ref(fdb,"plans"),snap=>{
+    const v=snap.val()||{};
+    Object.keys(plans).forEach(k=>{ if(!(k in v))delete plans[k]; });
+    Object.assign(plans,v);
+    renderPlanAdmin();
+  });
   onValue(ref(fdb,"reflections"),snap=>{
     const v=snap.val()||{};
     Object.keys(reflections).forEach(k=>{ if(!(k in v))delete reflections[k]; });
@@ -3838,6 +4166,7 @@ $("serverWipeBtn").addEventListener("click",async()=>{
     await fmod.remove(fmod.ref(fdb,"records"));
     await fmod.remove(fmod.ref(fdb,"battles")).catch(()=>{});
     await fmod.remove(fmod.ref(fdb,"reflections")).catch(()=>{});
+    await fmod.remove(fmod.ref(fdb,"plans")).catch(()=>{});
     await fmod.remove(fmod.ref(fdb,"presence")).catch(()=>{});
     await fmod.remove(fmod.ref(fdb,"control")).catch(()=>{});
     records.length=0; totalPts=0; myPlans=[]; seenBattles=[];
