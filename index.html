@@ -826,10 +826,10 @@
       <div class="kpi"><div class="v num c1" id="pvDone">0</div><div class="k">제출</div></div>
       <div class="kpi"><div class="v num" style="color:var(--bad)" id="pvUndone">0</div><div class="k">미제출</div></div>
       <div class="kpi"><div class="v num c2" id="pvRate">–</div><div class="k">제출률</div></div>
-      <div class="kpi"><div class="v num" style="color:var(--good)" id="pvFull">0</div><div class="k">서술 4칸 완성</div></div>
+      <div class="kpi"><div class="v num" style="color:var(--good)" id="pvFull">0</div><div class="k">서술 5칸 완성</div></div>
     </div>
     <div class="hint" id="pvMissing" style="margin:6px 0 10px"></div>
-    <table><thead><tr><th>번호</th><th>이름</th><th>제출</th><th>계획서 이름</th><th>목표</th><th>체감 체력</th><th>서술 4칸</th><th>분량</th></tr></thead>
+    <table><thead><tr><th>번호</th><th>이름</th><th>제출</th><th>계획서 이름</th><th>목표</th><th>체감 체력</th><th>서술 5칸</th><th>분량</th></tr></thead>
       <tbody id="pvRows"><tr><td colspan="8" class="empty">반을 고르면 학생별 계획이 표시됩니다.</td></tr></tbody></table>
     <div id="pvDetail" style="margin-top:10px"></div>
     </details>
@@ -1014,9 +1014,15 @@
       <div style="font-weight:800;font-size:18px">📝 운동 계획서</div>
       <div class="hint" style="margin:2px 0 6px">정답은 없습니다. <b>왜 그렇게 정했는지</b> 자기 생각을 쓰는 것이 계획서의 전부예요.</div>
       <div class="cfg-fixed" id="planDocCfg" style="margin-bottom:6px"></div>
-      <div class="doc-prog" id="planDocProg"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="doc-prog" id="planDocProg"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     </div>
     <div class="sheet-bd">
+      <div class="pc-q"><label>⓪ 먼저 내 생활을 돌아봅시다 <span style="font-weight:400;color:var(--muted)">— 계획의 출발점</span></label>
+        <div class="hint" style="margin-bottom:5px">솔직하게 고르세요. 점수를 매기려는 게 아니라 <b>원인을 찾으려는</b> 것입니다.</div>
+        <div id="pcHabitList"></div>
+        <div class="hint" style="margin:9px 0 4px">이 중에서 <b>내 체력을 떨어뜨린 원인</b>은 무엇일까요?</div>
+        <textarea id="pcHabitWhy" rows="3" placeholder="예: 하루 종일 앉아 있고 폰을 볼 때 목을 앞으로 빼는 자세가 습관이 됐다. 저녁을 늦게 많이 먹고 바로 누워서 아침에 몸이 무겁다."></textarea></div>
+
       <div class="pc-q"><label>① 내 운동 목표는?</label>
         <div class="pc-opts" id="pcGoal">
           <button type="button" data-v="fat">🔥 체중 감량</button>
@@ -2510,7 +2516,7 @@ function addPlan(name){
     rounds:+$("rounds").value||8, made:todayStr(), last:"", n:0,
     // 계획서 서술은 비워 둔다 — 나중에 [📝 계획서]에서 쓰고 제출한다
     goal:"", level:"", goalWhy:"", reason:"", careText:"", careWhy:"",
-    when:"", check:"", aim:"", exNotes:[], freq:0, target:0, submitted:""};
+    when:"", check:"", aim:"", exNotes:[], habit:{}, habitWhy:"", freq:0, target:0, submitted:""};
   myPlans.unshift(p);
   myPlans=myPlans.slice(0,12);
   saveAll();
@@ -2526,6 +2532,7 @@ function pushPlan(p){
     goalWhy:p.goalWhy||"", reason:p.reason||"",
     careText:p.careText||"", careWhy:p.careWhy||"",
     when:p.when||"", check:p.check||"", aim:p.aim||"",
+    habit:Object.assign({},p.habit||{}), habitWhy:p.habitWhy||"",
     exNotes:(p.exNotes||[]).map((n,i)=>({ex:p.seq[i]||"",fit:n.fit||"",load:n.load||"",why:n.why||""})),
     freq:p.freq||0, target:p.target||0, submitted:todayStr()
   }); // 실패는 호출한 쪽에서 학생에게 알려야 하므로 여기서 삼키지 않는다
@@ -3103,7 +3110,35 @@ bindPcChips("pcGoal"); bindPcChips("pcLevel");
 let planDocId=null, pcExNotes=[];
 // 작년 종이 계획서처럼 운동마다 체력요소·강도·선정이유를 적게 한다.
 // 운동명과 부위는 앱이 이미 아니까 자동으로 채우고, 학생은 생각만 쓰면 된다.
-const FIT_OPTS=["심폐지구력","근력","근지구력","유연성","순발력","민첩성","평형성"];
+// 건강관련 체력요소 중, 우리 13개 동작으로 실제로 기를 수 있는 것만 둔다.
+// (민첩성·평형성은 운동관련 체력요소라 뺐고, 유연성·악력은 해당 동작이 없다)
+// 계획의 출발점 — 평소 생활을 스스로 돌아보고 체력 저하의 원인을 찾는다.
+// (학생체력평가 학습지의 '식습관·수면습관·운동습관에서 원인을 찾고' 문항을 옮긴 것)
+const HABIT_QS=[
+  {k:"posture", t:"생활 자세", h:"앉을 때·폰 볼 때 허리와 목"},
+  {k:"move",    t:"운동 습관", h:"평소 몸을 얼마나 움직이나"},
+  {k:"diet",    t:"식습관",    h:"골고루·규칙적으로 먹나"},
+  {k:"sleep",   t:"수면 습관", h:"충분히 자고 일정한가"}
+];
+const HABIT_LABEL={3:"좋음",2:"보통",1:"부족함"};
+let pcHabit={};
+function renderHabits(){
+  const box=$("pcHabitList"); box.innerHTML="";
+  HABIT_QS.forEach(q=>{
+    const d=document.createElement("div"); d.className="rf-self";
+    d.innerHTML='<span class="lb"><b>'+q.t+'</b><br><span style="color:var(--muted);font-size:12px">'+q.h+'</span></span>'
+      +'<span class="op">'+[3,2,1].map(v=>'<button type="button" data-v="'+v+'">'+HABIT_LABEL[v]+'</button>').join("")+'</span>';
+    const bs=d.querySelectorAll("button");
+    bs.forEach(b=>b.addEventListener("click",()=>{
+      pcHabit[q.k]=+b.dataset.v;
+      bs.forEach(x=>x.classList.toggle("on",x===b));
+      renderPlanProg();
+    }));
+    if(pcHabit[q.k])bs.forEach(x=>x.classList.toggle("on",+x.dataset.v===pcHabit[q.k]));
+    box.appendChild(d);
+  });
+}
+const FIT_OPTS=["심폐지구력","근력","근지구력","순발력"];
 const LOAD_OPTS=["저강도","중강도","고강도"];
 function escHtml(t){ return String(t||"").replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c])); }
 function renderExNotes(seqArr){
@@ -3139,6 +3174,8 @@ function openPlanDoc(p){
   $("pcFreq").value=p.freq||3; $("pcTarget").value=p.target||10;
   $("pcWhen").value=p.when||""; $("pcCheck").value=p.check||"";
   $("pcAim").value=p.aim||"";
+  $("pcHabitWhy").value=p.habitWhy||"";
+  pcHabit=Object.assign({},p.habit||{}); renderHabits();
   // 저장해 둔 운동별 메모를 지금 구성 길이에 맞춰 불러온다
   pcExNotes=p.seq.map((k,i)=>Object.assign({fit:"",load:"",why:""},(p.exNotes||[])[i]||{}));
   renderExNotes(p.seq);
@@ -3147,7 +3184,7 @@ function openPlanDoc(p){
     ? `<span style="color:var(--good)">${p.submitted}에 제출함 — 고쳐서 다시 낼 수 있어요</span>` : "";
   $("planDocOverlay").style.display="flex";
 }
-const PLAN_TEXTS=["pcGoalWhy","pcReason","pcCareWhy","pcCheck"]; // 채점의 근거가 되는 서술 4칸
+const PLAN_TEXTS=["pcHabitWhy","pcGoalWhy","pcReason","pcCareWhy","pcCheck"]; // 채점의 근거가 되는 서술 5칸
 function exNotesDone(){ return pcExNotes.length>0&&pcExNotes.every(n=>(n.why||"").trim()&&n.fit); }
 function collectPlanDoc(){
   return {goal:pcGoal, level:pcLevel,
@@ -3155,6 +3192,7 @@ function collectPlanDoc(){
     careText:($("pcCareText").value||"").trim(), careWhy:($("pcCareWhy").value||"").trim(),
     when:($("pcWhen").value||"").trim(), check:($("pcCheck").value||"").trim(),
     aim:($("pcAim").value||"").trim(),
+    habit:Object.assign({},pcHabit), habitWhy:($("pcHabitWhy").value||"").trim(),
     exNotes:pcExNotes.map(n=>({fit:n.fit||"",load:n.load||"",why:(n.why||"").trim()})),
     freq:+$("pcFreq").value||0, target:+$("pcTarget").value||0};
 }
@@ -3162,7 +3200,7 @@ function collectPlanDoc(){
 function renderPlanProg(){
   const bars=$("planDocProg").children;
   PLAN_TEXTS.forEach((id,i)=>{ if(bars[i])bars[i].classList.toggle("on",!!($(id).value||"").trim()); });
-  if(bars[4])bars[4].classList.toggle("on",exNotesDone());
+  if(bars[5])bars[5].classList.toggle("on",exNotesDone());
 }
 PLAN_TEXTS.forEach(id=>$(id).addEventListener("input",renderPlanProg));
 function planDocApply(){
@@ -3182,6 +3220,7 @@ $("planDocSubmit").addEventListener("click",()=>{
   const blanks=[["① 왜 이 목표를 골랐나요?",d.goalWhy],["③ 왜 이렇게 계획했나요?",d.reason],
     ["④ 조심할 부위를 어떻게 고려했나요?",d.careWhy],
     ["⑥ 계획대로 되는지 어떻게 확인할까요?",d.check]].filter(([,v])=>!v).map(([t])=>t);
+  if(!d.habitWhy)blanks.unshift("⓪ 내 체력이 떨어진 원인");
   const exBlank=pcExNotes.filter(n=>!(n.why||"").trim()||!n.fit).length;
   if(exBlank)blanks.unshift("③ 운동별 칸 "+exBlank+"개 (체력요소·선정이유)");
   if(blanks.length&&!confirm(`아직 쓰지 않은 칸이 있습니다.\n\n${blanks.join("\n")}\n\n이대로 제출할까요?`))return;
@@ -3201,9 +3240,9 @@ $("planDocSubmit").addEventListener("click",()=>{
 const plans={};   // Firebase /plans 미러 {반:{이름:{계획id:{...}}}}
 let pvOpen="";
 function plansOf(name,cls){ const o=(plans[cls]||{})[name]||{}; return Object.entries(o).map(([id,v])=>({id,...v})); }
-function planWrote(p){ // 서술 4칸 중 몇 칸을 채웠는지
+function planWrote(p){ // 서술 5칸 중 몇 칸을 채웠는지
   if(!p)return 0;
-  return [p.goalWhy,p.reason,p.careWhy,p.check].filter(t=>(t||"").trim()).length;
+  return [p.habitWhy,p.goalWhy,p.reason,p.careWhy,p.check].filter(t=>(t||"").trim()).length;
 }
 // 대표 계획은 '얼마나 충실히 썼는가'로 고른다
 function bestPlan(list){
@@ -3216,7 +3255,7 @@ function bestPlan(list){
 function classPlanStat(cls){
   const list=rosters[cls]||[];
   const done=list.filter(s=>plansOf(s.name,cls).length).length;
-  const full=list.filter(s=>{const b=bestPlan(plansOf(s.name,cls));return b&&planWrote(b)===4;}).length;
+  const full=list.filter(s=>{const b=bestPlan(plansOf(s.name,cls));return b&&planWrote(b)===5;}).length;
   return {total:list.length, done, full, undone:list.length-done,
     rate:list.length?Math.round(done/list.length*100):0,
     missing:list.filter(s=>!plansOf(s.name,cls).length).map(s=>s.name)};
@@ -3258,7 +3297,7 @@ function renderPlanAdmin(){
       <td>${b?b.name:"–"}</td>
       <td>${b?(GOAL_LABEL[b.goal]||"–"):"–"}</td>
       <td>${b?(LEVEL_LABEL[b.level]||"–"):"–"}</td>
-      <td class="num" style="color:${w===4?"var(--good)":w?"var(--gold)":"var(--bad)"}"><b>${b?w+"/4":"–"}</b></td>
+      <td class="num" style="color:${w===5?"var(--good)":w?"var(--gold)":"var(--bad)"}"><b>${b?w+"/5":"–"}</b></td>
       <td class="num" style="color:var(--muted)">${len?len+"자":"–"}</td>`;
     tr.querySelector("b").addEventListener("click",()=>{ pvOpen=(pvOpen===s.name?"":s.name); showPlanDetail(cls,s.name); });
     tb.appendChild(tr);
@@ -3283,6 +3322,8 @@ function showPlanDetail(cls,name){
       <br><span style="color:var(--muted)">${["하체","상체","코어","유산소"].map(x=>`${x} ${parts[x]||0}`).join(" · ")}</span>
       <br>목표 <b>${GOAL_LABEL[p.goal]||"–"}</b> · 체감 체력 <b>${LEVEL_LABEL[p.level]||"–"}</b>
        · 주 ${p.freq||"–"}회 · 목표 ${p.target||"–"}회${p.when?` · ${esc(p.when)}`:""}
+      ${(p.habit&&Object.keys(p.habit).length)?`<div style="margin-top:7px"><b style="color:var(--gold)">생활 자기평가</b> `+HABIT_QS.map(q=>`${q.t}: ${HABIT_LABEL[p.habit[q.k]]||"–"}`).join(" · ")+`</div>`:""}
+      ${q("⓪ 체력이 떨어진 원인",p.habitWhy)}
       ${p.aim?`<div style="margin-top:6px"><b style="color:var(--gold)">운동목표</b> ${esc(p.aim)}</div>`:""}
       ${(p.exNotes&&p.exNotes.length)?`<div style="margin-top:8px"><b style="color:var(--gold)">운동별 계획</b>`
         +p.exNotes.map((n,i)=>`<div style="margin-top:4px">${i+1}. <b>${EXNAME[n.ex]||n.ex||""}</b>
@@ -3302,7 +3343,7 @@ $("pvExport").addEventListener("click",()=>{
   const cs=classNames();
   if(!cs.length){alert("먼저 명렬표를 등록하세요.");return;}
   const head=["번호","이름","계획수","대표 계획명","운동 구성","하체","상체","코어","유산소",
-    "목표","운동목표(서술)","체감 체력","주 실천(회)","목표 실천(회)",
+    "생활자세","운동습관","식습관","수면습관","⓪ 체력저하 원인","목표","운동목표(서술)","체감 체력","주 실천(회)","목표 실천(회)",
     "① 왜 이 목표?","② 왜 이 운동들?","조심할 부위","③ 어떻게 고려?","실천 시간·장소","④ 확인 방법","서술 작성(4칸)","총 글자수"];
   const sheets=cs.map(c=>({
     name:c,
@@ -3311,9 +3352,11 @@ $("pvExport").addEventListener("click",()=>{
       if(!p)return [s.no==null?"":Number(s.no), s.name, 0].concat(new Array(head.length-3).fill(""));
       const sq=String(p.seq||"").split(",").filter(Boolean);
       const pc={}; sq.forEach(k=>{const q=EX_PART[k]||"기타";pc[q]=(pc[q]||0)+1;});
-      const len=(p.goalWhy||"").length+(p.reason||"").length+(p.careWhy||"").length+(p.check||"").length;
+      const len=(p.habitWhy||"").length+(p.goalWhy||"").length+(p.reason||"").length+(p.careWhy||"").length+(p.check||"").length;
       return [s.no==null?"":Number(s.no), s.name, ps.length, p.name, sq.map(k=>EXNAME[k]||k).join("→"),
         pc["하체"]||0, pc["상체"]||0, pc["코어"]||0, pc["유산소"]||0,
+        HABIT_LABEL[(p.habit||{}).posture]||"", HABIT_LABEL[(p.habit||{}).move]||"",
+        HABIT_LABEL[(p.habit||{}).diet]||"", HABIT_LABEL[(p.habit||{}).sleep]||"", p.habitWhy||"",
         GOAL_LABEL[p.goal]||"", p.aim||"", LEVEL_LABEL[p.level]||"",
         Number(p.freq)||"", Number(p.target)||"",
         p.goalWhy||"", p.reason||"", p.careText||"", p.careWhy||"", p.when||"", p.check||"", planWrote(p), len];
@@ -3589,7 +3632,7 @@ function buildGradeBook(){
 
   // ── 시트 1: 전 학급 요약 (한눈에 채점 상태 파악) ──
   const sumHead=["반","번호","이름","성별",
-    "㉮ 계획서 제출","㉮ 서술(4칸)","㉯ 실천점수(20)","㉯ 이수율(%)","㉯ 세션수",
+    "㉮ 계획서 제출","㉮ 서술(5칸)","㉯ 실천점수(20)","㉯ 이수율(%)","㉯ 세션수",
     "㉰ 수시성찰(회)","㉰ 마무리성찰"];
   const sumRows=[sumHead];
   cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
@@ -3604,7 +3647,7 @@ function buildGradeBook(){
   const head=["번호","이름","성별",
     // ㉮ 운동계획
     "㉮제출","㉮계획서 이름","㉮운동 구성","㉮설정","㉮목표","㉮체감 체력",
-    "㉮왜 이 목표?","㉮왜 이렇게 계획?","㉮조심할 부위","㉮어떻게 고려?","㉮실천 시간·장소","㉮확인 방법","㉮주 실천(회)","㉮목표 실천(회)","㉮서술 칸수",
+    "㉮생활자세","㉮운동습관","㉮식습관","㉮수면습관","㉮체력저하 원인","㉮왜 이 목표?","㉮왜 이렇게 계획?","㉮조심할 부위","㉮어떻게 고려?","㉮실천 시간·장소","㉮확인 방법","㉮주 실천(회)","㉮목표 실천(회)","㉮서술 칸수",
     // ㉯ 운동실천
     "㉯①과제제출","㉯②심박","㉯③정확도","㉯④자율실천","㉯⑤향상","㉯만족개수","㉯실천점수(20)",
     "㉯배정차시","㉯이수차시","㉯이수율(%)","㉯세션수","㉯심박달성","㉯평균정확도(%)","㉯향상률(%)","㉯최고점수","㉯최근수행일",
@@ -3627,7 +3670,9 @@ function buildGradeBook(){
         p?"제출":"미제출", p?p.name:"", sq.map(k=>EXNAME[k]||k).join("→"),
         p?`${p.work}/${p.rest}초 × ${p.rounds}R`:"",
         p?(GOAL_LABEL[p.goal]||""):"", p?(LEVEL_LABEL[p.level]||""):"",
-        p?(p.goalWhy||""):"", p?(p.reason||""):"", p?(p.careText||""):"", p?(p.careWhy||""):"",
+        p?(HABIT_LABEL[(p.habit||{}).posture]||""):"", p?(HABIT_LABEL[(p.habit||{}).move]||""):"",
+        p?(HABIT_LABEL[(p.habit||{}).diet]||""):"", p?(HABIT_LABEL[(p.habit||{}).sleep]||""):"",
+        p?(p.habitWhy||""):"", p?(p.goalWhy||""):"", p?(p.reason||""):"", p?(p.careText||""):"", p?(p.careWhy||""):"",
         p?(p.when||""):"", p?(p.check||""):"",
         p?(num(p.freq)||""):"", p?(num(p.target)||""):"", p?planWrote(p):"",
         OX(g.items[0]),OX(g.items[1]),OX(g.items[2]),OX(g.items[3]),OX(g.items[4]),g.met,num(g.score),
