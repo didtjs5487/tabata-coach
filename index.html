@@ -403,12 +403,12 @@
       </div>
       <div class="seqlist" id="seqList"></div>
       <div class="row" style="margin-top:10px;margin-bottom:0;align-items:flex-end">
-        <div class="cfg-fixed" id="cfgFixed"></div>
-        <input type="hidden" id="workSec" value="20">
-        <input type="hidden" id="restSec" value="10">
-        <input type="hidden" id="rounds" value="8">
+        <div class="field"><label>운동(초)</label><input type="number" id="workSec" value="20" min="10" max="60"></div>
+        <div class="field"><label>휴식(초)</label><input type="number" id="restSec" value="10" min="5" max="60"></div>
+        <div class="field"><label>라운드</label><input type="number" id="rounds" value="8" min="2" max="16"></div>
         <input type="hidden" id="difficulty" value="1">
       </div>
+      <div class="cfg-fixed" id="cfgFixed" style="margin-top:10px"></div>
     </div>
 
     <div class="step-box" id="planCheckBox" style="margin-top:14px">
@@ -434,9 +434,9 @@
           <button type="button" data-v="high">좋은 편</button>
         </div></div>
 
-      <div class="pc-q"><label>③ 왜 이 운동들을 골랐나요? <span style="font-weight:400;color:var(--muted)">— 계획서의 핵심</span></label>
-        <div class="hint" style="margin-bottom:4px">내 <b>목표</b>와 <b>체력</b>에 비추어, 위에서 고른 동작들을 왜 그렇게 정했는지 설명하세요.</div>
-        <textarea id="pcReason" rows="3" placeholder="예: 심폐지구력을 키우고 싶어서 점핑잭·하이니처럼 쉬지 않고 움직이는 동작을 넣었다. 체력이 보통이라 버피는 빼고 마운틴클라이머로 바꿨다."></textarea></div>
+      <div class="pc-q"><label>③ 왜 이렇게 계획했나요? <span style="font-weight:400;color:var(--muted)">— 계획서의 핵심</span></label>
+        <div class="hint" style="margin-bottom:4px">내 <b>목표</b>와 <b>체력</b>에 비추어 <b>고른 동작</b>과 <b>운동·휴식 시간, 라운드 수</b>를 왜 그렇게 정했는지 설명하세요.</div>
+        <textarea id="pcReason" rows="3" placeholder="예: 심폐지구력을 키우고 싶어서 점핑잭·하이니처럼 쉬지 않고 움직이는 동작을 넣었다. 오래 이어가는 게 중요해서 라운드를 10으로 늘렸고, 대신 힘드니까 휴식을 15초로 잡았다."></textarea></div>
 
       <div class="pc-q"><label>④ 아프거나 조심해야 할 부위가 있나요?</label>
         <input type="text" id="pcCareText" placeholder="예: 왼쪽 무릎 / 없으면 '없음'이라고 쓰세요" style="width:100%">
@@ -2831,8 +2831,7 @@ $("gradeCsv").addEventListener("click",()=>{
    앱은 계획의 옳고 그름을 판정하지 않는다. 목표가 다양하고, 한 부위만 집중하는 계획도,
    자기 체력에 맞춰 강도를 고르는 것도 모두 정당하기 때문이다.
    대신 '왜 그렇게 정했는지'를 학생이 직접 쓰게 하고, 그 글을 교사가 읽고 평가한다.
-   운동 시간은 20초 운동 + 10초 휴식 × 8동작 = 4분으로 고정한다.        */
-const PLAN_WORK=20, PLAN_REST=10, PLAN_ROUNDS=8;
+   운동·휴식 시간과 라운드도 학생이 스스로 정한다 — 체력에 따라 정해 주지 않는다.  */
 const EX_PART={squat:"하체",lunge:"하체",sidelunge:"하체",jumpsquat:"하체",
   pushup:"상체",pushupknee:"상체", crunch:"코어",legraise:"코어",plank:"코어",
   jack:"유산소",highknee:"유산소",mtclimber:"유산소",burpee:"유산소"};
@@ -2849,11 +2848,12 @@ function renderCfgFixed(){
   // 초기화 중에도 불리므로 위쪽 상수를 참조하지 않고 숫자를 직접 쓴다
   const w=+$("workSec").value||20, r=+$("restSec").value||10, n=+$("rounds").value||8;
   const min=Math.round((w+r)*n/60*10)/10;
-  const cycle=seq.length?(n===seq.length?"한 번씩"
-    :(n%seq.length===0?`${n/seq.length}번씩 반복`:`${seq.length}가지를 돌아가며`)):"";
-  box.innerHTML=`⏱️ <b>${w}초 운동 · ${r}초 휴식 × ${n}동작 = ${min}분</b>`
-    +(cycle?`<span> — 고른 ${seq.length}가지를 ${cycle}</span>`:"")
-    +`<span>모든 운동은 같은 시간으로 맞춰져 있어요. 무엇을 넣을지만 정하면 됩니다.</span>`;
+  const cycle=seq.length?(n===seq.length?"한 번씩 합니다"
+    :(n%seq.length===0?`${n/seq.length}번씩 반복합니다`
+      :`순서대로 돌아가며 ${n}번 합니다 (마지막에 일부만 더 합니다)`)):"";
+  box.innerHTML=`⏱️ <b>총 ${min}분</b> — ${w}초 운동 · ${r}초 휴식 × ${n}라운드`
+    +(cycle?`<span>고른 ${seq.length}가지를 ${cycle}</span>`:"")
+    +`<span>시간과 라운드는 내 목표와 체력에 맞게 스스로 정하세요.</span>`;
 }
 
 function bindPcChips(id){
@@ -2864,6 +2864,7 @@ function bindPcChips(id){
   });
 }
 bindPcChips("pcGoal"); bindPcChips("pcLevel");
+["workSec","restSec","rounds"].forEach(id=>$(id).addEventListener("input",renderCfgFixed));
 
 /* ---------- 교사: 운동 계획 보기 ---------- */
 const plans={};   // Firebase /plans 미러 {반:{이름:{계획id:{...}}}}
