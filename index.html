@@ -691,6 +691,22 @@
   <section class="page" id="pgAdmin">
     <div class="hint" id="saveStatusLine" style="margin-bottom:12px;font-weight:600">저장 상태 확인 중…</div>
 
+    <div class="step-box" id="authBox" style="margin-bottom:14px">
+      <div style="font-weight:700">🔐 교사 로그인</div>
+      <div class="hint" id="authMsg" style="margin:3px 0 8px">학생이 쓴 <b>성찰·계획서</b>는 로그인한 교사만 볼 수 있습니다.</div>
+      <div class="row" id="authForm" style="margin:0">
+        <div class="field" style="flex:1;min-width:180px"><label>이메일</label>
+          <input type="email" id="authEmail" autocomplete="username" style="width:100%"></div>
+        <div class="field" style="flex:1;min-width:140px"><label>비밀번호</label>
+          <input type="password" id="authPw" autocomplete="current-password" style="width:100%"></div>
+        <button class="btn btn-go btn-sm" id="authIn">로그인</button>
+      </div>
+      <div class="row" id="authOutRow" style="margin:0;display:none">
+        <span class="hint" id="authWho" style="flex:1"></span>
+        <button class="btn btn-stop btn-sm" id="authOut">로그아웃</button>
+      </div>
+    </div>
+
     <button class="btn btn-teal" id="allExport" style="padding:15px 24px;width:100%">📥 평가용 통합 엑셀 내려받기</button>
     <div class="hint" style="margin:8px 0 16px">㉮ 운동계획 · ㉯ 운동실천 · ㉰ 자기성찰을 <b>학생 한 명당 한 줄</b>로 합칩니다. 첫 시트는 전 학급 요약, 그다음은 반별 시트, 마지막은 수시 성찰 원문입니다.</div>
 
@@ -3374,15 +3390,17 @@ $("pvExport").addEventListener("click",()=>{
    자기평가 4항목을 그대로 옮겼고, 심박·정확도·종합점수는 앱이 자동으로 채운다.
    마무리 성찰: 모든 차시가 끝난 뒤 단원 전체를 돌아보며 한 번 쓴다.
    저장 위치 reflections/{반}/{이름} = {logs:{...수시}, final:{...마무리}}          */
-const reflections={};                 // Firebase /reflections 미러
+const reflections={};                 // Firebase /reflections 미러 (교사가 로그인했을 때만 채워진다)
+let myLogsLocal={};                   // 내가 쓴 수시 성찰 (이 기기에 보관 — 남의 것을 볼 수 없게 하려고)
+let myFinalLocal=null;                // 내 마무리 성찰
 let lastRec=null;                     // 방금 끝낸 세션 (수시 성찰을 이 기록에 붙인다)
 const RF_QS=["운동 강도 돌아보기","잘한 점 / 배운 점","배운 개념 연결하기","부족했던 점","다음 실천 계획"];
 const RF_SELF=["성실하게 끝까지 참여했다","바른 자세로 운동했다","목표한 강도로 운동했다","다음 계획을 구체적으로 세웠다"];
 const SELF_LABEL={3:"잘함",2:"보통",1:"노력 필요"};
 function reflectOf(name,cls){ return (reflections[cls]||{})[name]||null; }
-function myReflect(){ const me=myKey(); return me.name?reflectOf(me.name,me.cls):null; }
-function myLogs(){ const rf=myReflect();
-  return Object.entries((rf&&rf.logs)||{}).map(([k,v])=>({key:k,...v}))
+// 내 성찰은 항상 이 기기의 것을 본다 (서버는 교사만 읽는다)
+function myReflect(){ return {logs:myLogsLocal, final:myFinalLocal}; }
+function myLogs(){ return Object.entries(myLogsLocal||{}).map(([k,v])=>({key:k,...v}))
     .sort((a,b)=>String(b.date).localeCompare(String(a.date))); }
 function logCount(rf){ return rf&&rf.logs?Object.keys(rf.logs).length:0; }
 function hasFinal(rf){ return !!(rf&&rf.final&&[1,2,3,4,5].some(i=>(rf.final["q"+i]||"").trim())); }
@@ -3462,7 +3480,7 @@ $("rfDocSave").addEventListener("click",()=>{
   [1,2,3,4].forEach(i=>entry["s"+i]=rfSelf[i-1]||"");
   if(!filled&&!rfSelf.some(Boolean)){msg.innerHTML='<span class="err">한 문항이라도 써 주세요.</span>';return;}
   // 이미 쓴 일지를 고치는 경우 원래 운동 데이터를 유지한다
-  const old=(myReflect()&&myReflect().logs&&myReflect().logs[rfDocKey])||{};
+  const old=myLogsLocal[rfDocKey]||{};
   entry.hrPre=old.hrPre!==undefined?old.hrPre:((lastRec&&lastRec.hrPre)||"");
   entry.hr=old.hr!==undefined?old.hr:((lastRec&&lastRec.hr)||"");
   entry.acc=old.acc!==undefined?old.acc:((lastRec&&lastRec.acc)||"");
@@ -3470,10 +3488,7 @@ $("rfDocSave").addEventListener("click",()=>{
   entry.date=old.date||entry.date;
   entry.mode=old.mode||rfDocMode||"";
   entry.taskTitle=old.taskTitle||rfDocTitle||"";
-  if(!reflections[me.cls])reflections[me.cls]={};
-  if(!reflections[me.cls][me.name])reflections[me.cls][me.name]={};
-  if(!reflections[me.cls][me.name].logs)reflections[me.cls][me.name].logs={};
-  reflections[me.cls][me.name].logs[rfDocKey]=entry;   // 오프라인이어도 화면엔 반영
+  myLogsLocal[rfDocKey]=entry; saveAll();   // 기기에 먼저 남긴다
   renderRfLogs(); markReflectDone();
   if(!fdb){msg.textContent="이 기기에만 저장됨 (인터넷 연결 시 전송)";return;}
   msg.textContent="저장 중…";
@@ -3526,7 +3541,7 @@ function renderFinalReflect(){
     +cell("평균 정확도",g.n?g.acc+"%":"–")
     +cell("심박 기준 달성",g.n?`${g.dil}회`:"–")
     +cell("최근 심박(전→후)",st&&st.hr?st.hr:"–");
-  const rf=myReflect(), f=(rf&&rf.final)||null;
+  const f=myFinalLocal;
   if(f&&!box.dataset.filled){ [1,2,3,4,5].forEach(i=>{ $("fr"+i).value=f["q"+i]||""; }); box.dataset.filled="1"; }
   $("frMsg").innerHTML=f&&f.date?`<span style="color:var(--good)">${f.date}에 저장함 — 고쳐 쓸 수 있어요</span>`:"";
 }
@@ -3538,9 +3553,7 @@ $("frSave").addEventListener("click",()=>{
   [1,2,3,4,5].forEach(i=>{ const v=$("fr"+i).value.trim(); f["q"+i]=v; if(v)filled++; });
   if(!filled){msg.innerHTML='<span class="err">한 문항이라도 써 주세요.</span>';return;}
   if(filled<5&&!confirm(`${5-filled}개 문항이 비어 있습니다.\n이대로 저장할까요? (나중에 이어서 쓸 수 있습니다)`))return;
-  if(!reflections[me.cls])reflections[me.cls]={};
-  if(!reflections[me.cls][me.name])reflections[me.cls][me.name]={};
-  reflections[me.cls][me.name].final=f;
+  myFinalLocal=f; saveAll();   // 기기에 먼저 남긴다
   if(!fdb){msg.textContent="이 기기에만 저장됨 (인터넷 연결 시 전송)";return;}
   msg.textContent="저장 중…";
   fmod.set(reflectRef(me,"final"),f)
@@ -4460,7 +4473,7 @@ function saveAll(){
   if(!storageOK)return;
   try{
     const recs=records.map(({_row,...r})=>r);
-    localStorage.setItem(STORE_KEY,JSON.stringify({rosters,records:recs,totalPts,fbCfg:$("fbCfg").value,adminPw,assignments,seenBattles,myPlans,rubric}));
+    localStorage.setItem(STORE_KEY,JSON.stringify({rosters,records:recs,totalPts,fbCfg:$("fbCfg").value,adminPw,assignments,seenBattles,myPlans,rubric,myLogs:myLogsLocal,myFinal:myFinalLocal}));
   }catch(e){}
 }
 // 기기 저장 여부 + Firebase 연결 여부를 한 줄로 합쳐 보여준다(이전엔 3곳에 흩어져 있어 헷갈렸음)
@@ -4492,6 +4505,8 @@ function loadAll(){
       if(Array.isArray(d.seenBattles))seenBattles=d.seenBattles;
       if(Array.isArray(d.myPlans))myPlans=d.myPlans;
       if(d.rubric)rubric={...RUBRIC_DEFAULT,...d.rubric};
+      if(d.myLogs)myLogsLocal=d.myLogs;
+      if(d.myFinal)myFinalLocal=d.myFinal;
     }
   }catch(e){}
   renderRubric();
@@ -4563,6 +4578,7 @@ async function initFirebase(){
     const app=appM.initializeApp(cfg);
     fdb=fmod.getDatabase(app);
     attachFbListeners();
+    ensureAuth(app).catch(()=>{});
     setLive("🟢 Firebase 실시간 연결됨 — 기록이 서버에 안전하게 저장됩니다");
     syncPending();
     fbBooting=false; return true;
@@ -4571,6 +4587,89 @@ async function initFirebase(){
     setLive("연결 실패 — 인터넷과 설정을 확인하세요. 기록은 이 기기에 보관되며 연결되면 자동 전송됩니다.",true);
     return false;
   }
+}
+/* ---------- 🔐 교사 로그인 ----------
+   학생이 쓴 성찰·계획서는 로그인한 교사만 서버에서 읽을 수 있게 한다.
+   학생은 로그인하지 않는다 — 자기 글은 자기 기기에 있으므로 서버를 읽을 일이 없다. */
+let authMod=null, fbAuth=null, teacherUser=null;
+function isTeacher(){ return !!teacherUser; }
+function renderAuth(){
+  const inRow=$("authForm"), outRow=$("authOutRow"), msg=$("authMsg");
+  if(teacherUser){
+    inRow.style.display="none"; outRow.style.display="flex";
+    $("authWho").innerHTML=`<b style="color:var(--good)">${teacherUser.email}</b> 로 로그인됨 — 이 기기에서는 계속 유지됩니다`;
+    msg.innerHTML="학생이 쓴 <b>성찰·계획서</b>를 볼 수 있습니다.";
+  }else{
+    inRow.style.display="flex"; outRow.style.display="none";
+    msg.innerHTML="학생이 쓴 <b>성찰·계획서</b>는 로그인한 교사만 볼 수 있습니다.";
+  }
+  // 로그인 전에는 민감한 화면을 가린다
+  ["pvClassStats","pvRows","pvDetail","rfRows","rfDetail"].forEach(id=>{
+    const el=$(id); if(!el)return;
+    el.style.opacity=teacherUser?"":"0.35";
+  });
+  renderPlanAdmin(); renderReflectAdmin();
+}
+async function ensureAuth(app){
+  if(fbAuth)return fbAuth;
+  authMod=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+  fbAuth=authMod.getAuth(app);
+  authMod.onAuthStateChanged(fbAuth,u=>{
+    teacherUser=u||null;
+    if(!u){ // 로그아웃하면 화면에 남은 남의 자료를 지운다
+      Object.keys(plans).forEach(k=>delete plans[k]);
+      Object.keys(reflections).forEach(k=>delete reflections[k]);
+    }
+    if(fmod&&fdb)attachProtected(fmod.onValue,fmod.ref);
+    renderAuth();
+    if(u)toast("교사 로그인됨 — 성찰·계획서를 볼 수 있습니다","good","🔐");
+  });
+  return fbAuth;
+}
+$("authIn").addEventListener("click",async()=>{
+  const em=($("authEmail").value||"").trim(), pw=$("authPw").value||"";
+  const msg=$("authMsg");
+  if(!em||!pw){msg.innerHTML='<span class="err">이메일과 비밀번호를 입력하세요.</span>';return;}
+  if(!fbAuth){msg.innerHTML='<span class="err">서버 연결 후 다시 시도하세요.</span>';return;}
+  msg.textContent="로그인 중…";
+  try{
+    await authMod.signInWithEmailAndPassword(fbAuth,em,pw);
+    $("authPw").value="";
+  }catch(e){
+    const c=String(e&&e.code||"");
+    msg.innerHTML='<span class="err">'+(
+      /user-not-found|invalid-credential|wrong-password/.test(c)?"이메일 또는 비밀번호가 맞지 않습니다.":
+      /too-many-requests/.test(c)?"시도가 많아 잠시 막혔습니다. 잠시 뒤 다시 해주세요.":
+      /operation-not-allowed|configuration-not-found/.test(c)
+        ?"Firebase 콘솔 → Authentication에서 '이메일/비밀번호' 로그인을 먼저 켜 주세요.":
+      /invalid-email/.test(c)?"이메일 주소 형식이 올바르지 않습니다.":
+      /network/.test(c)?"인터넷 연결을 확인하세요.":
+      "로그인 실패 ("+c+")")+'</span>';
+  }
+});
+$("authOut").addEventListener("click",async()=>{
+  if(!fbAuth)return;
+  if(!confirm("로그아웃하면 이 기기에서 성찰·계획서를 볼 수 없습니다.\n로그아웃할까요?"))return;
+  try{ await authMod.signOut(fbAuth); }catch(e){}
+});
+// 성찰·계획서는 교사만 읽을 수 있다. 학생 기기에서는 권한 오류가 나는 게 정상이므로 조용히 넘긴다.
+let protOff=[];
+function attachProtected(onValue,ref){
+  protOff.forEach(f=>{try{f();}catch(e){}}); protOff=[];
+  if(!fdb)return;
+  const quiet=()=>{};   // 권한 없음 — 학생 화면에서는 아무 일도 일어나지 않아야 한다
+  protOff.push(onValue(ref(fdb,"plans"),snap=>{
+    const v=snap.val()||{};
+    Object.keys(plans).forEach(k=>{ if(!(k in v))delete plans[k]; });
+    Object.assign(plans,v);
+    renderPlanAdmin();
+  },quiet));
+  protOff.push(onValue(ref(fdb,"reflections"),snap=>{
+    const v=snap.val()||{};
+    Object.keys(reflections).forEach(k=>{ if(!(k in v))delete reflections[k]; });
+    Object.assign(reflections,v);
+    renderReflectAdmin();
+  },quiet));
 }
 function attachFbListeners(){
   const {ref,onChildAdded,onChildChanged,onValue}=fmod;
@@ -4651,18 +4750,7 @@ function attachFbListeners(){
     renderBattles(); renderTasks(); handleBattleEvents(); // 운동하기의 결투 카드도 함께 갱신
     checkBattleAutoStart();                               // 수락된 배틀이 있으면 동시 시작 카운트다운
   });
-  onValue(ref(fdb,"plans"),snap=>{
-    const v=snap.val()||{};
-    Object.keys(plans).forEach(k=>{ if(!(k in v))delete plans[k]; });
-    Object.assign(plans,v);
-    renderPlanAdmin();
-  });
-  onValue(ref(fdb,"reflections"),snap=>{
-    const v=snap.val()||{};
-    Object.keys(reflections).forEach(k=>{ if(!(k in v))delete reflections[k]; });
-    Object.assign(reflections,v);
-    renderReflectAdmin(); renderFinalReflect(); renderRfLogs();
-  });
+  attachProtected(onValue,ref);
   onValue(ref(fdb,"rosters"),snap=>{
     const v=snap.val(); if(!v)return;
     // 서버에서 지운 반이 다른 기기에 계속 남지 않도록 서버 상태를 그대로 반영한다
