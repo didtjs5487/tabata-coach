@@ -118,6 +118,14 @@
   .pc-opts button{background:var(--panel); border:1px solid var(--line); border-radius:999px;
     padding:7px 13px; cursor:pointer; color:var(--ink); font-size:13.5px; font-weight:600; font-family:inherit;}
   .pc-opts button.on{border-color:var(--primary); background:rgba(124,108,255,.22); color:#fff;}
+  .pv-stats{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:7px;}
+  .pv-stat{background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:8px 10px; cursor:pointer; text-align:left; font-family:inherit; color:var(--ink);}
+  .pv-stat.on{border-color:var(--primary); background:rgba(124,108,255,.18);}
+  .pv-stat .t{display:flex; justify-content:space-between; align-items:baseline; font-size:13.5px; font-weight:700;}
+  .pv-stat .t b{font-size:15px;}
+  .pv-stat .bar{height:6px; border-radius:99px; background:var(--panel3); margin-top:6px; overflow:hidden;}
+  .pv-stat .bar i{display:block; height:100%; border-radius:99px;}
   .cfg-fixed{flex:1; min-width:220px; background:var(--panel); border:1px solid var(--line);
     border-radius:10px; padding:10px 12px; font-size:14px; line-height:1.55;}
   .cfg-fixed span{display:block; color:var(--muted); font-size:12.5px; margin-top:2px;}
@@ -619,6 +627,9 @@
   <section class="page" id="pgAdmin">
     <div class="hint" id="saveStatusLine" style="margin-bottom:12px;font-weight:600">저장 상태 확인 중…</div>
 
+    <button class="btn btn-teal" id="allExport" style="padding:15px 24px;width:100%">📥 평가용 통합 엑셀 내려받기</button>
+    <div class="hint" style="margin:8px 0 16px">㉮ 운동계획 · ㉯ 운동실천 · ㉰ 자기성찰을 <b>학생 한 명당 한 줄</b>로 합칩니다. 첫 시트는 전 학급 요약, 그다음은 반별 시트, 마지막은 수시 성찰 원문입니다.</div>
+
     <button class="btn btn-go" id="boardBig" style="padding:15px 24px;width:100%">🖥️ 학생용 화면 크게 보기</button>
     <div class="hint" style="margin:8px 0 16px">프로젝터용 큰 화면입니다. 반 고르기(여러 반 동시 가능), 실시간 신호등, 다같이 시작·정지가 모두 그 안에 있습니다.</div>
 
@@ -738,13 +749,24 @@
     </details>
 
     <details class="collapsible">
-    <summary>📐 운동 계획 보기</summary>
-    <div class="hint" style="margin:10px 0 8px">학생이 <b>운동 설계</b>에서 쓴 계획서입니다. 앱은 옳고 그름을 판정하지 않으니 <b>서술 내용을 읽고</b> 평가하세요. 이름을 누르면 전문이 펼쳐집니다.</div>
-    <div class="row" style="align-items:flex-end">
+    <summary>📝 운동 계획서 모아보기</summary>
+    <div class="hint" style="margin:10px 0 8px">학생이 <b>[📤 선생님께 제출]</b>을 누른 계획서만 여기에 모입니다. 앱은 옳고 그름을 판정하지 않으니 <b>서술 내용을 읽고</b> 평가하세요.</div>
+
+    <div class="hint" style="margin:12px 0 5px"><b>반별 제출 현황</b> — 반을 누르면 그 반 명단으로 넘어갑니다</div>
+    <div id="pvClassStats" class="pv-stats"></div>
+
+    <div class="row" style="align-items:flex-end;margin-top:14px">
       <div class="field"><label>반 선택</label><select id="pvClass"><option value="">반을 등록하세요</option></select></div>
-      <button class="btn btn-teal btn-sm" id="pvExport">⬇ 계획 엑셀 내려받기</button>
+      <button class="btn btn-teal btn-sm" id="pvExport">⬇ 계획서 엑셀 내려받기</button>
     </div>
-    <table><thead><tr><th>번호</th><th>이름</th><th>계획 수</th><th>대표 계획</th><th>목표</th><th>체감 체력</th><th>서술 작성</th><th>분량</th></tr></thead>
+    <div class="kpis" id="pvKpis">
+      <div class="kpi"><div class="v num c1" id="pvDone">0</div><div class="k">제출</div></div>
+      <div class="kpi"><div class="v num" style="color:var(--bad)" id="pvUndone">0</div><div class="k">미제출</div></div>
+      <div class="kpi"><div class="v num c2" id="pvRate">–</div><div class="k">제출률</div></div>
+      <div class="kpi"><div class="v num" style="color:var(--good)" id="pvFull">0</div><div class="k">서술 3칸 완성</div></div>
+    </div>
+    <div class="hint" id="pvMissing" style="margin:6px 0 10px"></div>
+    <table><thead><tr><th>번호</th><th>이름</th><th>제출</th><th>계획서 이름</th><th>목표</th><th>체감 체력</th><th>서술 작성</th><th>분량</th></tr></thead>
       <tbody id="pvRows"><tr><td colspan="8" class="empty">반을 고르면 학생별 계획이 표시됩니다.</td></tr></tbody></table>
     <div id="pvDetail" style="margin-top:10px"></div>
     </details>
@@ -2939,9 +2961,41 @@ function bestPlan(list){
     return ((b.reason||"").length)-((a.reason||"").length);
   })[0]||null;
 }
+// 서버에 계획서가 하나라도 있으면 제출한 것 — 제출한 것만 올라오기 때문이다
+function classPlanStat(cls){
+  const list=rosters[cls]||[];
+  const done=list.filter(s=>plansOf(s.name,cls).length).length;
+  const full=list.filter(s=>{const b=bestPlan(plansOf(s.name,cls));return b&&planWrote(b)===3;}).length;
+  return {total:list.length, done, full, undone:list.length-done,
+    rate:list.length?Math.round(done/list.length*100):0,
+    missing:list.filter(s=>!plansOf(s.name,cls).length).map(s=>s.name)};
+}
+function renderPlanStats(){
+  const box=$("pvClassStats"); if(!box)return;
+  const cur=$("pvClass").value, names=classNames();
+  box.innerHTML="";
+  if(!names.length){ box.innerHTML='<div class="hint">명렬표를 먼저 등록하세요.</div>'; return; }
+  names.forEach(c=>{
+    const st=classPlanStat(c);
+    const col=st.rate>=90?"var(--good)":st.rate>=60?"var(--gold)":"var(--bad)";
+    const b=document.createElement("button");
+    b.className="pv-stat"+(c===cur?" on":"");
+    b.innerHTML=`<div class="t"><b>${shortCls(c)}반</b><span style="color:${col}">${st.done}/${st.total} · ${st.rate}%</span></div>
+      <div class="bar"><i style="width:${st.rate}%;background:${col}"></i></div>`;
+    b.addEventListener("click",()=>{ $("pvClass").value=c; pvOpen=""; renderPlanAdmin(); });
+    box.appendChild(b);
+  });
+}
 function renderPlanAdmin(){
   const cls=$("pvClass").value, tb=$("pvRows"); tb.innerHTML=""; $("pvDetail").innerHTML="";
+  renderPlanStats();
   const list=rosters[cls]||[];
+  const st=classPlanStat(cls);
+  $("pvDone").textContent=st.done; $("pvUndone").textContent=st.undone;
+  $("pvRate").textContent=list.length?st.rate+"%":"–"; $("pvFull").textContent=st.full;
+  $("pvMissing").innerHTML=(cls&&st.missing.length)
+    ? `<b style="color:var(--bad)">미제출 ${st.missing.length}명</b> — ${st.missing.join(", ")}`
+    : (cls&&list.length?'<b style="color:var(--good)">전원 제출했습니다 ✔</b>':"");
   if(!cls||!list.length){ tb.innerHTML='<tr><td colspan="8" class="empty">반을 고르면 학생별 계획이 표시됩니다.</td></tr>'; return; }
   list.forEach(s=>{
     const ps=plansOf(s.name,cls), b=bestPlan(ps), w=planWrote(b);
@@ -2949,7 +3003,7 @@ function renderPlanAdmin(){
     const tr=document.createElement("tr");
     tr.innerHTML=`<td class="num">${s.no||""}</td>
       <td><b style="cursor:pointer;color:var(--primary)">${s.name}</b></td>
-      <td class="num" style="color:${ps.length?"var(--good)":"var(--muted)"}">${ps.length}</td>
+      <td class="num" style="color:${ps.length?"var(--good)":"var(--bad)"}"><b>${ps.length?"✔"+(ps.length>1?" "+ps.length+"건":""):"미제출"}</b></td>
       <td>${b?b.name:"–"}</td>
       <td>${b?(GOAL_LABEL[b.goal]||"–"):"–"}</td>
       <td>${b?(LEVEL_LABEL[b.level]||"–"):"–"}</td>
@@ -3154,23 +3208,116 @@ $("rfViewClass").addEventListener("change",()=>{ rfOpen=""; renderReflectAdmin()
 $("rfExport").addEventListener("click",()=>{
   const cs=classNames();
   if(!cs.length){alert("먼저 명렬표를 등록하세요.");return;}
-  const head=["번호","이름","수시성찰(회)","평균체감강도","마무리성찰",
-    "① 체력 변화","② 나아진 점","③ 어려웠던 운동","④ 계획 실천","⑤ 앞으로의 계획","수시 성찰 전문"];
+  // 수시 성찰은 건수가 계속 늘어나므로 반별 시트엔 요약만 두고 원문은 별도 시트에 한 줄씩 편다
+  const head=["번호","이름","수시성찰(회)","평균체감강도","최근 성찰일","마무리성찰",
+    "① 체력 변화","② 나아진 점","③ 어려웠던 운동","④ 계획 실천","⑤ 앞으로의 계획"];
   const sheets=cs.map(c=>({
     name:c,
     rows:[head].concat((rosters[c]||[]).map(s=>{
       const rf=reflectOf(s.name,c), f=(rf&&rf.final)||{}, fe=avgFeel(rf);
       const logs=Object.values((rf&&rf.logs)||{}).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
-      const all=logs.map(l=>`[${String(l.date).slice(0,10)}${l.feel?" 체감"+l.feel:""}] ${l.good||""}${l.next?" → "+l.next:""}`).join("\n");
-      return [s.no==null?"":Number(s.no), s.name, logs.length, fe==null?"":fe, hasFinal(rf)?"작성":"미작성",
-        f.q1||"", f.q2||"", f.q3||"", f.q4||"", f.q5||"", all];
+      const last=logs[logs.length-1];
+      return [s.no==null?"":Number(s.no), s.name, logs.length, fe==null?"":fe,
+        last?String(last.date).slice(0,10):"", hasFinal(rf)?"작성":"미작성",
+        f.q1||"", f.q2||"", f.q3||"", f.q4||"", f.q5||""];
     }))
   }));
+  const logHead=["반","번호","이름","작성일","체감강도(1~5)","체감 설명","그날 종합점수","잘된 점 · 아쉬운 점","다음에 바꿀 점"];
+  const logRows=[logHead];
+  cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
+    const rf=reflectOf(s.name,c);
+    Object.values((rf&&rf.logs)||{}).sort((a,b)=>String(a.date).localeCompare(String(b.date)))
+      .forEach(l=>logRows.push([c, s.no==null?"":Number(s.no), s.name, String(l.date||"").slice(0,10),
+        l.feel?Number(l.feel):"", FEEL_LABEL[l.feel]||"", l.score||"", l.good||"", l.next||""]));
+  }));
+  sheets.push({name:"수시성찰 원문",rows:logRows});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(XLSX.build(sheets));
   a.download=`타바타_자기성찰_${todayStr()}.xlsx`; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
   toast(`${cs.length}개 반의 성찰을 시트로 나눠 내려받았습니다.`,"good","✍️");
+});
+
+/* =================== 📥 평가용 통합 엑셀 ===================
+   ㉮ 운동계획 · ㉯ 운동실천 · ㉰ 자기성찰을 한 학생당 한 줄로 합친다.
+   첫 시트는 전 학급 요약, 이후 반별 시트에 근거 자료를 모두 담는다.    */
+function buildGradeBook(){
+  const cs=classNames();
+  const num=v=>(v===""||v==null||!isFinite(v))?v:Number(v);
+  const OX=b=>b?"○":"×";
+
+  // ── 시트 1: 전 학급 요약 (한눈에 채점 상태 파악) ──
+  const sumHead=["반","번호","이름","성별",
+    "㉮ 계획서 제출","㉮ 서술(3칸)","㉯ 실천점수(20)","㉯ 이수율(%)","㉯ 세션수",
+    "㉰ 수시성찰(회)","㉰ 마무리성찰"];
+  const sumRows=[sumHead];
+  cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
+    const g=practiceScore(s.name,c), rf=reflectOf(s.name,c);
+    const pb=bestPlan(plansOf(s.name,c));
+    sumRows.push([c, num(s.no), s.name, s.sex||"",
+      pb?"제출":"미제출", pb?planWrote(pb):"", num(g.score), g.assigned?num(g.rate):"", g.n,
+      logCount(rf), hasFinal(rf)?"작성":"미작성"]);
+  }));
+
+  // ── 반별 시트: 채점 근거 전부 ──
+  const head=["번호","이름","성별",
+    // ㉮ 운동계획
+    "㉮제출","㉮계획서 이름","㉮운동 구성","㉮설정","㉮목표","㉮체감 체력",
+    "㉮왜 이 목표?","㉮왜 이렇게 계획?","㉮조심할 부위","㉮어떻게 고려?","㉮주 실천(회)","㉮목표 실천(회)","㉮서술 칸수",
+    // ㉯ 운동실천
+    "㉯①과제제출","㉯②심박","㉯③정확도","㉯④자율실천","㉯⑤향상","㉯만족개수","㉯실천점수(20)",
+    "㉯배정차시","㉯이수차시","㉯이수율(%)","㉯세션수","㉯심박달성","㉯평균정확도(%)","㉯향상률(%)","㉯최고점수","㉯최근수행일",
+    // ㉰ 자기성찰
+    // 수시 성찰은 운동 횟수만큼 늘어나므로 여기엔 요약만 두고, 원문은 마지막 시트에 한 줄씩 편다
+    "㉰수시성찰(회)","㉰평균 체감강도","㉰최근 성찰일","㉰최근 성찰 내용","㉰마무리성찰",
+    "㉰① 체력 변화","㉰② 나아진 점","㉰③ 어려웠던 운동","㉰④ 계획 실천","㉰⑤ 앞으로의 계획"];
+  const sheets=[{name:"전체요약",rows:sumRows}].concat(cs.map(c=>({
+    name:c,
+    rows:[head].concat((rosters[c]||[]).map(s=>{
+      const st=statsFor(s.name,c), g=practiceScore(s.name,c);
+      const p=bestPlan(plansOf(s.name,c));
+      const rf=reflectOf(s.name,c), f=(rf&&rf.final)||{};
+      const logs=Object.values((rf&&rf.logs)||{}).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+      const lastLog=logs[logs.length-1]||null;
+      const lastTxt=lastLog?[lastLog.good,lastLog.next].filter(Boolean).join(" → "):"";
+      const sq=p?String(p.seq||"").split(",").filter(Boolean):[];
+      const fe=avgFeel(rf);
+      return [num(s.no), s.name, s.sex||"",
+        p?"제출":"미제출", p?p.name:"", sq.map(k=>EXNAME[k]||k).join("→"),
+        p?`${p.work}/${p.rest}초 × ${p.rounds}R`:"",
+        p?(GOAL_LABEL[p.goal]||""):"", p?(LEVEL_LABEL[p.level]||""):"",
+        p?(p.goalWhy||""):"", p?(p.reason||""):"", p?(p.careText||""):"", p?(p.careWhy||""):"",
+        p?(num(p.freq)||""):"", p?(num(p.target)||""):"", p?planWrote(p):"",
+        OX(g.items[0]),OX(g.items[1]),OX(g.items[2]),OX(g.items[3]),OX(g.items[4]),g.met,num(g.score),
+        g.assigned, g.done, g.assigned?num(g.rate):"", g.n, g.dil, g.n?num(g.acc):"",
+        g.gain!=null?num(g.gain):"", st?num(st.best):"", st?st.date:"",
+        logs.length, fe==null?"":num(fe),
+        lastLog?String(lastLog.date).slice(0,10):"", lastTxt, hasFinal(rf)?"작성":"미작성",
+        f.q1||"", f.q2||"", f.q3||"", f.q4||"", f.q5||""];
+    }))
+  })));
+
+  // ── 마지막 시트: 수시 성찰 원문 (한 건에 한 줄 — 횟수가 늘어도 그대로 쌓인다) ──
+  const logHead=["반","번호","이름","작성일","체감강도(1~5)","체감 설명","그날 종합점수","그날 정확도(%)","잘된 점 · 아쉬운 점","다음에 바꿀 점"];
+  const logRows=[logHead];
+  cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
+    const rf=reflectOf(s.name,c);
+    Object.values((rf&&rf.logs)||{})
+      .sort((a,b)=>String(a.date).localeCompare(String(b.date)))
+      .forEach(l=>logRows.push([c, num(s.no), s.name, String(l.date||"").slice(0,10),
+        l.feel?num(l.feel):"", FEEL_LABEL[l.feel]||"", num(l.score)||"", num(l.acc)||"",
+        l.good||"", l.next||""]));
+  }));
+  sheets.push({name:"수시성찰 원문",rows:logRows});
+  return sheets;
+}
+$("allExport").addEventListener("click",()=>{
+  if(!classNames().length){alert("먼저 명렬표를 등록하세요.");return;}
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(XLSX.build(buildGradeBook()));
+  a.download=`타바타_평가자료_${todayStr()}.xlsx`; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast("계획·실천·성찰을 한 파일로 내려받았습니다 — 첫 시트가 전체 요약입니다.","good","📥");
 });
 
 function statsFor(name,cls){
