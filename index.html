@@ -648,6 +648,7 @@
       <div class="kpi"><div class="v num" style="color:var(--gold)" id="mineGRate">–</div><div class="k">퍼펙트·그레이트율</div></div>
       <div class="kpi"><div class="v num c3" id="mineHr">–</div><div class="k">최근 심박(전→후)</div></div>
       <div class="kpi"><div class="v num" style="color:var(--good)" id="mineDil">0</div><div class="k">성실 수행</div></div>
+      <div class="kpi"><div class="v num" style="color:var(--gold)" id="mineBattle">–</div><div class="k">결투 전적</div></div>
     </div>
     <div class="trend-row" id="mineTrendRow" style="display:none">
       <div><div class="hint">직전 세션 대비</div><div class="trend-delta" id="mineDelta">–</div></div>
@@ -841,8 +842,8 @@
       <div class="field"><label>반 선택</label><select id="rfViewClass"><option value="">반을 등록하세요</option></select></div>
       <button class="btn btn-teal btn-sm" id="rfExport">⬇ 성찰 엑셀 내려받기</button>
     </div>
-    <table><thead><tr><th>번호</th><th>이름</th><th>수시 성찰</th><th>자기평가 평균</th><th>마무리 성찰</th><th>최근 작성</th></tr></thead>
-      <tbody id="rfRows"><tr><td colspan="6" class="empty">반을 고르면 학생별 성찰 현황이 표시됩니다.</td></tr></tbody></table>
+    <table><thead><tr><th>번호</th><th>이름</th><th>수시 성찰</th><th>공통/자율</th><th>자기평가 평균</th><th>마무리 성찰</th><th>최근 작성</th></tr></thead>
+      <tbody id="rfRows"><tr><td colspan="7" class="empty">반을 고르면 학생별 성찰 현황이 표시됩니다.</td></tr></tbody></table>
     <div id="rfDetail" style="margin-top:10px"></div>
     </details>
 
@@ -3409,7 +3410,7 @@ function nowStamp(){
 }
 
 /* ---------- 성찰 일지 쓰기·다시보기 (하나의 화면으로 처리) ---------- */
-let rfDocKey=null, rfSelf=[0,0,0,0];
+let rfDocKey=null, rfSelf=[0,0,0,0], rfDocMode="", rfDocTitle="";
 function renderRfSelf(){
   const box=$("rfSelfList"); box.innerHTML="";
   RF_SELF.forEach((t,i)=>{
@@ -3431,11 +3432,16 @@ function openReflectDoc(entry){
   const src=entry||{};
   rfDocKey=entry?entry.key:((lastRec&&lastRec.id)||Date.now().toString(36));
   const rec=entry?null:lastRec;
+  // 어떤 과제로 한 운동인지 함께 남긴다 (공통과제 / 자율 / 결투)
+  const mode=entry?(src.mode||""):(rec?(rec.taskId?"공통과제":(String(rec.task||"").indexOf("vs")>=0?"결투":"자율")):"");
+  const modeTitle=entry?(src.taskTitle||""):(rec?(rec.taskId?String(rec.task||""):""):"");
   const hrPre=entry?src.hrPre:(rec&&rec.hrPre)||"";
   const hr=entry?src.hr:(rec&&rec.hr)||"";
   const acc=entry?src.acc:(rec&&rec.acc)||"";
   const score=entry?src.score:(rec&&rec.score)||"";
-  $("rfDocWhen").textContent=(entry?src.date:nowStamp())+(entry?" 에 쓴 일지":" · 방금 마친 운동");
+  const badge=mode?("  ·  "+mode+(modeTitle?" ("+modeTitle+")":"")):"";
+  $("rfDocWhen").textContent=(entry?src.date:nowStamp())+(entry?" 에 쓴 일지":" · 방금 마친 운동")+badge;
+  rfDocMode=mode; rfDocTitle=modeTitle;
   $("rfDocData").innerHTML=`<b>내 운동 데이터</b>`
     +`<span>운동 전 심박 ${hrPre||"–"} → 운동 후 ${hr||"– (아직 측정 안 함)"}</span>`
     +`<span>동작 정확도 ${acc!==""?acc+"%":"–"} · 종합 점수 ${score!==""?score+"점":"–"}</span>`;
@@ -3462,6 +3468,8 @@ $("rfDocSave").addEventListener("click",()=>{
   entry.acc=old.acc!==undefined?old.acc:((lastRec&&lastRec.acc)||"");
   entry.score=old.score!==undefined?old.score:((lastRec&&lastRec.score)||"");
   entry.date=old.date||entry.date;
+  entry.mode=old.mode||rfDocMode||"";
+  entry.taskTitle=old.taskTitle||rfDocTitle||"";
   if(!reflections[me.cls])reflections[me.cls]={};
   if(!reflections[me.cls][me.name])reflections[me.cls][me.name]={};
   if(!reflections[me.cls][me.name].logs)reflections[me.cls][me.name].logs={};
@@ -3496,7 +3504,8 @@ function renderRfLogs(){
   logs.forEach(l=>{
     const b=document.createElement("button"); b.className="rf-log";
     const pv=[l.q1,l.q2,l.q3,l.q4,l.q5].find(t=>String(t||"").trim())||"(내용 없음)";
-    b.innerHTML=`<span class="dt">${String(l.date||"").replace(" ","<br>")}</span>
+    const tag=l.mode?`<span class="pt">${l.mode}</span>`:"";
+    b.innerHTML=`<span class="dt">${String(l.date||"").replace(" ","<br>")}</span>${tag}
       <span class="pv">${String(pv).replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]))}</span>
       <span class="num" style="color:var(--muted);font-size:12px">${logWrote(l)}/5</span>`;
     b.addEventListener("click",()=>openReflectDoc(l));
@@ -3546,7 +3555,7 @@ function renderReflectAdmin(){
   const cls=$("rfViewClass").value, tb=$("rfRows"); tb.innerHTML="";
   $("rfDetail").innerHTML="";
   const list=rosters[cls]||[];
-  if(!cls||!list.length){ tb.innerHTML='<tr><td colspan="6" class="empty">반을 고르면 학생별 성찰 현황이 표시됩니다.</td></tr>'; return; }
+  if(!cls||!list.length){ tb.innerHTML='<tr><td colspan="7" class="empty">반을 고르면 학생별 성찰 현황이 표시됩니다.</td></tr>'; return; }
   list.forEach(s=>{
     const rf=reflectOf(s.name,cls), nLog=logCount(rf), fin=hasFinal(rf), fe=avgSelf(rf);
     const last=Object.values((rf&&rf.logs)||{}).map(l=>l.date||"").sort().slice(-1)[0]
@@ -3555,6 +3564,7 @@ function renderReflectAdmin(){
     tr.innerHTML=`<td class="num">${s.no||""}</td>
       <td><b style="cursor:pointer;color:var(--primary)">${s.name}</b></td>
       <td class="num" style="color:${nLog?"var(--good)":"var(--muted)"}">${nLog}회</td>
+      <td class="num" style="color:var(--muted)">${(()=>{const L=Object.values((rf&&rf.logs)||{});const c=L.filter(x=>x.mode==="공통과제").length, z=L.filter(x=>x.mode&&x.mode!=="공통과제").length;return L.length?(c+"/"+z):"–";})()}</td>
       <td class="num">${fe!=null?fe:"–"}</td>
       <td class="num" style="color:${fin?"var(--good)":"var(--bad)"}">${fin?"작성 ✔":"미작성"}</td>
       <td class="num" style="color:var(--muted)">${last?String(last).slice(0,10):"–"}</td>`;
@@ -3573,7 +3583,7 @@ function showReflectDetail(cls,name){
   let h=`<div class="step-box"><div style="font-weight:700;font-size:16px;margin-bottom:8px">✍️ ${cls}반 ${name}</div>`;
   h+=`<div class="hint" style="margin-bottom:4px">수시 성찰 ${logs.length}회</div>`;
   h+=logs.length?logs.map(l=>`<div class="rf-text"><b class="num" style="color:var(--muted)">${esc(l.date)}</b>
-      ${l.score?` · 종합 ${l.score}점`:""}${l.acc?` · 정확도 ${l.acc}%`:""}${(l.hrPre||l.hr)?` · 심박 ${l.hrPre||"–"}→${l.hr||"–"}`:""}
+      ${l.mode?` · <b>${esc(l.mode)}</b>${l.taskTitle?" ("+esc(l.taskTitle)+")":""}`:""}${l.score?` · 종합 ${l.score}점`:""}${l.acc?` · 정확도 ${l.acc}%`:""}${(l.hrPre||l.hr)?` · 심박 ${l.hrPre||"–"}→${l.hr||"–"}`:""}
       ${RF_QS.map((q,qi)=>String(l["q"+(qi+1)]||"").trim()?`<br><b>${qi+1}. ${q}</b><br>${esc(l["q"+(qi+1)])}`:"").join("")}
       ${[1,2,3,4].some(i=>l["s"+i])?`<br><span style="color:var(--muted)">자기평가 — `+RF_SELF.map((t,si)=>`${t}: ${SELF_LABEL[l["s"+(si+1)]]||"–"}`).join(" · ")+`</span>`:""}</div>`).join("")
     :'<div class="hint">아직 없습니다.</div>';
@@ -3603,13 +3613,13 @@ $("rfExport").addEventListener("click",()=>{
         f.q1||"", f.q2||"", f.q3||"", f.q4||"", f.q5||""];
     }))
   }));
-  const logHead=["반","번호","이름","작성일","심박 전","심박 후","정확도(%)","종합점수","① 운동 강도 돌아보기","② 잘한 점/배운 점","③ 배운 개념 연결","④ 부족했던 점","⑤ 다음 실천 계획","자기평가1 성실참여","자기평가2 바른자세","자기평가3 목표강도","자기평가4 구체적계획","작성 문항수"];
+  const logHead=["반","번호","이름","작성일","구분","과제명","심박 전","심박 후","정확도(%)","종합점수","① 운동 강도 돌아보기","② 잘한 점/배운 점","③ 배운 개념 연결","④ 부족했던 점","⑤ 다음 실천 계획","자기평가1 성실참여","자기평가2 바른자세","자기평가3 목표강도","자기평가4 구체적계획","작성 문항수"];
   const logRows=[logHead];
   cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
     const rf=reflectOf(s.name,c);
     Object.values((rf&&rf.logs)||{}).sort((a,b)=>String(a.date).localeCompare(String(b.date)))
       .forEach(l=>logRows.push([c, s.no==null?"":Number(s.no), s.name, String(l.date||"").slice(0,10),
-        l.hrPre||"", l.hr||"", l.acc||"", l.score||"",
+        l.mode||"", l.taskTitle||"", l.hrPre||"", l.hr||"", l.acc||"", l.score||"",
         l.q1||"", l.q2||"", l.q3||"", l.q4||"", l.q5||"",
         SELF_LABEL[l.s1]||"", SELF_LABEL[l.s2]||"", SELF_LABEL[l.s3]||"", SELF_LABEL[l.s4]||"",
         logWrote(l)]));
@@ -3685,14 +3695,14 @@ function buildGradeBook(){
   })));
 
   // ── 마지막 시트: 수시 성찰 원문 (한 건에 한 줄 — 횟수가 늘어도 그대로 쌓인다) ──
-  const logHead=["반","번호","이름","작성일","심박 전","심박 후","정확도(%)","종합점수","① 운동 강도 돌아보기","② 잘한 점/배운 점","③ 배운 개념 연결","④ 부족했던 점","⑤ 다음 실천 계획","자기평가1 성실참여","자기평가2 바른자세","자기평가3 목표강도","자기평가4 구체적계획","작성 문항수"];
+  const logHead=["반","번호","이름","작성일","구분","과제명","심박 전","심박 후","정확도(%)","종합점수","① 운동 강도 돌아보기","② 잘한 점/배운 점","③ 배운 개념 연결","④ 부족했던 점","⑤ 다음 실천 계획","자기평가1 성실참여","자기평가2 바른자세","자기평가3 목표강도","자기평가4 구체적계획","작성 문항수"];
   const logRows=[logHead];
   cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
     const rf=reflectOf(s.name,c);
     Object.values((rf&&rf.logs)||{})
       .sort((a,b)=>String(a.date).localeCompare(String(b.date)))
       .forEach(l=>logRows.push([c, num(s.no), s.name, String(l.date||"").slice(0,10),
-        num(l.hrPre)||"", num(l.hr)||"", num(l.acc)||"", num(l.score)||"",
+        l.mode||"", l.taskTitle||"", num(l.hrPre)||"", num(l.hr)||"", num(l.acc)||"", num(l.score)||"",
         l.q1||"", l.q2||"", l.q3||"", l.q4||"", l.q5||"",
         SELF_LABEL[l.s1]||"", SELF_LABEL[l.s2]||"", SELF_LABEL[l.s3]||"", SELF_LABEL[l.s4]||"",
         logWrote(l)]));
@@ -3787,6 +3797,18 @@ function renderMine(){
   const last=rs[rs.length-1];
   $("mineHr").textContent=last&&(last.hrPre||last.hr)?`${last.hrPre||"–"}→${last.hr||"–"}`:"–";
   $("mineDil").textContent=rs.filter(isDiligent).length;
+  { // 결투 전적 — 끝난 결투만 센다
+    const me={name,cls}; let w=0,d=0,l=0;
+    Object.values(battles).forEach(b=>{
+      if(!b||b.status!=="done")return;
+      const iAmC=sameP(b.ch,me), iAmO=sameP(b.op,me);
+      if(!iAmC&&!iAmO)return;
+      const mine=iAmC?"c":"o";
+      if(b.winner==="draw")d++; else if(b.winner===mine)w++; else l++;
+    });
+    const n=w+d+l;
+    $("mineBattle").textContent=n?(w+"승"+(d?" "+d+"무":"")+" "+l+"패"):"–";
+  }
   renderMineTrend(rs,name,cls);
   renderFinalReflect(); renderRfLogs(); // 기록이 없어도 성찰 칸은 보여야 하므로 early return보다 먼저
   if(!rs.length){tb.innerHTML='<tr><td colspan="8" class="empty">아직 기록이 없습니다.</td></tr>';return;}
