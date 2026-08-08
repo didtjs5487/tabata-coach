@@ -420,7 +420,6 @@
           <button type="button" data-v="fat">🔥 체중 감량</button>
           <button type="button" data-v="end">🔁 근지구력 증가</button>
           <button type="button" data-v="car">🫁 심폐지구력 증가</button>
-          <button type="button" data-v="flex">🤸 유연성 증가</button>
           <button type="button" data-v="str">💪 근력 증가</button>
         </div>
         <div style="margin-top:8px">
@@ -2837,8 +2836,10 @@ const PLAN_WORK=20, PLAN_REST=10, PLAN_ROUNDS=8;
 const EX_PART={squat:"하체",lunge:"하체",sidelunge:"하체",jumpsquat:"하체",
   pushup:"상체",pushupknee:"상체", crunch:"코어",legraise:"코어",plank:"코어",
   jack:"유산소",highknee:"유산소",mtclimber:"유산소",burpee:"유산소"};
+// 유연성은 13개 동작 중 해당 운동이 없어 선택지에서 뺐다.
+// (이미 저장된 계획이 있을 수 있으므로 표시용 이름은 남겨 둔다)
 const GOAL_LABEL={fat:"체중 감량",end:"근지구력 증가",car:"심폐지구력 증가",
-  flex:"유연성 증가",str:"근력 증가"};
+  str:"근력 증가",flex:"유연성 증가"};
 const LEVEL_LABEL={low:"약한 편",mid:"보통",high:"좋은 편"};
 let pcGoal="", pcLevel="";
 
