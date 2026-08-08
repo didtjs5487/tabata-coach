@@ -707,9 +707,9 @@
   <section class="page" id="pgAdmin">
     <div class="hint" id="saveStatusLine" style="margin-bottom:12px;font-weight:600">저장 상태 확인 중…</div>
 
-    <div class="step-box" id="authBox" style="margin-bottom:14px">
-      <div style="font-weight:700">🔐 교사 로그인</div>
-      <div class="hint" id="authMsg" style="margin:3px 0 8px">학생이 쓴 <b>성찰·계획서</b>는 로그인한 교사만 볼 수 있습니다.</div>
+    <details class="collapsible" id="authBox" open>
+      <summary id="authSum">🔐 교사 로그인 — 로그인 필요</summary>
+      <div class="hint" id="authMsg" style="margin:10px 0 8px">학생이 쓴 <b>성찰·계획서</b>는 로그인한 교사만 볼 수 있습니다.</div>
       <div class="row" id="authForm" style="margin:0">
         <div class="field" style="flex:1;min-width:180px"><label>이메일</label>
           <input type="email" id="authEmail" autocomplete="username" style="width:100%"></div>
@@ -728,7 +728,7 @@
         <button class="btn btn-go btn-sm" id="authPwSave">변경</button>
         <button class="btn btn-stop btn-sm" id="authPwCancel">취소</button>
       </div>
-    </div>
+    </details>
 
     <button class="btn btn-teal" id="allExport" style="padding:15px 24px;width:100%">📥 평가용 통합 엑셀 내려받기</button>
     <div class="hint" style="margin:8px 0 16px">㉮ 운동계획 · ㉯ 운동실천 · ㉰ 자기성찰을 <b>학생 한 명당 한 줄</b>로 합칩니다. 첫 시트는 전 학급 요약, 그다음은 반별 시트, 마지막은 수시 성찰 원문입니다.</div>
@@ -4673,6 +4673,8 @@ async function initFirebase(){
    학생이 쓴 성찰·계획서는 로그인한 교사만 서버에서 읽을 수 있게 한다.
    학생은 로그인하지 않는다 — 자기 글은 자기 기기에 있으므로 서버를 읽을 일이 없다. */
 let authMod=null, fbAuth=null, teacherUser=null;
+let authTouched=false;   // 선생님이 직접 접었다 폈으면 그 선택을 존중한다
+$("authBox").addEventListener("toggle",()=>{ authTouched=true; });
 function isTeacher(){ return !!teacherUser; }
 function renderAuth(){
   const inRow=$("authForm"), outRow=$("authOutRow"), msg=$("authMsg");
@@ -4681,10 +4683,14 @@ function renderAuth(){
     $("authPwRow").style.display="none"; $("authPwNew").value="";
     $("authWho").innerHTML=`<b style="color:var(--good)">${teacherUser.email}</b> 로 로그인됨 — 이 기기에서는 계속 유지됩니다`;
     msg.innerHTML="학생이 쓴 <b>성찰·계획서</b>를 볼 수 있습니다.";
+    $("authSum").innerHTML=`🔐 교사 로그인 — <span style="color:var(--good)">${teacherUser.email}</span>`;
+    if(!authTouched)$("authBox").open=false;   // 로그인되면 자리를 차지하지 않게 접는다
   }else{
     inRow.style.display="flex"; outRow.style.display="none";
     $("authPwRow").style.display="none";
     msg.innerHTML="학생이 쓴 <b>성찰·계획서</b>는 로그인한 교사만 볼 수 있습니다.";
+    $("authSum").innerHTML='🔐 교사 로그인 — <span style="color:var(--bad)">로그인 필요</span>';
+    if(!authTouched)$("authBox").open=true;    // 로그아웃 상태면 눈에 띄게 펼쳐 둔다
   }
   // 로그인 전에는 민감한 화면을 가린다
   ["pvClassStats","pvRows","pvDetail","rfRows","rfDetail"].forEach(id=>{
