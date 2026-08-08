@@ -104,6 +104,17 @@
   .rf-q > label{display:block; font-weight:700; font-size:14px; margin-bottom:4px;}
   .rf-q textarea{width:100%; background:var(--panel); color:var(--ink); border:1px solid var(--line);
     border-radius:10px; padding:9px; font-family:inherit; font-size:14px; resize:vertical;}
+  .rf-self{display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--line);}
+  .rf-self .lb{flex:1; font-size:13.5px; line-height:1.35;}
+  .rf-self .op{display:flex; gap:4px;}
+  .rf-self .op button{background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:6px 9px; cursor:pointer; color:var(--muted); font-size:12.5px; font-weight:700; font-family:inherit; white-space:nowrap;}
+  .rf-self .op button.on{border-color:var(--primary); background:rgba(124,108,255,.25); color:#fff;}
+  .rf-log{display:flex; align-items:center; gap:10px; width:100%; text-align:left; cursor:pointer;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:9px 11px;
+    margin-bottom:6px; color:var(--ink); font-family:inherit;}
+  .rf-log .dt{font-weight:700; font-size:13.5px; white-space:nowrap;}
+  .rf-log .pv{flex:1; font-size:12.5px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .rf-sum{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;}
   .rf-sum div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:7px 11px; font-size:13px;}
   .rf-sum b{font-size:16px;}
@@ -558,23 +569,9 @@
 
       <div class="step-box" id="reflectBox" style="margin-top:18px">
         <div style="font-weight:700">✍️ 오늘의 성찰</div>
-        <div class="hint" style="margin:2px 0 10px">한 줄이면 충분해요. 위 기록을 보면서 쓰면 좋습니다.</div>
-        <div class="hint" style="margin-bottom:5px">오늘 운동 강도는 어땠나요?</div>
-        <div class="rf-scale" id="rfFeel">
-          <button type="button" data-v="1">😣<span>너무 힘듦</span></button>
-          <button type="button" data-v="2">😥<span>힘듦</span></button>
-          <button type="button" data-v="3">🙂<span>알맞음</span></button>
-          <button type="button" data-v="4">😄<span>여유</span></button>
-          <button type="button" data-v="5">💪<span>더 가능</span></button>
-        </div>
-        <div class="rf-q"><label>잘된 점 · 아쉬운 점</label>
-          <textarea id="rfGood" rows="2" placeholder="예: 스쿼트 자세가 지난번보다 안정됐다"></textarea></div>
-        <div class="rf-q"><label>다음에 바꿀 점</label>
-          <textarea id="rfNext" rows="2" placeholder="예: 플랭크에서 허리가 내려가지 않게 버티기"></textarea></div>
-        <div class="row" style="margin:10px 0 0">
-          <button class="btn btn-teal btn-sm" id="rfSave">성찰 저장</button>
-          <span class="hint" id="rfMsg"></span>
-        </div>
+        <div class="hint" style="margin:2px 0 10px">기본 정보와 운동 데이터는 <b>자동으로 채워집니다.</b> 성찰 문항만 쓰면 돼요.</div>
+        <button class="btn btn-teal btn-sm" id="rfOpenBtn">✍️ 성찰 일지 쓰기</button>
+        <span class="hint" id="rfBoxMsg" style="margin-left:8px"></span>
       </div>
     </div>
     </div><!-- /workSteps -->
@@ -598,6 +595,12 @@
     </div>
     <table><thead><tr><th>일시</th><th>구분</th><th>운동구성</th><th>정확도</th><th>판정(퍼·그·굿·오·미)</th><th>심박(전→후)</th><th>종합</th><th>획득P</th></tr></thead>
       <tbody id="mineRows"><tr><td colspan="8" class="empty">아직 기록이 없습니다.</td></tr></tbody></table>
+
+    <div class="step-box" id="rfLogBox" style="margin-top:22px">
+      <div style="font-weight:700;font-size:16px">✍️ 내가 쓴 성찰 일지</div>
+      <div class="hint" style="margin:2px 0 10px">누르면 그때 쓴 내용을 다시 보고 고칠 수 있어요.</div>
+      <div id="rfLogList"></div>
+    </div>
 
     <div class="step-box" id="finalRfBox" style="margin-top:22px">
       <div style="font-weight:700;font-size:16px">🏁 단원 마무리 성찰</div>
@@ -778,7 +781,7 @@
       <div class="field"><label>반 선택</label><select id="rfViewClass"><option value="">반을 등록하세요</option></select></div>
       <button class="btn btn-teal btn-sm" id="rfExport">⬇ 성찰 엑셀 내려받기</button>
     </div>
-    <table><thead><tr><th>번호</th><th>이름</th><th>수시 성찰</th><th>평균 체감강도</th><th>마무리 성찰</th><th>최근 작성</th></tr></thead>
+    <table><thead><tr><th>번호</th><th>이름</th><th>수시 성찰</th><th>자기평가 평균</th><th>마무리 성찰</th><th>최근 작성</th></tr></thead>
       <tbody id="rfRows"><tr><td colspan="6" class="empty">반을 고르면 학생별 성찰 현황이 표시됩니다.</td></tr></tbody></table>
     <div id="rfDetail" style="margin-top:10px"></div>
     </details>
@@ -908,6 +911,38 @@
       <button class="btn btn-go btn-sm" id="battlePickSend">⚔️ 신청 보내기</button>
       <button class="btn btn-stop btn-sm" id="battlePickClose">닫기</button>
       <span class="hint" id="battlePickMsg"></span>
+    </div>
+  </div>
+</div>
+<div id="rfDocOverlay" style="display:none;position:fixed;inset:0;z-index:10005;background:rgba(28,32,66,.93);align-items:center;justify-content:center;padding:10px">
+  <div style="background:var(--panel);border-radius:16px;padding:16px;width:min(560px,98vw);max-height:96vh;display:flex;flex-direction:column">
+    <div style="font-weight:800;font-size:18px">✍️ 자기성찰 일지</div>
+    <div class="hint" id="rfDocWhen" style="margin:2px 0 8px"></div>
+    <div class="cfg-fixed" id="rfDocData" style="margin-bottom:8px"></div>
+    <div style="overflow-y:auto;flex:1">
+      <div class="rf-q"><label>1. 운동 강도 돌아보기</label>
+        <div class="hint" style="margin-bottom:4px">위 심박수를 근거로, 내가 충분한 강도로 운동했는지 스스로 평가해 보세요.</div>
+        <textarea id="rq1" rows="3" placeholder="예: 운동 전 72에서 후 138까지 올라 충분히 힘을 냈다고 생각한다"></textarea></div>
+      <div class="rf-q"><label>2. 잘한 점 / 배운 점</label>
+        <div class="hint" style="margin-bottom:4px">자세·호흡·리듬·체력 등에서 잘한 점이나 새로 알게 된 점</div>
+        <textarea id="rq2" rows="3" placeholder="예: 숨을 참지 않고 내쉬면서 하니 끝까지 버틸 수 있었다"></textarea></div>
+      <div class="rf-q"><label>3. 배운 개념 연결하기</label>
+        <div class="hint" style="margin-bottom:4px">수업에서 배운 개념(심박수와 운동 강도, 운동 후 소모되는 에너지 등)을 오늘 내 경험과 이어 설명해 보세요.</div>
+        <textarea id="rq3" rows="3" placeholder="예: 운동이 끝나고도 한참 숨이 찼는데, 배운 대로 회복하는 동안에도 에너지를 쓰기 때문인 것 같다"></textarea></div>
+      <div class="rf-q"><label>4. 부족했던 점</label>
+        <div class="hint" style="margin-bottom:4px">어떤 운동이나 부분이 특히 어려웠나요? 그 이유는 무엇이라고 생각하나요?</div>
+        <textarea id="rq4" rows="3" placeholder="예: 플랭크에서 허리가 내려갔다. 배에 힘을 주는 법을 아직 잘 모르는 것 같다"></textarea></div>
+      <div class="rf-q"><label>5. 다음 실천 계획</label>
+        <div class="hint" style="margin-bottom:4px">다음 운동에서 무엇을, 어떻게 바꿔 볼 것인가요? 실천할 수 있는 구체적인 계획으로.</div>
+        <textarea id="rq5" rows="3" placeholder="예: 다음에는 플랭크를 20초씩 나눠서 하고, 배에 힘을 준 채로 숨쉬기를 먼저 연습하겠다"></textarea></div>
+
+      <div class="rf-q"><label>오늘의 자기 평가</label>
+        <div id="rfSelfList"></div></div>
+    </div>
+    <div class="row" style="margin:12px 0 0">
+      <button class="btn btn-go btn-sm" id="rfDocSave">💾 성찰 저장</button>
+      <button class="btn btn-stop btn-sm" id="rfDocClose">닫기</button>
+      <span class="hint" id="rfDocMsg"></span>
     </div>
   </div>
 </div>
@@ -3068,18 +3103,29 @@ $("pvExport").addEventListener("click",()=>{
   toast(`${cs.length}개 반의 운동 계획서를 내려받았습니다.`,"good","📝");
 });
 /* =================== ✍️ 자기성찰 (평가계획서 ㉰) ===================
-   수시 성찰: 운동을 마친 결과 화면에서 자기 수치를 보며 바로 쓴다.
-   마무리 성찰: 모든 차시가 끝난 뒤 '내 기록' 탭에서 단원 전체를 돌아보며 한 번 쓴다.
+   수시 성찰: 운동을 마칠 때마다 쓴다. 학습지(타바타_자기성찰_학습지)의 5문항 +
+   자기평가 4항목을 그대로 옮겼고, 심박·정확도·종합점수는 앱이 자동으로 채운다.
+   마무리 성찰: 모든 차시가 끝난 뒤 단원 전체를 돌아보며 한 번 쓴다.
    저장 위치 reflections/{반}/{이름} = {logs:{...수시}, final:{...마무리}}          */
 const reflections={};                 // Firebase /reflections 미러
 let lastRec=null;                     // 방금 끝낸 세션 (수시 성찰을 이 기록에 붙인다)
-const FEEL_LABEL={1:"너무 힘듦",2:"힘듦",3:"알맞음",4:"여유",5:"더 가능"};
+const RF_QS=["운동 강도 돌아보기","잘한 점 / 배운 점","배운 개념 연결하기","부족했던 점","다음 실천 계획"];
+const RF_SELF=["성실하게 끝까지 참여했다","바른 자세로 운동했다","목표한 강도로 운동했다","다음 계획을 구체적으로 세웠다"];
+const SELF_LABEL={3:"잘함",2:"보통",1:"노력 필요"};
 function reflectOf(name,cls){ return (reflections[cls]||{})[name]||null; }
 function myReflect(){ const me=myKey(); return me.name?reflectOf(me.name,me.cls):null; }
+function myLogs(){ const rf=myReflect();
+  return Object.entries((rf&&rf.logs)||{}).map(([k,v])=>({key:k,...v}))
+    .sort((a,b)=>String(b.date).localeCompare(String(a.date))); }
 function logCount(rf){ return rf&&rf.logs?Object.keys(rf.logs).length:0; }
 function hasFinal(rf){ return !!(rf&&rf.final&&[1,2,3,4,5].some(i=>(rf.final["q"+i]||"").trim())); }
-function avgFeel(rf){
-  const vs=Object.values((rf&&rf.logs)||{}).map(l=>+l.feel).filter(v=>v>=1&&v<=5);
+function logWrote(l){ return [1,2,3,4,5].filter(i=>String(l["q"+i]||"").trim()).length; }
+// 자기평가 평균 (잘함3 · 보통2 · 노력필요1)
+function avgSelf(rf){
+  const vs=[];
+  Object.values((rf&&rf.logs)||{}).forEach(l=>[1,2,3,4].forEach(i=>{
+    const v=+l["s"+i]; if(v>=1&&v<=3)vs.push(v);
+  }));
   return vs.length?Math.round(vs.reduce((a,b)=>a+b,0)/vs.length*10)/10:null;
 }
 function reflectRef(me,sub){ return fmod.ref(fdb,`reflections/${me.cls}/${me.name}`+(sub?"/"+sub:"")); }
@@ -3090,39 +3136,107 @@ function reflectErr(e){
     ? "저장 권한이 없습니다 — 선생님께 알려주세요 (Firebase 규칙에 reflections 추가 필요)"
     : "전송 실패 — 인터넷을 확인하세요.";
 }
-
-/* ---------- 수시 성찰 (결과 화면) ---------- */
-let rfFeel=0;
-$("rfFeel").addEventListener("click",e=>{
-  const b=e.target.closest("button"); if(!b)return;
-  rfFeel=+b.dataset.v;
-  [...$("rfFeel").children].forEach(x=>x.classList.toggle("on",x===b));
-});
-function resetReflectForm(){
-  rfFeel=0; [...$("rfFeel").children].forEach(x=>x.classList.remove("on"));
-  $("rfGood").value=""; $("rfNext").value=""; $("rfMsg").textContent="";
-  $("rfSave").disabled=false; $("rfSave").textContent="성찰 저장";
+function nowStamp(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`
+    +` ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
 }
-$("rfSave").addEventListener("click",()=>{
-  const me=myKey(), msg=$("rfMsg");
+
+/* ---------- 성찰 일지 쓰기·다시보기 (하나의 화면으로 처리) ---------- */
+let rfDocKey=null, rfSelf=[0,0,0,0];
+function renderRfSelf(){
+  const box=$("rfSelfList"); box.innerHTML="";
+  RF_SELF.forEach((t,i)=>{
+    const d=document.createElement("div"); d.className="rf-self";
+    d.innerHTML=`<span class="lb">${i+1}. ${t}</span><span class="op">`
+      +[3,2,1].map(v=>`<button type="button" data-v="${v}">${SELF_LABEL[v]}</button>`).join("")+`</span>`;
+    d.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+      rfSelf[i]=+b.dataset.v;
+      d.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    }));
+    if(rfSelf[i])d.querySelectorAll("button").forEach(x=>x.classList.toggle("on",+x.dataset.v===rfSelf[i]));
+    box.appendChild(d);
+  });
+}
+// entry가 없으면 방금 끝낸 세션으로 새로 쓴다
+function openReflectDoc(entry){
+  const me=myKey();
+  if(!me.name){alert("운동 설계 탭에서 학번을 먼저 입력하세요.");return;}
+  const src=entry||{};
+  rfDocKey=entry?entry.key:((lastRec&&lastRec.id)||Date.now().toString(36));
+  const rec=entry?null:lastRec;
+  const hrPre=entry?src.hrPre:(rec&&rec.hrPre)||"";
+  const hr=entry?src.hr:(rec&&rec.hr)||"";
+  const acc=entry?src.acc:(rec&&rec.acc)||"";
+  const score=entry?src.score:(rec&&rec.score)||"";
+  $("rfDocWhen").textContent=(entry?src.date:nowStamp())+(entry?" 에 쓴 일지":" · 방금 마친 운동");
+  $("rfDocData").innerHTML=`<b>내 운동 데이터</b>`
+    +`<span>운동 전 심박 ${hrPre||"–"} → 운동 후 ${hr||"– (아직 측정 안 함)"}</span>`
+    +`<span>동작 정확도 ${acc!==""?acc+"%":"–"} · 종합 점수 ${score!==""?score+"점":"–"}</span>`;
+  [1,2,3,4,5].forEach(i=>$("rq"+i).value=src["q"+i]||"");
+  rfSelf=[1,2,3,4].map(i=>+src["s"+i]||0);
+  renderRfSelf();
+  $("rfDocMsg").textContent="";
+  $("rfDocOverlay").style.display="flex";
+}
+$("rfOpenBtn").addEventListener("click",()=>openReflectDoc(null));
+$("rfDocClose").addEventListener("click",()=>{ $("rfDocOverlay").style.display="none"; });
+$("rfDocSave").addEventListener("click",()=>{
+  const me=myKey(), msg=$("rfDocMsg");
   if(!me.name){msg.innerHTML='<span class="err">운동 설계 탭에서 학번을 먼저 입력하세요.</span>';return;}
-  const good=$("rfGood").value.trim(), next=$("rfNext").value.trim();
-  if(!rfFeel&&!good&&!next){msg.innerHTML='<span class="err">한 가지라도 남겨 주세요.</span>';return;}
-  const key=(lastRec&&lastRec.id)||Date.now().toString(36);
-  const entry={date:(lastRec&&lastRec.date)||todayStr(), feel:rfFeel||"",
-    good, next, score:(lastRec&&lastRec.score)||"", acc:(lastRec&&lastRec.acc)||""};
+  const entry={date:$("rfDocWhen").textContent.slice(0,16)};
+  let filled=0;
+  [1,2,3,4,5].forEach(i=>{const v=($("rq"+i).value||"").trim(); entry["q"+i]=v; if(v)filled++;});
+  [1,2,3,4].forEach(i=>entry["s"+i]=rfSelf[i-1]||"");
+  if(!filled&&!rfSelf.some(Boolean)){msg.innerHTML='<span class="err">한 문항이라도 써 주세요.</span>';return;}
+  // 이미 쓴 일지를 고치는 경우 원래 운동 데이터를 유지한다
+  const old=(myReflect()&&myReflect().logs&&myReflect().logs[rfDocKey])||{};
+  entry.hrPre=old.hrPre!==undefined?old.hrPre:((lastRec&&lastRec.hrPre)||"");
+  entry.hr=old.hr!==undefined?old.hr:((lastRec&&lastRec.hr)||"");
+  entry.acc=old.acc!==undefined?old.acc:((lastRec&&lastRec.acc)||"");
+  entry.score=old.score!==undefined?old.score:((lastRec&&lastRec.score)||"");
+  entry.date=old.date||entry.date;
   if(!reflections[me.cls])reflections[me.cls]={};
   if(!reflections[me.cls][me.name])reflections[me.cls][me.name]={};
   if(!reflections[me.cls][me.name].logs)reflections[me.cls][me.name].logs={};
-  reflections[me.cls][me.name].logs[key]=entry;   // 오프라인이어도 화면엔 반영
+  reflections[me.cls][me.name].logs[rfDocKey]=entry;   // 오프라인이어도 화면엔 반영
+  renderRfLogs(); markReflectDone();
   if(!fdb){msg.textContent="이 기기에만 저장됨 (인터넷 연결 시 전송)";return;}
   msg.textContent="저장 중…";
-  fmod.set(reflectRef(me,"logs/"+key),entry)
-    .then(()=>{ msg.innerHTML='<b style="color:var(--good)">저장되었습니다 ✔</b>';
-      $("rfSave").disabled=true; $("rfSave").textContent="저장 완료"; toast("오늘의 성찰이 저장되었습니다","good","✍️"); })
+  fmod.set(reflectRef(me,"logs/"+rfDocKey),entry)
+    .then(()=>{ $("rfDocOverlay").style.display="none";
+      toast(`성찰 일지를 저장했습니다 (${filled}/5 문항)`,"good","✍️"); })
     .catch(e=>{ msg.innerHTML='<span class="err">'+reflectErr(e)+'</span>'; });
 });
+// 운동을 마치면 결과 화면의 성찰 버튼을 새 세션용으로 되돌린다
+function resetReflectForm(){
+  $("rfBoxMsg").textContent="";
+  $("rfOpenBtn").disabled=false; $("rfOpenBtn").textContent="✍️ 성찰 일지 쓰기";
+}
+function markReflectDone(){
+  if(!lastRec||rfDocKey!==lastRec.id)return;
+  $("rfOpenBtn").textContent="✍️ 성찰 일지 고쳐 쓰기";
+  $("rfBoxMsg").innerHTML='<b style="color:var(--good)">저장했습니다 ✔</b>';
+}
 
+/* ---------- 내 기록: 내가 쓴 성찰 일지 목록 ---------- */
+function renderRfLogs(){
+  const box=$("rfLogList"); if(!box)return;
+  const me=myKey();
+  if(!me.name){ box.innerHTML='<div class="hint">운동 설계 탭에서 학번을 입력하면 내 일지가 표시됩니다.</div>'; return; }
+  const logs=myLogs();
+  if(!logs.length){ box.innerHTML='<div class="hint">아직 쓴 일지가 없습니다. 운동을 마치면 결과 화면에서 쓸 수 있어요.</div>'; return; }
+  box.innerHTML="";
+  logs.forEach(l=>{
+    const b=document.createElement("button"); b.className="rf-log";
+    const pv=[l.q1,l.q2,l.q3,l.q4,l.q5].find(t=>String(t||"").trim())||"(내용 없음)";
+    b.innerHTML=`<span class="dt">${String(l.date||"").replace(" ","<br>")}</span>
+      <span class="pv">${String(pv).replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]))}</span>
+      <span class="num" style="color:var(--muted);font-size:12px">${logWrote(l)}/5</span>`;
+    b.addEventListener("click",()=>openReflectDoc(l));
+    box.appendChild(b);
+  });
+}
 /* ---------- 마무리 성찰 (내 기록 탭) ---------- */
 function renderFinalReflect(){
   const me=myKey(), box=$("finalRfBox");
@@ -3168,7 +3282,7 @@ function renderReflectAdmin(){
   const list=rosters[cls]||[];
   if(!cls||!list.length){ tb.innerHTML='<tr><td colspan="6" class="empty">반을 고르면 학생별 성찰 현황이 표시됩니다.</td></tr>'; return; }
   list.forEach(s=>{
-    const rf=reflectOf(s.name,cls), nLog=logCount(rf), fin=hasFinal(rf), fe=avgFeel(rf);
+    const rf=reflectOf(s.name,cls), nLog=logCount(rf), fin=hasFinal(rf), fe=avgSelf(rf);
     const last=Object.values((rf&&rf.logs)||{}).map(l=>l.date||"").sort().slice(-1)[0]
       ||((rf&&rf.final&&rf.final.date)||"");
     const tr=document.createElement("tr");
@@ -3193,8 +3307,9 @@ function showReflectDetail(cls,name){
   let h=`<div class="step-box"><div style="font-weight:700;font-size:16px;margin-bottom:8px">✍️ ${cls}반 ${name}</div>`;
   h+=`<div class="hint" style="margin-bottom:4px">수시 성찰 ${logs.length}회</div>`;
   h+=logs.length?logs.map(l=>`<div class="rf-text"><b class="num" style="color:var(--muted)">${esc(l.date)}</b>
-      ${l.feel?` · 체감 ${l.feel}(${FEEL_LABEL[l.feel]||""})`:""}${l.score?` · 종합 ${l.score}점`:""}
-      ${l.good?`<br>👍 ${esc(l.good)}`:""}${l.next?`<br>🎯 ${esc(l.next)}`:""}</div>`).join("")
+      ${l.score?` · 종합 ${l.score}점`:""}${l.acc?` · 정확도 ${l.acc}%`:""}${(l.hrPre||l.hr)?` · 심박 ${l.hrPre||"–"}→${l.hr||"–"}`:""}
+      ${RF_QS.map((q,qi)=>String(l["q"+(qi+1)]||"").trim()?`<br><b>${qi+1}. ${q}</b><br>${esc(l["q"+(qi+1)])}`:"").join("")}
+      ${[1,2,3,4].some(i=>l["s"+i])?`<br><span style="color:var(--muted)">자기평가 — `+RF_SELF.map((t,si)=>`${t}: ${SELF_LABEL[l["s"+(si+1)]]||"–"}`).join(" · ")+`</span>`:""}</div>`).join("")
     :'<div class="hint">아직 없습니다.</div>';
   const f=rf.final;
   h+=`<div class="hint" style="margin:12px 0 4px">🏁 단원 마무리 성찰${f&&f.date?` (${esc(f.date)})`:""}</div>`;
@@ -3209,12 +3324,12 @@ $("rfExport").addEventListener("click",()=>{
   const cs=classNames();
   if(!cs.length){alert("먼저 명렬표를 등록하세요.");return;}
   // 수시 성찰은 건수가 계속 늘어나므로 반별 시트엔 요약만 두고 원문은 별도 시트에 한 줄씩 편다
-  const head=["번호","이름","수시성찰(회)","평균체감강도","최근 성찰일","마무리성찰",
+  const head=["번호","이름","수시성찰(회)","자기평가 평균(3점)","최근 성찰일","마무리성찰",
     "① 체력 변화","② 나아진 점","③ 어려웠던 운동","④ 계획 실천","⑤ 앞으로의 계획"];
   const sheets=cs.map(c=>({
     name:c,
     rows:[head].concat((rosters[c]||[]).map(s=>{
-      const rf=reflectOf(s.name,c), f=(rf&&rf.final)||{}, fe=avgFeel(rf);
+      const rf=reflectOf(s.name,c), f=(rf&&rf.final)||{}, fe=avgSelf(rf);
       const logs=Object.values((rf&&rf.logs)||{}).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
       const last=logs[logs.length-1];
       return [s.no==null?"":Number(s.no), s.name, logs.length, fe==null?"":fe,
@@ -3222,13 +3337,16 @@ $("rfExport").addEventListener("click",()=>{
         f.q1||"", f.q2||"", f.q3||"", f.q4||"", f.q5||""];
     }))
   }));
-  const logHead=["반","번호","이름","작성일","체감강도(1~5)","체감 설명","그날 종합점수","잘된 점 · 아쉬운 점","다음에 바꿀 점"];
+  const logHead=["반","번호","이름","작성일","심박 전","심박 후","정확도(%)","종합점수","① 운동 강도 돌아보기","② 잘한 점/배운 점","③ 배운 개념 연결","④ 부족했던 점","⑤ 다음 실천 계획","자기평가1 성실참여","자기평가2 바른자세","자기평가3 목표강도","자기평가4 구체적계획","작성 문항수"];
   const logRows=[logHead];
   cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
     const rf=reflectOf(s.name,c);
     Object.values((rf&&rf.logs)||{}).sort((a,b)=>String(a.date).localeCompare(String(b.date)))
       .forEach(l=>logRows.push([c, s.no==null?"":Number(s.no), s.name, String(l.date||"").slice(0,10),
-        l.feel?Number(l.feel):"", FEEL_LABEL[l.feel]||"", l.score||"", l.good||"", l.next||""]));
+        l.hrPre||"", l.hr||"", l.acc||"", l.score||"",
+        l.q1||"", l.q2||"", l.q3||"", l.q4||"", l.q5||"",
+        SELF_LABEL[l.s1]||"", SELF_LABEL[l.s2]||"", SELF_LABEL[l.s3]||"", SELF_LABEL[l.s4]||"",
+        logWrote(l)]));
   }));
   sheets.push({name:"수시성찰 원문",rows:logRows});
   const a=document.createElement("a");
@@ -3269,7 +3387,7 @@ function buildGradeBook(){
     "㉯배정차시","㉯이수차시","㉯이수율(%)","㉯세션수","㉯심박달성","㉯평균정확도(%)","㉯향상률(%)","㉯최고점수","㉯최근수행일",
     // ㉰ 자기성찰
     // 수시 성찰은 운동 횟수만큼 늘어나므로 여기엔 요약만 두고, 원문은 마지막 시트에 한 줄씩 편다
-    "㉰수시성찰(회)","㉰평균 체감강도","㉰최근 성찰일","㉰최근 성찰 내용","㉰마무리성찰",
+    "㉰수시성찰(회)","㉰자기평가 평균(3점)","㉰최근 성찰일","㉰최근 성찰 내용","㉰마무리성찰",
     "㉰① 체력 변화","㉰② 나아진 점","㉰③ 어려웠던 운동","㉰④ 계획 실천","㉰⑤ 앞으로의 계획"];
   const sheets=[{name:"전체요약",rows:sumRows}].concat(cs.map(c=>({
     name:c,
@@ -3279,9 +3397,9 @@ function buildGradeBook(){
       const rf=reflectOf(s.name,c), f=(rf&&rf.final)||{};
       const logs=Object.values((rf&&rf.logs)||{}).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
       const lastLog=logs[logs.length-1]||null;
-      const lastTxt=lastLog?[lastLog.good,lastLog.next].filter(Boolean).join(" → "):"";
+      const lastTxt=lastLog?([1,2,3,4,5].map(i=>lastLog["q"+i]).find(t=>String(t||"").trim())||""):"";
       const sq=p?String(p.seq||"").split(",").filter(Boolean):[];
-      const fe=avgFeel(rf);
+      const fe=avgSelf(rf);
       return [num(s.no), s.name, s.sex||"",
         p?"제출":"미제출", p?p.name:"", sq.map(k=>EXNAME[k]||k).join("→"),
         p?`${p.work}/${p.rest}초 × ${p.rounds}R`:"",
@@ -3298,15 +3416,17 @@ function buildGradeBook(){
   })));
 
   // ── 마지막 시트: 수시 성찰 원문 (한 건에 한 줄 — 횟수가 늘어도 그대로 쌓인다) ──
-  const logHead=["반","번호","이름","작성일","체감강도(1~5)","체감 설명","그날 종합점수","그날 정확도(%)","잘된 점 · 아쉬운 점","다음에 바꿀 점"];
+  const logHead=["반","번호","이름","작성일","심박 전","심박 후","정확도(%)","종합점수","① 운동 강도 돌아보기","② 잘한 점/배운 점","③ 배운 개념 연결","④ 부족했던 점","⑤ 다음 실천 계획","자기평가1 성실참여","자기평가2 바른자세","자기평가3 목표강도","자기평가4 구체적계획","작성 문항수"];
   const logRows=[logHead];
   cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
     const rf=reflectOf(s.name,c);
     Object.values((rf&&rf.logs)||{})
       .sort((a,b)=>String(a.date).localeCompare(String(b.date)))
       .forEach(l=>logRows.push([c, num(s.no), s.name, String(l.date||"").slice(0,10),
-        l.feel?num(l.feel):"", FEEL_LABEL[l.feel]||"", num(l.score)||"", num(l.acc)||"",
-        l.good||"", l.next||""]));
+        num(l.hrPre)||"", num(l.hr)||"", num(l.acc)||"", num(l.score)||"",
+        l.q1||"", l.q2||"", l.q3||"", l.q4||"", l.q5||"",
+        SELF_LABEL[l.s1]||"", SELF_LABEL[l.s2]||"", SELF_LABEL[l.s3]||"", SELF_LABEL[l.s4]||"",
+        logWrote(l)]));
   }));
   sheets.push({name:"수시성찰 원문",rows:logRows});
   return sheets;
@@ -3389,7 +3509,7 @@ function renderMine(){
   $("mineHr").textContent=last&&(last.hrPre||last.hr)?`${last.hrPre||"–"}→${last.hr||"–"}`:"–";
   $("mineDil").textContent=rs.filter(isDiligent).length;
   renderMineTrend(rs,name,cls);
-  renderFinalReflect(); // 기록이 없어도 마무리 성찰 칸은 보여야 하므로 아래 early return보다 먼저 부른다
+  renderFinalReflect(); renderRfLogs(); // 기록이 없어도 성찰 칸은 보여야 하므로 early return보다 먼저
   if(!rs.length){tb.innerHTML='<tr><td colspan="8" class="empty">아직 기록이 없습니다.</td></tr>';return;}
   tb.innerHTML="";
   rs.slice().reverse().forEach(r=>{
@@ -4216,7 +4336,7 @@ function attachFbListeners(){
     const v=snap.val()||{};
     Object.keys(reflections).forEach(k=>{ if(!(k in v))delete reflections[k]; });
     Object.assign(reflections,v);
-    renderReflectAdmin(); renderFinalReflect();
+    renderReflectAdmin(); renderFinalReflect(); renderRfLogs();
   });
   onValue(ref(fdb,"rosters"),snap=>{
     const v=snap.val(); if(!v)return;
