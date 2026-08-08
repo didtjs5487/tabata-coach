@@ -411,44 +411,7 @@
       <div class="cfg-fixed" id="cfgFixed" style="margin-top:10px"></div>
     </div>
 
-    <div class="step-box" id="planCheckBox" style="margin-top:14px">
-      <div style="font-weight:700;font-size:16px">📝 내 운동 계획서</div>
-      <div class="hint" style="margin:2px 0 12px">정답은 없습니다. <b>왜 그렇게 정했는지</b> 자기 생각을 쓰는 것이 이 계획서의 전부입니다.</div>
-
-      <div class="pc-q"><label>① 내 운동 목표는?</label>
-        <div class="pc-opts" id="pcGoal">
-          <button type="button" data-v="fat">🔥 체중 감량</button>
-          <button type="button" data-v="end">🔁 근지구력 증가</button>
-          <button type="button" data-v="car">🫁 심폐지구력 증가</button>
-          <button type="button" data-v="str">💪 근력 증가</button>
-        </div>
-        <div style="margin-top:8px">
-          <div class="hint" style="margin-bottom:4px">왜 이 목표를 골랐나요?</div>
-          <textarea id="pcGoalWhy" rows="2" placeholder="예: 계단만 올라도 숨이 차서 오래 움직여도 지치지 않는 몸을 만들고 싶다"></textarea>
-        </div></div>
-
-      <div class="pc-q"><label>② 요즘 내 체력은 어느 정도라고 느끼나요?</label>
-        <div class="pc-opts" id="pcLevel">
-          <button type="button" data-v="low">약한 편</button>
-          <button type="button" data-v="mid">보통</button>
-          <button type="button" data-v="high">좋은 편</button>
-        </div></div>
-
-      <div class="pc-q"><label>③ 왜 이렇게 계획했나요? <span style="font-weight:400;color:var(--muted)">— 계획서의 핵심</span></label>
-        <div class="hint" style="margin-bottom:4px">내 <b>목표</b>와 <b>체력</b>에 비추어 <b>고른 동작</b>과 <b>운동·휴식 시간, 라운드 수</b>를 왜 그렇게 정했는지 설명하세요.</div>
-        <textarea id="pcReason" rows="3" placeholder="예: 심폐지구력을 키우고 싶어서 점핑잭·하이니처럼 쉬지 않고 움직이는 동작을 넣었다. 오래 이어가는 게 중요해서 라운드를 10으로 늘렸고, 대신 힘드니까 휴식을 15초로 잡았다."></textarea></div>
-
-      <div class="pc-q"><label>④ 아프거나 조심해야 할 부위가 있나요?</label>
-        <input type="text" id="pcCareText" placeholder="예: 왼쪽 무릎 / 없으면 '없음'이라고 쓰세요" style="width:100%">
-        <div class="hint" style="margin:7px 0 4px">그 부위를 생각해서 계획을 어떻게 짰나요?</div>
-        <textarea id="pcCareWhy" rows="2" placeholder="예: 무릎이 아파서 점프스쿼트를 빼고 크런치를 넣었다. 런지는 천천히 하기로 했다."></textarea></div>
-
-      <div class="pc-q"><label>⑤ 얼마나 자주 실천할까요?</label>
-        <div class="row" style="margin:0">
-          <div class="field"><label>주 몇 회</label><input type="number" id="pcFreq" value="3" min="1" max="7" style="width:80px"></div>
-          <div class="field"><label>목표 실천 횟수</label><input type="number" id="pcTarget" value="10" min="1" max="60" style="width:90px"></div>
-        </div></div>
-    </div>
+    <div class="hint" style="margin-top:10px">운동을 골랐으면 이름을 붙여 추가하세요. <b>설명은 쓰지 않아도 됩니다.</b><br>선생님께 낼 <b>운동 계획서</b>는 <b>운동하기</b> 탭의 과제 목록에서 <b>[📝 계획서]</b>로 따로 씁니다.</div>
 
     <div class="row" style="margin-top:12px;align-items:flex-end">
       <div class="field" style="flex:1;min-width:180px"><label>이 운동의 이름</label><input type="text" id="planName" placeholder="예: 하체 집중 4분" style="width:100%"></div>
@@ -926,6 +889,54 @@
     </div>
   </div>
 </div>
+<div id="planDocOverlay" style="display:none;position:fixed;inset:0;z-index:10005;background:rgba(28,32,66,.93);align-items:center;justify-content:center;padding:14px">
+  <div style="background:var(--panel);border-radius:18px;padding:20px;width:min(580px,96vw);max-height:94vh;display:flex;flex-direction:column">
+    <div style="font-weight:800;font-size:19px">📝 운동 계획서</div>
+    <div class="hint" style="margin:3px 0 8px">정답은 없습니다. <b>왜 그렇게 정했는지</b> 자기 생각을 쓰는 것이 계획서의 전부입니다.</div>
+    <div class="cfg-fixed" id="planDocCfg" style="margin-bottom:6px"></div>
+    <div style="overflow-y:auto;flex:1">
+      <div class="pc-q"><label>① 내 운동 목표는?</label>
+        <div class="pc-opts" id="pcGoal">
+          <button type="button" data-v="fat">🔥 체중 감량</button>
+          <button type="button" data-v="end">🔁 근지구력 증가</button>
+          <button type="button" data-v="car">🫁 심폐지구력 증가</button>
+          <button type="button" data-v="str">💪 근력 증가</button>
+        </div>
+        <div style="margin-top:8px">
+          <div class="hint" style="margin-bottom:4px">왜 이 목표를 골랐나요?</div>
+          <textarea id="pcGoalWhy" rows="2" placeholder="예: 계단만 올라도 숨이 차서 오래 움직여도 지치지 않는 몸을 만들고 싶다"></textarea>
+        </div></div>
+
+      <div class="pc-q"><label>② 요즘 내 체력은 어느 정도라고 느끼나요?</label>
+        <div class="pc-opts" id="pcLevel">
+          <button type="button" data-v="low">약한 편</button>
+          <button type="button" data-v="mid">보통</button>
+          <button type="button" data-v="high">좋은 편</button>
+        </div></div>
+
+      <div class="pc-q"><label>③ 왜 이렇게 계획했나요? <span style="font-weight:400;color:var(--muted)">— 계획서의 핵심</span></label>
+        <div class="hint" style="margin-bottom:4px">내 <b>목표</b>와 <b>체력</b>에 비추어 <b>고른 동작</b>과 <b>운동·휴식 시간, 라운드 수</b>를 왜 그렇게 정했는지 설명하세요.</div>
+        <textarea id="pcReason" rows="3" placeholder="예: 심폐지구력을 키우고 싶어서 점핑잭·하이니처럼 쉬지 않고 움직이는 동작을 넣었다. 오래 이어가는 게 중요해서 라운드를 10으로 늘렸고, 대신 힘드니까 휴식을 15초로 잡았다."></textarea></div>
+
+      <div class="pc-q"><label>④ 아프거나 조심해야 할 부위가 있나요?</label>
+        <input type="text" id="pcCareText" placeholder="예: 왼쪽 무릎 / 없으면 '없음'이라고 쓰세요" style="width:100%">
+        <div class="hint" style="margin:7px 0 4px">그 부위를 생각해서 계획을 어떻게 짰나요?</div>
+        <textarea id="pcCareWhy" rows="2" placeholder="예: 무릎이 아파서 점프스쿼트를 빼고 크런치를 넣었다. 런지는 천천히 하기로 했다."></textarea></div>
+
+      <div class="pc-q"><label>⑤ 얼마나 자주 실천할까요?</label>
+        <div class="row" style="margin:0">
+          <div class="field"><label>주 몇 회</label><input type="number" id="pcFreq" value="3" min="1" max="7" style="width:80px"></div>
+          <div class="field"><label>목표 실천 횟수</label><input type="number" id="pcTarget" value="10" min="1" max="60" style="width:90px"></div>
+        </div></div>
+    </div>
+    <div class="row" style="margin:12px 0 0">
+      <button class="btn btn-go btn-sm" id="planDocSubmit">📤 선생님께 제출</button>
+      <button class="btn btn-stop btn-sm" id="planDocSave">임시 저장</button>
+      <button class="btn btn-stop btn-sm" id="planDocClose">닫기</button>
+      <span class="hint" id="planDocMsg"></span>
+    </div>
+  </div>
+</div>
 <div id="battleCdOverlay" style="display:none;position:fixed;inset:0;z-index:10006;background:rgba(20,22,48,.96);flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center">
   <div id="battleCdVs" style="font-size:clamp(20px,5vw,30px);font-weight:800;color:var(--gold)">⚔️ vs</div>
   <div id="battleCdNum" class="num" style="font-size:clamp(90px,26vw,190px);font-weight:900;color:var(--primary);line-height:1">10</div>
@@ -1019,18 +1030,7 @@ $("parqOk").addEventListener("click",()=>{
 $("toWorkout").addEventListener("click",()=>{
   const msg=$("planAddMsg");
   if(!seq.length){msg.innerHTML='<span class="err">운동을 하나 이상 추가한 뒤 눌러주세요.</span>';return;}
-  if(!pcGoal||!pcLevel){
-    msg.innerHTML='<span class="err">계획서의 ① 운동 목표와 ② 체감 체력을 골라 주세요.</span>';
-    $("planCheckBox").scrollIntoView({behavior:"smooth",block:"center"}); return;
-  }
-  // 서술이 계획서의 본체다. 비었으면 되묻되, 학생이 원하면 그대로 제출할 수 있게 둔다.
-  const blanks=[["① 왜 이 목표를 골랐나요?",$("pcGoalWhy").value],
-    ["② 왜 이 운동들을 골랐나요?",$("pcReason").value],
-    ["③ 조심할 부위를 어떻게 고려했나요?",$("pcCareWhy").value]]
-    .filter(([,v])=>!(v||"").trim()).map(([t])=>t);
-  if(blanks.length&&!confirm(`아직 쓰지 않은 칸이 있습니다.\n\n${blanks.join("\n")}\n\n계획서는 '왜 그렇게 정했는지'를 쓰는 것이 가장 중요합니다.\n[취소]를 눌러 마저 쓰거나, [확인]으로 이대로 제출할 수 있어요.`)){
-    $("planCheckBox").scrollIntoView({behavior:"smooth",block:"center"}); return;
-  }
+  // 운동을 만드는 데는 아무 설명도 요구하지 않는다 — 계획서는 나중에 따로 쓴다
   msg.textContent=""; commitPlan();
 });
 function commitPlan(){
@@ -1041,6 +1041,7 @@ function commitPlan(){
   $("planName").value="";
   renderTasks();
   msg.innerHTML=`<b style="color:var(--good)">'${p.name}' 추가 완료 — 운동하기 탭에서 골라 실천하세요.</b>`;
+  renderCfgFixed();
   goPage("pgWork");
 }
 
@@ -1335,7 +1336,9 @@ function renderTasks(){
       <span class="td">${p.seq.map(k=>EXNAME[k]).join("→")} · ${p.work}/${p.rest}초 × ${p.rounds}R<br>
         <span style="color:var(--muted)">만든 날 ${p.made||"–"} · </span>
         <b style="color:${p.n?"var(--good)":"var(--muted)"}">${p.n?`${p.n}회 실천`:"아직 안 함"}</b>
-        <span style="color:var(--muted)">${p.last?` · 마지막 ${p.last}`:""}</span></span>`;
+        <span style="color:var(--muted)">${p.last?` · 마지막 ${p.last}`:""}</span>
+        <br>${p.submitted?`<b style="color:var(--good)">📤 계획서 제출함 (${p.submitted})</b>`
+          :`<span style="color:var(--muted)">계획서 미제출</span>`}</span>`;
     const go=document.createElement("button"); go.className="btn btn-go btn-sm"; go.textContent="혼자 하기";
     go.addEventListener("click",()=>{
       applyPlan(p); currentPlanId=p.id;
@@ -1343,17 +1346,22 @@ function renderTasks(){
     });
     const duel=document.createElement("button"); duel.className="btn btn-stop btn-sm"; duel.textContent="⚔️ 결투";
     duel.addEventListener("click",()=>openBattlePick(p));
+    const doc=document.createElement("button"); doc.className="btn btn-teal btn-sm";
+    doc.textContent=p.submitted?"📝 계획서 보기":"📝 계획서";
+    doc.title="이 운동으로 계획서를 써서 선생님께 제출합니다";
+    doc.addEventListener("click",()=>openPlanDoc(p));
     const del=document.createElement("button"); del.className="btn btn-stop btn-sm";
     del.textContent="✕"; del.title="이 운동 목록에서 지우기"; del.style.color="var(--bad)";
     del.addEventListener("click",()=>{
       // 이 운동으로 걸려 있는 결투를 같이 정리한다 — 안 그러면 상대 화면에 배틀이 영영 남는다
       const linked=liveBattlesFor(me).filter(([id,b])=>b.planName===p.name);
-      const warn=linked.length?`\n\n⚔️ 이 운동으로 진행 중인 결투 ${linked.length}건도 함께 종료됩니다.`:"";
+      const warn=(linked.length?`\n\n⚔️ 이 운동으로 진행 중인 결투 ${linked.length}건도 함께 종료됩니다.`:"")
+        +(p.submitted?`\n\n📤 선생님께 낸 계획서도 함께 취소됩니다.`:"");
       if(!confirm(`'${p.name}'을(를) 목록에서 지울까요? (지금까지의 운동 기록은 그대로 남습니다)`+warn))return;
       linked.forEach(([id])=>removeBattle(id));
       myPlans=myPlans.filter(x=>x.id!==p.id); saveAll(); renderTasks(); removePlanRemote(p.id);
     });
-    c.appendChild(go); c.appendChild(duel); c.appendChild(del); tc.appendChild(c);
+    c.appendChild(go); c.appendChild(duel); c.appendChild(doc); c.appendChild(del); tc.appendChild(c);
   });
   // 교사: 과제 목록 칩 + 완료현황 select
   const chips=$("taskChips"); chips.innerHTML="";
@@ -2278,30 +2286,25 @@ function addPlan(name){
   const p={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6), name,
     seq:[...seq], work:+$("workSec").value||20, rest:+$("restSec").value||10,
     rounds:+$("rounds").value||8, made:todayStr(), last:"", n:0,
-    // 학생이 쓴 계획서 본문 — ㉮ 평가는 전부 이 서술로 이루어진다
-    goal:pcGoal, level:pcLevel,
-    goalWhy:($("pcGoalWhy").value||"").trim(),
-    reason:($("pcReason").value||"").trim(),
-    careText:($("pcCareText").value||"").trim(),
-    careWhy:($("pcCareWhy").value||"").trim(),
-    freq:+$("pcFreq").value||0, target:+$("pcTarget").value||0};
+    // 계획서 서술은 비워 둔다 — 나중에 [📝 계획서]에서 쓰고 제출한다
+    goal:"", level:"", goalWhy:"", reason:"", careText:"", careWhy:"",
+    freq:0, target:0, submitted:""};
   myPlans.unshift(p);
   myPlans=myPlans.slice(0,12);
   saveAll();
-  pushPlan(p);
   return p;
 }
-// 학생 기기에만 있으면 교사가 채점할 수 없으므로 계획서를 서버에 올린다
+// 학생이 [제출]을 누른 계획서만 서버에 올린다 — 교사 화면에는 이것만 보인다
 function pushPlan(p){
-  if(!fdb)return;
-  const me=myKey(); if(!me.name)return;
-  fmod.set(fmod.ref(fdb,`plans/${me.cls}/${me.name}/${p.id}`),{
+  if(!fdb)return Promise.reject(new Error("no-db"));
+  const me=myKey(); if(!me.name)return Promise.reject(new Error("no-name"));
+  return fmod.set(fmod.ref(fdb,`plans/${me.cls}/${me.name}/${p.id}`),{
     name:p.name, seq:p.seq.join(","), work:p.work, rest:p.rest, rounds:p.rounds,
     made:p.made, goal:p.goal||"", level:p.level||"",
     goalWhy:p.goalWhy||"", reason:p.reason||"",
     careText:p.careText||"", careWhy:p.careWhy||"",
-    freq:p.freq||0, target:p.target||0
-  }).catch(()=>{});
+    freq:p.freq||0, target:p.target||0, submitted:todayStr()
+  }); // 실패는 호출한 쪽에서 학생에게 알려야 하므로 여기서 삼키지 않는다
 }
 function removePlanRemote(id){
   if(!fdb)return;
@@ -2865,6 +2868,61 @@ function bindPcChips(id){
 }
 bindPcChips("pcGoal"); bindPcChips("pcLevel");
 ["workSec","restSec","rounds"].forEach(id=>$(id).addEventListener("input",renderCfgFixed));
+
+/* ---------- 📝 계획서 쓰기·제출 ----------
+   운동을 만드는 일과 계획서를 쓰는 일을 떼어 놓는다.
+   운동은 설명 없이 얼마든지 만들고 실천할 수 있고,
+   교사에게 넘어가는 것은 학생이 [제출]을 누른 계획서뿐이다.        */
+let planDocId=null;
+function openPlanDoc(p){
+  planDocId=p.id;
+  const min=Math.round((p.work+p.rest)*p.rounds/60*10)/10;
+  $("planDocCfg").innerHTML=`📋 <b>${p.name}</b><span>${p.seq.map(k=>EXNAME[k]).join(" → ")}</span>`
+    +`<span>${p.work}초 운동 · ${p.rest}초 휴식 × ${p.rounds}라운드 = 총 ${min}분</span>`;
+  pcGoal=p.goal||""; pcLevel=p.level||"";
+  [["pcGoal",pcGoal],["pcLevel",pcLevel]].forEach(([id,v])=>
+    [...$(id).querySelectorAll("button")].forEach(b=>b.classList.toggle("on",b.dataset.v===v)));
+  $("pcGoalWhy").value=p.goalWhy||""; $("pcReason").value=p.reason||"";
+  $("pcCareText").value=p.careText||""; $("pcCareWhy").value=p.careWhy||"";
+  $("pcFreq").value=p.freq||3; $("pcTarget").value=p.target||10;
+  $("planDocMsg").innerHTML=p.submitted
+    ? `<span style="color:var(--good)">${p.submitted}에 제출함 — 고쳐서 다시 낼 수 있어요</span>` : "";
+  $("planDocOverlay").style.display="flex";
+}
+function collectPlanDoc(){
+  return {goal:pcGoal, level:pcLevel,
+    goalWhy:($("pcGoalWhy").value||"").trim(), reason:($("pcReason").value||"").trim(),
+    careText:($("pcCareText").value||"").trim(), careWhy:($("pcCareWhy").value||"").trim(),
+    freq:+$("pcFreq").value||0, target:+$("pcTarget").value||0};
+}
+function planDocApply(){
+  const p=myPlans.find(x=>x.id===planDocId); if(!p)return null;
+  Object.assign(p,collectPlanDoc()); saveAll(); return p;
+}
+$("planDocClose").addEventListener("click",()=>{ $("planDocOverlay").style.display="none"; });
+$("planDocSave").addEventListener("click",()=>{
+  if(!planDocApply())return;
+  $("planDocMsg").innerHTML='<span style="color:var(--gold)">임시 저장됨 — 아직 선생님께 가지 않았어요</span>';
+  renderTasks();
+});
+$("planDocSubmit").addEventListener("click",()=>{
+  const msg=$("planDocMsg");
+  if(!pcGoal||!pcLevel){msg.innerHTML='<span class="err">① 운동 목표와 ② 체감 체력을 골라 주세요.</span>';return;}
+  const d=collectPlanDoc();
+  const blanks=[["① 왜 이 목표를 골랐나요?",d.goalWhy],["③ 왜 이렇게 계획했나요?",d.reason],
+    ["④ 조심할 부위를 어떻게 고려했나요?",d.careWhy]].filter(([,v])=>!v).map(([t])=>t);
+  if(blanks.length&&!confirm(`아직 쓰지 않은 칸이 있습니다.\n\n${blanks.join("\n")}\n\n이대로 제출할까요?`))return;
+  const p=planDocApply(); if(!p)return;
+  if(!fdb){msg.innerHTML='<span class="err">인터넷 연결이 필요합니다. 연결 후 다시 제출하세요.</span>';return;}
+  const me=myKey();
+  if(!me.name){msg.innerHTML='<span class="err">운동 설계 탭에서 학번을 먼저 입력하세요.</span>';return;}
+  msg.textContent="제출 중…";
+  pushPlan(p)
+    .then(()=>{ p.submitted=todayStr(); saveAll(); renderTasks();
+      $("planDocOverlay").style.display="none";
+      toast(`'${p.name}' 계획서를 선생님께 제출했습니다`,"good","📤"); })
+    .catch(()=>{ msg.innerHTML='<span class="err">제출 실패 — 인터넷을 확인하세요.</span>'; });
+});
 
 /* ---------- 교사: 운동 계획 보기 ---------- */
 const plans={};   // Firebase /plans 미러 {반:{이름:{계획id:{...}}}}
