@@ -702,8 +702,15 @@
         <button class="btn btn-go btn-sm" id="authIn">로그인</button>
       </div>
       <div class="row" id="authOutRow" style="margin:0;display:none">
-        <span class="hint" id="authWho" style="flex:1"></span>
+        <span class="hint" id="authWho" style="flex:1;min-width:180px"></span>
+        <button class="btn btn-teal btn-sm" id="authPwChange">비밀번호 바꾸기</button>
         <button class="btn btn-stop btn-sm" id="authOut">로그아웃</button>
+      </div>
+      <div class="row" id="authPwRow" style="margin:8px 0 0;display:none">
+        <div class="field" style="flex:1;min-width:160px"><label>새 비밀번호 (6자 이상)</label>
+          <input type="password" id="authPwNew" autocomplete="new-password" style="width:100%"></div>
+        <button class="btn btn-go btn-sm" id="authPwSave">변경</button>
+        <button class="btn btn-stop btn-sm" id="authPwCancel">취소</button>
       </div>
     </div>
 
@@ -4597,10 +4604,12 @@ function renderAuth(){
   const inRow=$("authForm"), outRow=$("authOutRow"), msg=$("authMsg");
   if(teacherUser){
     inRow.style.display="none"; outRow.style.display="flex";
+    $("authPwRow").style.display="none"; $("authPwNew").value="";
     $("authWho").innerHTML=`<b style="color:var(--good)">${teacherUser.email}</b> 로 로그인됨 — 이 기기에서는 계속 유지됩니다`;
     msg.innerHTML="학생이 쓴 <b>성찰·계획서</b>를 볼 수 있습니다.";
   }else{
     inRow.style.display="flex"; outRow.style.display="none";
+    $("authPwRow").style.display="none";
     msg.innerHTML="학생이 쓴 <b>성찰·계획서</b>는 로그인한 교사만 볼 수 있습니다.";
   }
   // 로그인 전에는 민감한 화면을 가린다
@@ -4645,6 +4654,30 @@ $("authIn").addEventListener("click",async()=>{
       /invalid-email/.test(c)?"이메일 주소 형식이 올바르지 않습니다.":
       /network/.test(c)?"인터넷 연결을 확인하세요.":
       "로그인 실패 ("+c+")")+'</span>';
+  }
+});
+$("authPwChange").addEventListener("click",()=>{
+  const r=$("authPwRow");
+  r.style.display=r.style.display==="none"?"flex":"none";
+  if(r.style.display==="flex")$("authPwNew").focus();
+});
+$("authPwCancel").addEventListener("click",()=>{ $("authPwRow").style.display="none"; $("authPwNew").value=""; });
+$("authPwSave").addEventListener("click",async()=>{
+  const np=$("authPwNew").value||"", msg=$("authMsg");
+  if(np.length<6){msg.innerHTML='<span class="err">비밀번호는 6자 이상이어야 합니다.</span>';return;}
+  if(!fbAuth||!fbAuth.currentUser)return;
+  msg.textContent="변경 중…";
+  try{
+    await authMod.updatePassword(fbAuth.currentUser,np);
+    $("authPwNew").value=""; $("authPwRow").style.display="none";
+    msg.innerHTML='<b style="color:var(--good)">비밀번호를 바꿨습니다. 다음부터 새 비밀번호로 로그인하세요.</b>';
+    toast("비밀번호를 변경했습니다","good","🔐");
+  }catch(e){
+    const c=String(e&&e.code||"");
+    msg.innerHTML='<span class="err">'+(/requires-recent-login/.test(c)
+      ?"보안을 위해 다시 로그인한 뒤 바꿔 주세요. (로그아웃 → 로그인)"
+      :/weak-password/.test(c)?"비밀번호가 너무 쉽습니다. 6자 이상으로 정해 주세요."
+      :"변경 실패 ("+c+")")+'</span>';
   }
 });
 $("authOut").addEventListener("click",async()=>{
