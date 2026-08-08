@@ -109,6 +109,26 @@
   .rf-sum b{font-size:16px;}
   .rf-text{white-space:pre-wrap; background:var(--panel3); border:1px solid var(--line);
     border-radius:10px; padding:10px; margin:6px 0; font-size:14px; line-height:1.5;}
+  /* 📐 운동 계획 점검 */
+  .pc-q{margin-top:12px;}
+  .pc-q > label{display:block; font-weight:700; font-size:14px; margin-bottom:5px;}
+  .pc-q textarea{width:100%; background:var(--panel); color:var(--ink); border:1px solid var(--line);
+    border-radius:10px; padding:9px; font-family:inherit; font-size:14px; resize:vertical;}
+  .pc-opts{display:flex; gap:6px; flex-wrap:wrap;}
+  .pc-opts button{background:var(--panel); border:1px solid var(--line); border-radius:999px;
+    padding:7px 13px; cursor:pointer; color:var(--ink); font-size:13.5px; font-weight:600; font-family:inherit;}
+  .pc-opts button.on{border-color:var(--primary); background:rgba(124,108,255,.22); color:#fff;}
+  .pv-stats{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:7px;}
+  .pv-stat{background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:8px 10px; cursor:pointer; text-align:left; font-family:inherit; color:var(--ink);}
+  .pv-stat.on{border-color:var(--primary); background:rgba(124,108,255,.18);}
+  .pv-stat .t{display:flex; justify-content:space-between; align-items:baseline; font-size:13.5px; font-weight:700;}
+  .pv-stat .t b{font-size:15px;}
+  .pv-stat .bar{height:6px; border-radius:99px; background:var(--panel3); margin-top:6px; overflow:hidden;}
+  .pv-stat .bar i{display:block; height:100%; border-radius:99px;}
+  .cfg-fixed{flex:1; min-width:220px; background:var(--panel); border:1px solid var(--line);
+    border-radius:10px; padding:10px 12px; font-size:14px; line-height:1.55;}
+  .cfg-fixed span{display:block; color:var(--muted); font-size:12.5px; margin-top:2px;}
   #levelupOverlay{position:fixed; inset:0; z-index:10000; display:none; align-items:center; justify-content:center;
     background:rgba(43,49,96,.55); backdrop-filter:blur(4px); opacity:0; transition:opacity .35s;}
   #levelupOverlay.show{opacity:1;}
@@ -396,7 +416,10 @@
         <div class="field"><label>라운드</label><input type="number" id="rounds" value="8" min="2" max="16"></div>
         <input type="hidden" id="difficulty" value="1">
       </div>
+      <div class="cfg-fixed" id="cfgFixed" style="margin-top:10px"></div>
     </div>
+
+    <div class="hint" style="margin-top:10px">운동을 골랐으면 이름을 붙여 추가하세요. <b>설명은 쓰지 않아도 됩니다.</b><br>선생님께 낼 <b>운동 계획서</b>는 <b>운동하기</b> 탭의 과제 목록에서 <b>[📝 계획서]</b>로 따로 씁니다.</div>
 
     <div class="row" style="margin-top:12px;align-items:flex-end">
       <div class="field" style="flex:1;min-width:180px"><label>이 운동의 이름</label><input type="text" id="planName" placeholder="예: 하체 집중 4분" style="width:100%"></div>
@@ -604,6 +627,9 @@
   <section class="page" id="pgAdmin">
     <div class="hint" id="saveStatusLine" style="margin-bottom:12px;font-weight:600">저장 상태 확인 중…</div>
 
+    <button class="btn btn-teal" id="allExport" style="padding:15px 24px;width:100%">📥 평가용 통합 엑셀 내려받기</button>
+    <div class="hint" style="margin:8px 0 16px">㉮ 운동계획 · ㉯ 운동실천 · ㉰ 자기성찰을 <b>학생 한 명당 한 줄</b>로 합칩니다. 첫 시트는 전 학급 요약, 그다음은 반별 시트, 마지막은 수시 성찰 원문입니다.</div>
+
     <button class="btn btn-go" id="boardBig" style="padding:15px 24px;width:100%">🖥️ 학생용 화면 크게 보기</button>
     <div class="hint" style="margin:8px 0 16px">프로젝터용 큰 화면입니다. 반 고르기(여러 반 동시 가능), 실시간 신호등, 다같이 시작·정지가 모두 그 안에 있습니다.</div>
 
@@ -720,6 +746,29 @@
       <table><thead><tr><th>일시</th><th>이름</th><th>학반</th><th>구분</th><th>운동구성</th><th>라운드</th><th>정확도</th><th>반복수</th><th>수행시간</th><th>강도</th><th>판정(퍼/그/굿/오/미)</th><th>심박(전→후)</th><th>종합</th><th>획득P</th></tr></thead>
         <tbody id="recRows"><tr><td colspan="14" class="empty">아직 기록이 없습니다.</td></tr></tbody></table>
     </div>
+    </details>
+
+    <details class="collapsible">
+    <summary>📝 운동 계획서 모아보기</summary>
+    <div class="hint" style="margin:10px 0 8px">학생이 <b>[📤 선생님께 제출]</b>을 누른 계획서만 여기에 모입니다. 앱은 옳고 그름을 판정하지 않으니 <b>서술 내용을 읽고</b> 평가하세요.</div>
+
+    <div class="hint" style="margin:12px 0 5px"><b>반별 제출 현황</b> — 반을 누르면 그 반 명단으로 넘어갑니다</div>
+    <div id="pvClassStats" class="pv-stats"></div>
+
+    <div class="row" style="align-items:flex-end;margin-top:14px">
+      <div class="field"><label>반 선택</label><select id="pvClass"><option value="">반을 등록하세요</option></select></div>
+      <button class="btn btn-teal btn-sm" id="pvExport">⬇ 계획서 엑셀 내려받기</button>
+    </div>
+    <div class="kpis" id="pvKpis">
+      <div class="kpi"><div class="v num c1" id="pvDone">0</div><div class="k">제출</div></div>
+      <div class="kpi"><div class="v num" style="color:var(--bad)" id="pvUndone">0</div><div class="k">미제출</div></div>
+      <div class="kpi"><div class="v num c2" id="pvRate">–</div><div class="k">제출률</div></div>
+      <div class="kpi"><div class="v num" style="color:var(--good)" id="pvFull">0</div><div class="k">서술 3칸 완성</div></div>
+    </div>
+    <div class="hint" id="pvMissing" style="margin:6px 0 10px"></div>
+    <table><thead><tr><th>번호</th><th>이름</th><th>제출</th><th>계획서 이름</th><th>목표</th><th>체감 체력</th><th>서술 작성</th><th>분량</th></tr></thead>
+      <tbody id="pvRows"><tr><td colspan="8" class="empty">반을 고르면 학생별 계획이 표시됩니다.</td></tr></tbody></table>
+    <div id="pvDetail" style="margin-top:10px"></div>
     </details>
 
     <details class="collapsible">
@@ -862,6 +911,54 @@
     </div>
   </div>
 </div>
+<div id="planDocOverlay" style="display:none;position:fixed;inset:0;z-index:10005;background:rgba(28,32,66,.93);align-items:center;justify-content:center;padding:14px">
+  <div style="background:var(--panel);border-radius:18px;padding:20px;width:min(580px,96vw);max-height:94vh;display:flex;flex-direction:column">
+    <div style="font-weight:800;font-size:19px">📝 운동 계획서</div>
+    <div class="hint" style="margin:3px 0 8px">정답은 없습니다. <b>왜 그렇게 정했는지</b> 자기 생각을 쓰는 것이 계획서의 전부입니다.</div>
+    <div class="cfg-fixed" id="planDocCfg" style="margin-bottom:6px"></div>
+    <div style="overflow-y:auto;flex:1">
+      <div class="pc-q"><label>① 내 운동 목표는?</label>
+        <div class="pc-opts" id="pcGoal">
+          <button type="button" data-v="fat">🔥 체중 감량</button>
+          <button type="button" data-v="end">🔁 근지구력 증가</button>
+          <button type="button" data-v="car">🫁 심폐지구력 증가</button>
+          <button type="button" data-v="str">💪 근력 증가</button>
+        </div>
+        <div style="margin-top:8px">
+          <div class="hint" style="margin-bottom:4px">왜 이 목표를 골랐나요?</div>
+          <textarea id="pcGoalWhy" rows="2" placeholder="예: 계단만 올라도 숨이 차서 오래 움직여도 지치지 않는 몸을 만들고 싶다"></textarea>
+        </div></div>
+
+      <div class="pc-q"><label>② 요즘 내 체력은 어느 정도라고 느끼나요?</label>
+        <div class="pc-opts" id="pcLevel">
+          <button type="button" data-v="low">약한 편</button>
+          <button type="button" data-v="mid">보통</button>
+          <button type="button" data-v="high">좋은 편</button>
+        </div></div>
+
+      <div class="pc-q"><label>③ 왜 이렇게 계획했나요? <span style="font-weight:400;color:var(--muted)">— 계획서의 핵심</span></label>
+        <div class="hint" style="margin-bottom:4px">내 <b>목표</b>와 <b>체력</b>에 비추어 <b>고른 동작</b>과 <b>운동·휴식 시간, 라운드 수</b>를 왜 그렇게 정했는지 설명하세요.</div>
+        <textarea id="pcReason" rows="3" placeholder="예: 심폐지구력을 키우고 싶어서 점핑잭·하이니처럼 쉬지 않고 움직이는 동작을 넣었다. 오래 이어가는 게 중요해서 라운드를 10으로 늘렸고, 대신 힘드니까 휴식을 15초로 잡았다."></textarea></div>
+
+      <div class="pc-q"><label>④ 아프거나 조심해야 할 부위가 있나요?</label>
+        <input type="text" id="pcCareText" placeholder="예: 왼쪽 무릎 / 없으면 '없음'이라고 쓰세요" style="width:100%">
+        <div class="hint" style="margin:7px 0 4px">그 부위를 생각해서 계획을 어떻게 짰나요?</div>
+        <textarea id="pcCareWhy" rows="2" placeholder="예: 무릎이 아파서 점프스쿼트를 빼고 크런치를 넣었다. 런지는 천천히 하기로 했다."></textarea></div>
+
+      <div class="pc-q"><label>⑤ 얼마나 자주 실천할까요?</label>
+        <div class="row" style="margin:0">
+          <div class="field"><label>주 몇 회</label><input type="number" id="pcFreq" value="3" min="1" max="7" style="width:80px"></div>
+          <div class="field"><label>목표 실천 횟수</label><input type="number" id="pcTarget" value="10" min="1" max="60" style="width:90px"></div>
+        </div></div>
+    </div>
+    <div class="row" style="margin:12px 0 0">
+      <button class="btn btn-go btn-sm" id="planDocSubmit">📤 선생님께 제출</button>
+      <button class="btn btn-stop btn-sm" id="planDocSave">임시 저장</button>
+      <button class="btn btn-stop btn-sm" id="planDocClose">닫기</button>
+      <span class="hint" id="planDocMsg"></span>
+    </div>
+  </div>
+</div>
 <div id="battleCdOverlay" style="display:none;position:fixed;inset:0;z-index:10006;background:rgba(20,22,48,.96);flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center">
   <div id="battleCdVs" style="font-size:clamp(20px,5vw,30px);font-weight:800;color:var(--gold)">⚔️ vs</div>
   <div id="battleCdNum" class="num" style="font-size:clamp(90px,26vw,190px);font-weight:900;color:var(--primary);line-height:1">10</div>
@@ -955,14 +1052,20 @@ $("parqOk").addEventListener("click",()=>{
 $("toWorkout").addEventListener("click",()=>{
   const msg=$("planAddMsg");
   if(!seq.length){msg.innerHTML='<span class="err">운동을 하나 이상 추가한 뒤 눌러주세요.</span>';return;}
+  // 운동을 만드는 데는 아무 설명도 요구하지 않는다 — 계획서는 나중에 따로 쓴다
+  msg.textContent=""; commitPlan();
+});
+function commitPlan(){
+  const msg=$("planAddMsg");
   let name=($("planName").value||"").trim();
   if(!name)name=seq.map(k=>EXNAME[k]).join("·").slice(0,20); // 이름을 안 쓰면 구성으로 자동 작명
   const p=addPlan(name);
   $("planName").value="";
   renderTasks();
   msg.innerHTML=`<b style="color:var(--good)">'${p.name}' 추가 완료 — 운동하기 탭에서 골라 실천하세요.</b>`;
+  renderCfgFixed();
   goPage("pgWork");
-});
+}
 
 /* ---------- exercise defs ---------- */
 const EXNAME={squat:"스쿼트",pushup:"푸쉬업",pushupknee:"푸쉬업(무릎대고)",lunge:"런지",jack:"점핑잭",plank:"플랭크",
@@ -1059,6 +1162,7 @@ function renderSeq(){
     el.appendChild(c);
   });
   if($("bCfgHint"))updateBCfgHint(); // 대결도 이 구성을 그대로 쓴다
+  if($("cfgFixed"))renderCfgFixed(); // 구성이 바뀌면 '몇 가지를 몇 번씩' 안내도 갱신
 }
 $("addBtn").addEventListener("click",()=>{
   if(!confirmTaskBreak())return;
@@ -1254,7 +1358,9 @@ function renderTasks(){
       <span class="td">${p.seq.map(k=>EXNAME[k]).join("→")} · ${p.work}/${p.rest}초 × ${p.rounds}R<br>
         <span style="color:var(--muted)">만든 날 ${p.made||"–"} · </span>
         <b style="color:${p.n?"var(--good)":"var(--muted)"}">${p.n?`${p.n}회 실천`:"아직 안 함"}</b>
-        <span style="color:var(--muted)">${p.last?` · 마지막 ${p.last}`:""}</span></span>`;
+        <span style="color:var(--muted)">${p.last?` · 마지막 ${p.last}`:""}</span>
+        <br>${p.submitted?`<b style="color:var(--good)">📤 계획서 제출함 (${p.submitted})</b>`
+          :`<span style="color:var(--muted)">계획서 미제출</span>`}</span>`;
     const go=document.createElement("button"); go.className="btn btn-go btn-sm"; go.textContent="혼자 하기";
     go.addEventListener("click",()=>{
       applyPlan(p); currentPlanId=p.id;
@@ -1262,17 +1368,22 @@ function renderTasks(){
     });
     const duel=document.createElement("button"); duel.className="btn btn-stop btn-sm"; duel.textContent="⚔️ 결투";
     duel.addEventListener("click",()=>openBattlePick(p));
+    const doc=document.createElement("button"); doc.className="btn btn-teal btn-sm";
+    doc.textContent=p.submitted?"📝 계획서 보기":"📝 계획서";
+    doc.title="이 운동으로 계획서를 써서 선생님께 제출합니다";
+    doc.addEventListener("click",()=>openPlanDoc(p));
     const del=document.createElement("button"); del.className="btn btn-stop btn-sm";
     del.textContent="✕"; del.title="이 운동 목록에서 지우기"; del.style.color="var(--bad)";
     del.addEventListener("click",()=>{
       // 이 운동으로 걸려 있는 결투를 같이 정리한다 — 안 그러면 상대 화면에 배틀이 영영 남는다
       const linked=liveBattlesFor(me).filter(([id,b])=>b.planName===p.name);
-      const warn=linked.length?`\n\n⚔️ 이 운동으로 진행 중인 결투 ${linked.length}건도 함께 종료됩니다.`:"";
+      const warn=(linked.length?`\n\n⚔️ 이 운동으로 진행 중인 결투 ${linked.length}건도 함께 종료됩니다.`:"")
+        +(p.submitted?`\n\n📤 선생님께 낸 계획서도 함께 취소됩니다.`:"");
       if(!confirm(`'${p.name}'을(를) 목록에서 지울까요? (지금까지의 운동 기록은 그대로 남습니다)`+warn))return;
       linked.forEach(([id])=>removeBattle(id));
-      myPlans=myPlans.filter(x=>x.id!==p.id); saveAll(); renderTasks();
+      myPlans=myPlans.filter(x=>x.id!==p.id); saveAll(); renderTasks(); removePlanRemote(p.id);
     });
-    c.appendChild(go); c.appendChild(duel); c.appendChild(del); tc.appendChild(c);
+    c.appendChild(go); c.appendChild(duel); c.appendChild(doc); c.appendChild(del); tc.appendChild(c);
   });
   // 교사: 과제 목록 칩 + 완료현황 select
   const chips=$("taskChips"); chips.innerHTML="";
@@ -2196,11 +2307,31 @@ let currentPlanId=null; // 지금 수행 중인 자율 과제(수행 횟수를 �
 function addPlan(name){
   const p={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6), name,
     seq:[...seq], work:+$("workSec").value||20, rest:+$("restSec").value||10,
-    rounds:+$("rounds").value||8, made:todayStr(), last:"", n:0};
+    rounds:+$("rounds").value||8, made:todayStr(), last:"", n:0,
+    // 계획서 서술은 비워 둔다 — 나중에 [📝 계획서]에서 쓰고 제출한다
+    goal:"", level:"", goalWhy:"", reason:"", careText:"", careWhy:"",
+    freq:0, target:0, submitted:""};
   myPlans.unshift(p);
   myPlans=myPlans.slice(0,12);
   saveAll();
   return p;
+}
+// 학생이 [제출]을 누른 계획서만 서버에 올린다 — 교사 화면에는 이것만 보인다
+function pushPlan(p){
+  if(!fdb)return Promise.reject(new Error("no-db"));
+  const me=myKey(); if(!me.name)return Promise.reject(new Error("no-name"));
+  return fmod.set(fmod.ref(fdb,`plans/${me.cls}/${me.name}/${p.id}`),{
+    name:p.name, seq:p.seq.join(","), work:p.work, rest:p.rest, rounds:p.rounds,
+    made:p.made, goal:p.goal||"", level:p.level||"",
+    goalWhy:p.goalWhy||"", reason:p.reason||"",
+    careText:p.careText||"", careWhy:p.careWhy||"",
+    freq:p.freq||0, target:p.target||0, submitted:todayStr()
+  }); // 실패는 호출한 쪽에서 학생에게 알려야 하므로 여기서 삼키지 않는다
+}
+function removePlanRemote(id){
+  if(!fdb)return;
+  const me=myKey(); if(!me.name)return;
+  fmod.remove(fmod.ref(fdb,`plans/${me.cls}/${me.name}/${id}`)).catch(()=>{});
 }
 function applyPlan(p){
   seq=[...p.seq];
@@ -2359,14 +2490,15 @@ function parseBulkRoster(text){
 }
 function refreshClassUI(){
   const chips=$("classChips"); chips.innerHTML="";
-  const vc=$("viewClass"), rc=$("rfViewClass");
-  const keepV=vc.value, keepR=rc.value;
-  vc.innerHTML=""; rc.innerHTML="";
+  const vc=$("viewClass"), rc=$("rfViewClass"), pv=$("pvClass");
+  const keepV=vc.value, keepR=rc.value, keepP=pv.value;
+  vc.innerHTML=""; rc.innerHTML=""; pv.innerHTML="";
   const names=classNames();
-  if(!names.length){ vc.innerHTML='<option value="">반을 등록하세요</option>'; rc.innerHTML='<option value="">반을 등록하세요</option>'; }
+  if(!names.length){ const e='<option value="">반을 등록하세요</option>'; vc.innerHTML=e; rc.innerHTML=e; pv.innerHTML=e; }
   names.forEach(c=>{
     vc.insertAdjacentHTML("beforeend",`<option>${c}</option>`);
     rc.insertAdjacentHTML("beforeend",`<option>${c}</option>`);
+    pv.insertAdjacentHTML("beforeend",`<option>${c}</option>`);
     const chip=document.createElement("div"); chip.className="chip";
     chip.innerHTML=`<span class="ord num">${c}</span>${rosters[c].length}명<button title="반 삭제">✕</button>`;
     chip.querySelector("button").addEventListener("click",()=>{
@@ -2376,7 +2508,8 @@ function refreshClassUI(){
   });
   if(names.includes(keepV))vc.value=keepV;
   if(names.includes(keepR))rc.value=keepR;
-  renderStats(); refreshBattleUI(); renderReflectAdmin();
+  if(names.includes(keepP))pv.value=keepP;
+  renderStats(); refreshBattleUI(); renderReflectAdmin(); renderPlanAdmin();
   syncStuId(); // 명렬표가 나중에 도착(서버 동기화)해도 이미 입력된 학번을 다시 찾아본다
   refreshBoardClassSelect();
   renderTaskClassPick();
@@ -2719,6 +2852,221 @@ $("gradeCsv").addEventListener("click",()=>{
   toast(`${cs.length}개 반을 시트로 나눠 내려받았습니다 — 구글 드라이브에 올리면 탭으로 열립니다.`,"good","📊");
 });
 
+/* =================== 📝 운동 계획서 (평가계획서 ㉮) ===================
+   앱은 계획의 옳고 그름을 판정하지 않는다. 목표가 다양하고, 한 부위만 집중하는 계획도,
+   자기 체력에 맞춰 강도를 고르는 것도 모두 정당하기 때문이다.
+   대신 '왜 그렇게 정했는지'를 학생이 직접 쓰게 하고, 그 글을 교사가 읽고 평가한다.
+   운동·휴식 시간과 라운드도 학생이 스스로 정한다 — 체력에 따라 정해 주지 않는다.  */
+const EX_PART={squat:"하체",lunge:"하체",sidelunge:"하체",jumpsquat:"하체",
+  pushup:"상체",pushupknee:"상체", crunch:"코어",legraise:"코어",plank:"코어",
+  jack:"유산소",highknee:"유산소",mtclimber:"유산소",burpee:"유산소"};
+// 유연성은 13개 동작 중 해당 운동이 없어 선택지에서 뺐다.
+// (이미 저장된 계획이 있을 수 있으므로 표시용 이름은 남겨 둔다)
+const GOAL_LABEL={fat:"체중 감량",end:"근지구력 증가",car:"심폐지구력 증가",
+  str:"근력 증가",flex:"유연성 증가"};
+const LEVEL_LABEL={low:"약한 편",mid:"보통",high:"좋은 편"};
+let pcGoal="", pcLevel="";
+
+// 고정된 4분 구성을 보여 준다. 공통과제·배틀이 다른 설정을 적용하면 그 값을 그대로 비춘다.
+function renderCfgFixed(){
+  const box=$("cfgFixed"); if(!box)return;
+  // 초기화 중에도 불리므로 위쪽 상수를 참조하지 않고 숫자를 직접 쓴다
+  const w=+$("workSec").value||20, r=+$("restSec").value||10, n=+$("rounds").value||8;
+  const min=Math.round((w+r)*n/60*10)/10;
+  const cycle=seq.length?(n===seq.length?"한 번씩 합니다"
+    :(n%seq.length===0?`${n/seq.length}번씩 반복합니다`
+      :`순서대로 돌아가며 ${n}번 합니다 (마지막에 일부만 더 합니다)`)):"";
+  box.innerHTML=`⏱️ <b>총 ${min}분</b> — ${w}초 운동 · ${r}초 휴식 × ${n}라운드`
+    +(cycle?`<span>고른 ${seq.length}가지를 ${cycle}</span>`:"")
+    +`<span>시간과 라운드는 내 목표와 체력에 맞게 스스로 정하세요.</span>`;
+}
+
+function bindPcChips(id){
+  $(id).addEventListener("click",e=>{
+    const b=e.target.closest("button"); if(!b)return;
+    if(id==="pcGoal")pcGoal=b.dataset.v; else pcLevel=b.dataset.v;
+    [...$(id).querySelectorAll("button")].forEach(x=>x.classList.toggle("on",x===b));
+  });
+}
+bindPcChips("pcGoal"); bindPcChips("pcLevel");
+["workSec","restSec","rounds"].forEach(id=>$(id).addEventListener("input",renderCfgFixed));
+
+/* ---------- 📝 계획서 쓰기·제출 ----------
+   운동을 만드는 일과 계획서를 쓰는 일을 떼어 놓는다.
+   운동은 설명 없이 얼마든지 만들고 실천할 수 있고,
+   교사에게 넘어가는 것은 학생이 [제출]을 누른 계획서뿐이다.        */
+let planDocId=null;
+function openPlanDoc(p){
+  planDocId=p.id;
+  const min=Math.round((p.work+p.rest)*p.rounds/60*10)/10;
+  $("planDocCfg").innerHTML=`📋 <b>${p.name}</b><span>${p.seq.map(k=>EXNAME[k]).join(" → ")}</span>`
+    +`<span>${p.work}초 운동 · ${p.rest}초 휴식 × ${p.rounds}라운드 = 총 ${min}분</span>`;
+  pcGoal=p.goal||""; pcLevel=p.level||"";
+  [["pcGoal",pcGoal],["pcLevel",pcLevel]].forEach(([id,v])=>
+    [...$(id).querySelectorAll("button")].forEach(b=>b.classList.toggle("on",b.dataset.v===v)));
+  $("pcGoalWhy").value=p.goalWhy||""; $("pcReason").value=p.reason||"";
+  $("pcCareText").value=p.careText||""; $("pcCareWhy").value=p.careWhy||"";
+  $("pcFreq").value=p.freq||3; $("pcTarget").value=p.target||10;
+  $("planDocMsg").innerHTML=p.submitted
+    ? `<span style="color:var(--good)">${p.submitted}에 제출함 — 고쳐서 다시 낼 수 있어요</span>` : "";
+  $("planDocOverlay").style.display="flex";
+}
+function collectPlanDoc(){
+  return {goal:pcGoal, level:pcLevel,
+    goalWhy:($("pcGoalWhy").value||"").trim(), reason:($("pcReason").value||"").trim(),
+    careText:($("pcCareText").value||"").trim(), careWhy:($("pcCareWhy").value||"").trim(),
+    freq:+$("pcFreq").value||0, target:+$("pcTarget").value||0};
+}
+function planDocApply(){
+  const p=myPlans.find(x=>x.id===planDocId); if(!p)return null;
+  Object.assign(p,collectPlanDoc()); saveAll(); return p;
+}
+$("planDocClose").addEventListener("click",()=>{ $("planDocOverlay").style.display="none"; });
+$("planDocSave").addEventListener("click",()=>{
+  if(!planDocApply())return;
+  $("planDocMsg").innerHTML='<span style="color:var(--gold)">임시 저장됨 — 아직 선생님께 가지 않았어요</span>';
+  renderTasks();
+});
+$("planDocSubmit").addEventListener("click",()=>{
+  const msg=$("planDocMsg");
+  if(!pcGoal||!pcLevel){msg.innerHTML='<span class="err">① 운동 목표와 ② 체감 체력을 골라 주세요.</span>';return;}
+  const d=collectPlanDoc();
+  const blanks=[["① 왜 이 목표를 골랐나요?",d.goalWhy],["③ 왜 이렇게 계획했나요?",d.reason],
+    ["④ 조심할 부위를 어떻게 고려했나요?",d.careWhy]].filter(([,v])=>!v).map(([t])=>t);
+  if(blanks.length&&!confirm(`아직 쓰지 않은 칸이 있습니다.\n\n${blanks.join("\n")}\n\n이대로 제출할까요?`))return;
+  const p=planDocApply(); if(!p)return;
+  if(!fdb){msg.innerHTML='<span class="err">인터넷 연결이 필요합니다. 연결 후 다시 제출하세요.</span>';return;}
+  const me=myKey();
+  if(!me.name){msg.innerHTML='<span class="err">운동 설계 탭에서 학번을 먼저 입력하세요.</span>';return;}
+  msg.textContent="제출 중…";
+  pushPlan(p)
+    .then(()=>{ p.submitted=todayStr(); saveAll(); renderTasks();
+      $("planDocOverlay").style.display="none";
+      toast(`'${p.name}' 계획서를 선생님께 제출했습니다`,"good","📤"); })
+    .catch(()=>{ msg.innerHTML='<span class="err">제출 실패 — 인터넷을 확인하세요.</span>'; });
+});
+
+/* ---------- 교사: 운동 계획 보기 ---------- */
+const plans={};   // Firebase /plans 미러 {반:{이름:{계획id:{...}}}}
+let pvOpen="";
+function plansOf(name,cls){ const o=(plans[cls]||{})[name]||{}; return Object.entries(o).map(([id,v])=>({id,...v})); }
+function planWrote(p){ // 서술 3칸 중 몇 칸을 채웠는지
+  if(!p)return 0;
+  return [p.goalWhy,p.reason,p.careWhy].filter(t=>(t||"").trim()).length;
+}
+// 대표 계획은 '얼마나 충실히 썼는가'로 고른다
+function bestPlan(list){
+  return list.slice().sort((a,b)=>{
+    const d=planWrote(b)-planWrote(a); if(d)return d;
+    return ((b.reason||"").length)-((a.reason||"").length);
+  })[0]||null;
+}
+// 서버에 계획서가 하나라도 있으면 제출한 것 — 제출한 것만 올라오기 때문이다
+function classPlanStat(cls){
+  const list=rosters[cls]||[];
+  const done=list.filter(s=>plansOf(s.name,cls).length).length;
+  const full=list.filter(s=>{const b=bestPlan(plansOf(s.name,cls));return b&&planWrote(b)===3;}).length;
+  return {total:list.length, done, full, undone:list.length-done,
+    rate:list.length?Math.round(done/list.length*100):0,
+    missing:list.filter(s=>!plansOf(s.name,cls).length).map(s=>s.name)};
+}
+function renderPlanStats(){
+  const box=$("pvClassStats"); if(!box)return;
+  const cur=$("pvClass").value, names=classNames();
+  box.innerHTML="";
+  if(!names.length){ box.innerHTML='<div class="hint">명렬표를 먼저 등록하세요.</div>'; return; }
+  names.forEach(c=>{
+    const st=classPlanStat(c);
+    const col=st.rate>=90?"var(--good)":st.rate>=60?"var(--gold)":"var(--bad)";
+    const b=document.createElement("button");
+    b.className="pv-stat"+(c===cur?" on":"");
+    b.innerHTML=`<div class="t"><b>${shortCls(c)}반</b><span style="color:${col}">${st.done}/${st.total} · ${st.rate}%</span></div>
+      <div class="bar"><i style="width:${st.rate}%;background:${col}"></i></div>`;
+    b.addEventListener("click",()=>{ $("pvClass").value=c; pvOpen=""; renderPlanAdmin(); });
+    box.appendChild(b);
+  });
+}
+function renderPlanAdmin(){
+  const cls=$("pvClass").value, tb=$("pvRows"); tb.innerHTML=""; $("pvDetail").innerHTML="";
+  renderPlanStats();
+  const list=rosters[cls]||[];
+  const st=classPlanStat(cls);
+  $("pvDone").textContent=st.done; $("pvUndone").textContent=st.undone;
+  $("pvRate").textContent=list.length?st.rate+"%":"–"; $("pvFull").textContent=st.full;
+  $("pvMissing").innerHTML=(cls&&st.missing.length)
+    ? `<b style="color:var(--bad)">미제출 ${st.missing.length}명</b> — ${st.missing.join(", ")}`
+    : (cls&&list.length?'<b style="color:var(--good)">전원 제출했습니다 ✔</b>':"");
+  if(!cls||!list.length){ tb.innerHTML='<tr><td colspan="8" class="empty">반을 고르면 학생별 계획이 표시됩니다.</td></tr>'; return; }
+  list.forEach(s=>{
+    const ps=plansOf(s.name,cls), b=bestPlan(ps), w=planWrote(b);
+    const len=b?((b.goalWhy||"").length+(b.reason||"").length+(b.careWhy||"").length):0;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td class="num">${s.no||""}</td>
+      <td><b style="cursor:pointer;color:var(--primary)">${s.name}</b></td>
+      <td class="num" style="color:${ps.length?"var(--good)":"var(--bad)"}"><b>${ps.length?"✔"+(ps.length>1?" "+ps.length+"건":""):"미제출"}</b></td>
+      <td>${b?b.name:"–"}</td>
+      <td>${b?(GOAL_LABEL[b.goal]||"–"):"–"}</td>
+      <td>${b?(LEVEL_LABEL[b.level]||"–"):"–"}</td>
+      <td class="num" style="color:${w===3?"var(--good)":w?"var(--gold)":"var(--bad)"}"><b>${b?w+"/3":"–"}</b></td>
+      <td class="num" style="color:var(--muted)">${len?len+"자":"–"}</td>`;
+    tr.querySelector("b").addEventListener("click",()=>{ pvOpen=(pvOpen===s.name?"":s.name); showPlanDetail(cls,s.name); });
+    tb.appendChild(tr);
+  });
+  if(pvOpen)showPlanDetail(cls,pvOpen);
+}
+function showPlanDetail(cls,name){
+  const box=$("pvDetail");
+  if(pvOpen!==name){box.innerHTML="";return;}
+  const ps=plansOf(name,cls);
+  const esc=t=>String(t||"").replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]));
+  if(!ps.length){box.innerHTML=`<div class="step-box"><b>${esc(name)}</b> — 아직 만든 계획이 없습니다.</div>`;return;}
+  let h=`<div class="step-box"><div style="font-weight:700;font-size:16px;margin-bottom:8px">📝 ${esc(cls)}반 ${esc(name)} — 계획 ${ps.length}개</div>`;
+  ps.sort((a,b)=>String(b.made).localeCompare(String(a.made))).forEach(p=>{
+    const sq=String(p.seq||"").split(",").filter(Boolean);
+    const parts={}; sq.forEach(k=>{const q=EX_PART[k]||"기타";parts[q]=(parts[q]||0)+1;});
+    const q=(label,txt)=>txt&&String(txt).trim()
+      ? `<div style="margin-top:7px"><b style="color:var(--gold)">${label}</b><br>${esc(txt)}</div>`
+      : `<div style="margin-top:7px"><b style="color:var(--gold)">${label}</b><br><span style="color:var(--bad)">미작성</span></div>`;
+    h+=`<div class="rf-text"><b>${esc(p.name)}</b> <span style="color:var(--muted)">${esc(p.made)}</span>
+      <br>${sq.map(k=>EXNAME[k]||k).join("→")} · ${p.work}/${p.rest}초 × ${p.rounds}동작
+      <br><span style="color:var(--muted)">${["하체","상체","코어","유산소"].map(x=>`${x} ${parts[x]||0}`).join(" · ")}</span>
+      <br>목표 <b>${GOAL_LABEL[p.goal]||"–"}</b> · 체감 체력 <b>${LEVEL_LABEL[p.level]||"–"}</b>
+       · 주 ${p.freq||"–"}회 · 목표 ${p.target||"–"}회
+      ${q("① 왜 이 목표를 골랐나?",p.goalWhy)}
+      ${q("② 왜 이 운동들을 골랐나?",p.reason)}
+      ${q("③ 조심할 부위 — "+(String(p.careText||"").trim()||"미기재"),p.careWhy)}
+    </div>`;
+  });
+  box.innerHTML=h+"</div>";
+}
+$("pvClass").addEventListener("change",()=>{ pvOpen=""; renderPlanAdmin(); });
+$("pvExport").addEventListener("click",()=>{
+  const cs=classNames();
+  if(!cs.length){alert("먼저 명렬표를 등록하세요.");return;}
+  const head=["번호","이름","계획수","대표 계획명","운동 구성","하체","상체","코어","유산소",
+    "목표","체감 체력","주 실천(회)","목표 실천(회)",
+    "① 왜 이 목표?","② 왜 이 운동들?","조심할 부위","③ 어떻게 고려?","서술 작성(3칸)","총 글자수"];
+  const sheets=cs.map(c=>({
+    name:c,
+    rows:[head].concat((rosters[c]||[]).map(s=>{
+      const ps=plansOf(s.name,c), p=bestPlan(ps);
+      if(!p)return [s.no==null?"":Number(s.no), s.name, 0].concat(new Array(head.length-3).fill(""));
+      const sq=String(p.seq||"").split(",").filter(Boolean);
+      const pc={}; sq.forEach(k=>{const q=EX_PART[k]||"기타";pc[q]=(pc[q]||0)+1;});
+      const len=(p.goalWhy||"").length+(p.reason||"").length+(p.careWhy||"").length;
+      return [s.no==null?"":Number(s.no), s.name, ps.length, p.name, sq.map(k=>EXNAME[k]||k).join("→"),
+        pc["하체"]||0, pc["상체"]||0, pc["코어"]||0, pc["유산소"]||0,
+        GOAL_LABEL[p.goal]||"", LEVEL_LABEL[p.level]||"",
+        Number(p.freq)||"", Number(p.target)||"",
+        p.goalWhy||"", p.reason||"", p.careText||"", p.careWhy||"", planWrote(p), len];
+    }))
+  }));
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(XLSX.build(sheets));
+  a.download=`타바타_운동계획서_${todayStr()}.xlsx`; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast(`${cs.length}개 반의 운동 계획서를 내려받았습니다.`,"good","📝");
+});
 /* =================== ✍️ 자기성찰 (평가계획서 ㉰) ===================
    수시 성찰: 운동을 마친 결과 화면에서 자기 수치를 보며 바로 쓴다.
    마무리 성찰: 모든 차시가 끝난 뒤 '내 기록' 탭에서 단원 전체를 돌아보며 한 번 쓴다.
@@ -2860,23 +3208,116 @@ $("rfViewClass").addEventListener("change",()=>{ rfOpen=""; renderReflectAdmin()
 $("rfExport").addEventListener("click",()=>{
   const cs=classNames();
   if(!cs.length){alert("먼저 명렬표를 등록하세요.");return;}
-  const head=["번호","이름","수시성찰(회)","평균체감강도","마무리성찰",
-    "① 체력 변화","② 나아진 점","③ 어려웠던 운동","④ 계획 실천","⑤ 앞으로의 계획","수시 성찰 전문"];
+  // 수시 성찰은 건수가 계속 늘어나므로 반별 시트엔 요약만 두고 원문은 별도 시트에 한 줄씩 편다
+  const head=["번호","이름","수시성찰(회)","평균체감강도","최근 성찰일","마무리성찰",
+    "① 체력 변화","② 나아진 점","③ 어려웠던 운동","④ 계획 실천","⑤ 앞으로의 계획"];
   const sheets=cs.map(c=>({
     name:c,
     rows:[head].concat((rosters[c]||[]).map(s=>{
       const rf=reflectOf(s.name,c), f=(rf&&rf.final)||{}, fe=avgFeel(rf);
       const logs=Object.values((rf&&rf.logs)||{}).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
-      const all=logs.map(l=>`[${String(l.date).slice(0,10)}${l.feel?" 체감"+l.feel:""}] ${l.good||""}${l.next?" → "+l.next:""}`).join("\n");
-      return [s.no==null?"":Number(s.no), s.name, logs.length, fe==null?"":fe, hasFinal(rf)?"작성":"미작성",
-        f.q1||"", f.q2||"", f.q3||"", f.q4||"", f.q5||"", all];
+      const last=logs[logs.length-1];
+      return [s.no==null?"":Number(s.no), s.name, logs.length, fe==null?"":fe,
+        last?String(last.date).slice(0,10):"", hasFinal(rf)?"작성":"미작성",
+        f.q1||"", f.q2||"", f.q3||"", f.q4||"", f.q5||""];
     }))
   }));
+  const logHead=["반","번호","이름","작성일","체감강도(1~5)","체감 설명","그날 종합점수","잘된 점 · 아쉬운 점","다음에 바꿀 점"];
+  const logRows=[logHead];
+  cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
+    const rf=reflectOf(s.name,c);
+    Object.values((rf&&rf.logs)||{}).sort((a,b)=>String(a.date).localeCompare(String(b.date)))
+      .forEach(l=>logRows.push([c, s.no==null?"":Number(s.no), s.name, String(l.date||"").slice(0,10),
+        l.feel?Number(l.feel):"", FEEL_LABEL[l.feel]||"", l.score||"", l.good||"", l.next||""]));
+  }));
+  sheets.push({name:"수시성찰 원문",rows:logRows});
   const a=document.createElement("a");
   a.href=URL.createObjectURL(XLSX.build(sheets));
   a.download=`타바타_자기성찰_${todayStr()}.xlsx`; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
   toast(`${cs.length}개 반의 성찰을 시트로 나눠 내려받았습니다.`,"good","✍️");
+});
+
+/* =================== 📥 평가용 통합 엑셀 ===================
+   ㉮ 운동계획 · ㉯ 운동실천 · ㉰ 자기성찰을 한 학생당 한 줄로 합친다.
+   첫 시트는 전 학급 요약, 이후 반별 시트에 근거 자료를 모두 담는다.    */
+function buildGradeBook(){
+  const cs=classNames();
+  const num=v=>(v===""||v==null||!isFinite(v))?v:Number(v);
+  const OX=b=>b?"○":"×";
+
+  // ── 시트 1: 전 학급 요약 (한눈에 채점 상태 파악) ──
+  const sumHead=["반","번호","이름","성별",
+    "㉮ 계획서 제출","㉮ 서술(3칸)","㉯ 실천점수(20)","㉯ 이수율(%)","㉯ 세션수",
+    "㉰ 수시성찰(회)","㉰ 마무리성찰"];
+  const sumRows=[sumHead];
+  cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
+    const g=practiceScore(s.name,c), rf=reflectOf(s.name,c);
+    const pb=bestPlan(plansOf(s.name,c));
+    sumRows.push([c, num(s.no), s.name, s.sex||"",
+      pb?"제출":"미제출", pb?planWrote(pb):"", num(g.score), g.assigned?num(g.rate):"", g.n,
+      logCount(rf), hasFinal(rf)?"작성":"미작성"]);
+  }));
+
+  // ── 반별 시트: 채점 근거 전부 ──
+  const head=["번호","이름","성별",
+    // ㉮ 운동계획
+    "㉮제출","㉮계획서 이름","㉮운동 구성","㉮설정","㉮목표","㉮체감 체력",
+    "㉮왜 이 목표?","㉮왜 이렇게 계획?","㉮조심할 부위","㉮어떻게 고려?","㉮주 실천(회)","㉮목표 실천(회)","㉮서술 칸수",
+    // ㉯ 운동실천
+    "㉯①과제제출","㉯②심박","㉯③정확도","㉯④자율실천","㉯⑤향상","㉯만족개수","㉯실천점수(20)",
+    "㉯배정차시","㉯이수차시","㉯이수율(%)","㉯세션수","㉯심박달성","㉯평균정확도(%)","㉯향상률(%)","㉯최고점수","㉯최근수행일",
+    // ㉰ 자기성찰
+    // 수시 성찰은 운동 횟수만큼 늘어나므로 여기엔 요약만 두고, 원문은 마지막 시트에 한 줄씩 편다
+    "㉰수시성찰(회)","㉰평균 체감강도","㉰최근 성찰일","㉰최근 성찰 내용","㉰마무리성찰",
+    "㉰① 체력 변화","㉰② 나아진 점","㉰③ 어려웠던 운동","㉰④ 계획 실천","㉰⑤ 앞으로의 계획"];
+  const sheets=[{name:"전체요약",rows:sumRows}].concat(cs.map(c=>({
+    name:c,
+    rows:[head].concat((rosters[c]||[]).map(s=>{
+      const st=statsFor(s.name,c), g=practiceScore(s.name,c);
+      const p=bestPlan(plansOf(s.name,c));
+      const rf=reflectOf(s.name,c), f=(rf&&rf.final)||{};
+      const logs=Object.values((rf&&rf.logs)||{}).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+      const lastLog=logs[logs.length-1]||null;
+      const lastTxt=lastLog?[lastLog.good,lastLog.next].filter(Boolean).join(" → "):"";
+      const sq=p?String(p.seq||"").split(",").filter(Boolean):[];
+      const fe=avgFeel(rf);
+      return [num(s.no), s.name, s.sex||"",
+        p?"제출":"미제출", p?p.name:"", sq.map(k=>EXNAME[k]||k).join("→"),
+        p?`${p.work}/${p.rest}초 × ${p.rounds}R`:"",
+        p?(GOAL_LABEL[p.goal]||""):"", p?(LEVEL_LABEL[p.level]||""):"",
+        p?(p.goalWhy||""):"", p?(p.reason||""):"", p?(p.careText||""):"", p?(p.careWhy||""):"",
+        p?(num(p.freq)||""):"", p?(num(p.target)||""):"", p?planWrote(p):"",
+        OX(g.items[0]),OX(g.items[1]),OX(g.items[2]),OX(g.items[3]),OX(g.items[4]),g.met,num(g.score),
+        g.assigned, g.done, g.assigned?num(g.rate):"", g.n, g.dil, g.n?num(g.acc):"",
+        g.gain!=null?num(g.gain):"", st?num(st.best):"", st?st.date:"",
+        logs.length, fe==null?"":num(fe),
+        lastLog?String(lastLog.date).slice(0,10):"", lastTxt, hasFinal(rf)?"작성":"미작성",
+        f.q1||"", f.q2||"", f.q3||"", f.q4||"", f.q5||""];
+    }))
+  })));
+
+  // ── 마지막 시트: 수시 성찰 원문 (한 건에 한 줄 — 횟수가 늘어도 그대로 쌓인다) ──
+  const logHead=["반","번호","이름","작성일","체감강도(1~5)","체감 설명","그날 종합점수","그날 정확도(%)","잘된 점 · 아쉬운 점","다음에 바꿀 점"];
+  const logRows=[logHead];
+  cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
+    const rf=reflectOf(s.name,c);
+    Object.values((rf&&rf.logs)||{})
+      .sort((a,b)=>String(a.date).localeCompare(String(b.date)))
+      .forEach(l=>logRows.push([c, num(s.no), s.name, String(l.date||"").slice(0,10),
+        l.feel?num(l.feel):"", FEEL_LABEL[l.feel]||"", num(l.score)||"", num(l.acc)||"",
+        l.good||"", l.next||""]));
+  }));
+  sheets.push({name:"수시성찰 원문",rows:logRows});
+  return sheets;
+}
+$("allExport").addEventListener("click",()=>{
+  if(!classNames().length){alert("먼저 명렬표를 등록하세요.");return;}
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(XLSX.build(buildGradeBook()));
+  a.download=`타바타_평가자료_${todayStr()}.xlsx`; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast("계획·실천·성찰을 한 파일로 내려받았습니다 — 첫 시트가 전체 요약입니다.","good","📥");
 });
 
 function statsFor(name,cls){
@@ -3765,6 +4206,12 @@ function attachFbListeners(){
     renderBattles(); renderTasks(); handleBattleEvents(); // 운동하기의 결투 카드도 함께 갱신
     checkBattleAutoStart();                               // 수락된 배틀이 있으면 동시 시작 카운트다운
   });
+  onValue(ref(fdb,"plans"),snap=>{
+    const v=snap.val()||{};
+    Object.keys(plans).forEach(k=>{ if(!(k in v))delete plans[k]; });
+    Object.assign(plans,v);
+    renderPlanAdmin();
+  });
   onValue(ref(fdb,"reflections"),snap=>{
     const v=snap.val()||{};
     Object.keys(reflections).forEach(k=>{ if(!(k in v))delete reflections[k]; });
@@ -3838,6 +4285,7 @@ $("serverWipeBtn").addEventListener("click",async()=>{
     await fmod.remove(fmod.ref(fdb,"records"));
     await fmod.remove(fmod.ref(fdb,"battles")).catch(()=>{});
     await fmod.remove(fmod.ref(fdb,"reflections")).catch(()=>{});
+    await fmod.remove(fmod.ref(fdb,"plans")).catch(()=>{});
     await fmod.remove(fmod.ref(fdb,"presence")).catch(()=>{});
     await fmod.remove(fmod.ref(fdb,"control")).catch(()=>{});
     records.length=0; totalPts=0; myPlans=[]; seenBattles=[];
