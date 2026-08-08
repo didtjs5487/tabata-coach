@@ -124,6 +124,20 @@
     .sheet{padding:0; align-items:stretch;}
     .sheet-in{border-radius:0; max-height:100%; height:100%; width:100%; padding:14px 12px;}
   }
+  /* 운동별 계획 칸 (작년 종이 계획서의 표를 옮긴 것) */
+  .ex-row{background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:10px 11px; margin-bottom:8px;}
+  .ex-row .hd{display:flex; align-items:baseline; gap:7px; margin-bottom:7px; flex-wrap:wrap;}
+  .ex-row .no{background:var(--primary); color:#fff; font-weight:800; font-size:12px;
+    border-radius:99px; padding:2px 9px;}
+  .ex-row .nm{font-weight:700; font-size:15px;}
+  .ex-row .pt{font-size:12px; color:var(--muted); background:var(--panel3);
+    border:1px solid var(--line); border-radius:99px; padding:2px 9px;}
+  .ex-row .sels{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:7px;}
+  .ex-row select{flex:1; min-width:130px; background:var(--panel3); color:var(--ink);
+    border:1px solid var(--line); border-radius:9px; padding:8px; font-family:inherit; font-size:16px;}
+  .ex-row textarea{width:100%; background:var(--panel3); color:var(--ink); border:1px solid var(--line);
+    border-radius:9px; padding:8px; font-family:inherit; font-size:16px; resize:vertical;}
   .doc-prog{display:flex; gap:4px; margin-top:6px;}
   .doc-prog i{flex:1; height:4px; border-radius:99px; background:var(--line);}
   .doc-prog i.on{background:var(--good);}
@@ -1000,7 +1014,7 @@
       <div style="font-weight:800;font-size:18px">📝 운동 계획서</div>
       <div class="hint" style="margin:2px 0 6px">정답은 없습니다. <b>왜 그렇게 정했는지</b> 자기 생각을 쓰는 것이 계획서의 전부예요.</div>
       <div class="cfg-fixed" id="planDocCfg" style="margin-bottom:6px"></div>
-      <div class="doc-prog" id="planDocProg"><i></i><i></i><i></i><i></i></div>
+      <div class="doc-prog" id="planDocProg"><i></i><i></i><i></i><i></i><i></i></div>
     </div>
     <div class="sheet-bd">
       <div class="pc-q"><label>① 내 운동 목표는?</label>
@@ -1011,7 +1025,9 @@
           <button type="button" data-v="str">💪 근력 증가</button>
         </div>
         <div class="hint" style="margin:8px 0 4px">왜 이 목표를 골랐나요? <b>내 몸 상태나 바라는 점</b>을 들어서.</div>
-        <textarea id="pcGoalWhy" rows="3" placeholder="예: 계단만 올라도 숨이 차서 오래 움직여도 지치지 않는 몸을 만들고 싶다"></textarea></div>
+        <textarea id="pcGoalWhy" rows="3" placeholder="예: 계단만 올라도 숨이 차서 오래 움직여도 지치지 않는 몸을 만들고 싶다"></textarea>
+        <div class="hint" style="margin:8px 0 4px">이번 운동으로 이루고 싶은 <b>목표를 한 문장</b>으로.</div>
+        <input type="text" id="pcAim" placeholder="예: 많이 저하된 체력을 이번 학기 운동으로 끌어올리자" style="width:100%"></div>
 
       <div class="pc-q"><label>② 요즘 내 체력은 어느 정도라고 느끼나요?</label>
         <div class="pc-opts" id="pcLevel">
@@ -1020,9 +1036,13 @@
           <button type="button" data-v="high">좋은 편</button>
         </div></div>
 
-      <div class="pc-q"><label>③ 왜 이렇게 계획했나요? <span style="font-weight:400;color:var(--muted)">— 계획서의 핵심</span></label>
-        <div class="hint" style="margin-bottom:4px">내 <b>목표</b>와 <b>체력</b>에 비추어, <b>고른 동작</b>과 <b>운동·휴식 시간, 라운드 수</b>를 왜 그렇게 정했는지 설명하세요.</div>
-        <textarea id="pcReason" rows="4" placeholder="예: 심폐지구력을 키우고 싶어서 점핑잭·하이니처럼 쉬지 않고 움직이는 동작을 넣었다. 오래 이어가는 게 중요해서 라운드를 10으로 늘렸고, 대신 힘드니까 휴식을 15초로 잡았다."></textarea></div>
+      <div class="pc-q"><label>③ 운동을 하나씩 살펴봅시다 <span style="font-weight:400;color:var(--muted)">— 계획서의 핵심</span></label>
+        <div class="hint" style="margin-bottom:6px">운동마다 <b>어떤 체력요소</b>를 기르려고 넣었는지, <b>왜 골랐고 무엇을 조심</b>할지 적으세요.</div>
+        <div id="pcExList"></div></div>
+
+      <div class="pc-q"><label>③-2 전체 구성과 시간은 왜 이렇게 정했나요?</label>
+        <div class="hint" style="margin-bottom:4px">동작 순서, <b>운동·휴식 시간, 라운드 수</b>를 그렇게 잡은 까닭을.</div>
+        <textarea id="pcReason" rows="3" placeholder="예: 힘든 동작과 덜 힘든 동작을 번갈아 놓았다. 오래 이어가는 게 중요해서 라운드를 10으로 늘렸고, 대신 힘드니까 휴식을 15초로 잡았다."></textarea></div>
 
       <div class="pc-q"><label>④ 아프거나 조심해야 할 부위가 있나요?</label>
         <input type="text" id="pcCareText" placeholder="예: 왼쪽 무릎 / 없으면 '없음'" style="width:100%">
@@ -2490,7 +2510,7 @@ function addPlan(name){
     rounds:+$("rounds").value||8, made:todayStr(), last:"", n:0,
     // 계획서 서술은 비워 둔다 — 나중에 [📝 계획서]에서 쓰고 제출한다
     goal:"", level:"", goalWhy:"", reason:"", careText:"", careWhy:"",
-    when:"", check:"", freq:0, target:0, submitted:""};
+    when:"", check:"", aim:"", exNotes:[], freq:0, target:0, submitted:""};
   myPlans.unshift(p);
   myPlans=myPlans.slice(0,12);
   saveAll();
@@ -2505,7 +2525,8 @@ function pushPlan(p){
     made:p.made, goal:p.goal||"", level:p.level||"",
     goalWhy:p.goalWhy||"", reason:p.reason||"",
     careText:p.careText||"", careWhy:p.careWhy||"",
-    when:p.when||"", check:p.check||"",
+    when:p.when||"", check:p.check||"", aim:p.aim||"",
+    exNotes:(p.exNotes||[]).map((n,i)=>({ex:p.seq[i]||"",fit:n.fit||"",load:n.load||"",why:n.why||""})),
     freq:p.freq||0, target:p.target||0, submitted:todayStr()
   }); // 실패는 호출한 쪽에서 학생에게 알려야 하므로 여기서 삼키지 않는다
 }
@@ -3079,7 +3100,32 @@ bindPcChips("pcGoal"); bindPcChips("pcLevel");
    운동을 만드는 일과 계획서를 쓰는 일을 떼어 놓는다.
    운동은 설명 없이 얼마든지 만들고 실천할 수 있고,
    교사에게 넘어가는 것은 학생이 [제출]을 누른 계획서뿐이다.        */
-let planDocId=null;
+let planDocId=null, pcExNotes=[];
+// 작년 종이 계획서처럼 운동마다 체력요소·강도·선정이유를 적게 한다.
+// 운동명과 부위는 앱이 이미 아니까 자동으로 채우고, 학생은 생각만 쓰면 된다.
+const FIT_OPTS=["심폐지구력","근력","근지구력","유연성","순발력","민첩성","평형성"];
+const LOAD_OPTS=["저강도","중강도","고강도"];
+function escHtml(t){ return String(t||"").replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c])); }
+function renderExNotes(seqArr){
+  const box=$("pcExList"); box.innerHTML="";
+  seqArr.forEach((k,i)=>{
+    const n=pcExNotes[i]||(pcExNotes[i]={fit:"",load:"",why:""});
+    const opt=(arr,cur)=>arr.map(o=>'<option'+(cur===o?' selected':'')+'>'+o+'</option>').join("");
+    const d=document.createElement("div"); d.className="ex-row";
+    d.innerHTML='<div class="hd"><span class="no">'+(i+1)+'</span>'
+      +'<span class="nm">'+(EXNAME[k]||k)+'</span>'
+      +'<span class="pt">'+(EX_PART[k]||"기타")+'</span></div>'
+      +'<div class="sels">'
+      +'<select class="fit"><option value="">체력요소 고르기</option>'+opt(FIT_OPTS,n.fit)+'</select>'
+      +'<select class="load"><option value="">운동강도 고르기</option>'+opt(LOAD_OPTS,n.load)+'</select>'
+      +'</div>'
+      +'<textarea class="why" rows="2" placeholder="이 운동을 고른 이유 / 할 때 중요한 점">'+escHtml(n.why)+'</textarea>';
+    d.querySelector(".fit").addEventListener("change",e=>{n.fit=e.target.value;renderPlanProg();});
+    d.querySelector(".load").addEventListener("change",e=>{n.load=e.target.value;renderPlanProg();});
+    d.querySelector(".why").addEventListener("input",e=>{n.why=e.target.value;renderPlanProg();});
+    box.appendChild(d);
+  });
+}
 function openPlanDoc(p){
   planDocId=p.id;
   const min=Math.round((p.work+p.rest)*p.rounds/60*10)/10;
@@ -3092,23 +3138,31 @@ function openPlanDoc(p){
   $("pcCareText").value=p.careText||""; $("pcCareWhy").value=p.careWhy||"";
   $("pcFreq").value=p.freq||3; $("pcTarget").value=p.target||10;
   $("pcWhen").value=p.when||""; $("pcCheck").value=p.check||"";
+  $("pcAim").value=p.aim||"";
+  // 저장해 둔 운동별 메모를 지금 구성 길이에 맞춰 불러온다
+  pcExNotes=p.seq.map((k,i)=>Object.assign({fit:"",load:"",why:""},(p.exNotes||[])[i]||{}));
+  renderExNotes(p.seq);
   renderPlanProg();
   $("planDocMsg").innerHTML=p.submitted
     ? `<span style="color:var(--good)">${p.submitted}에 제출함 — 고쳐서 다시 낼 수 있어요</span>` : "";
   $("planDocOverlay").style.display="flex";
 }
 const PLAN_TEXTS=["pcGoalWhy","pcReason","pcCareWhy","pcCheck"]; // 채점의 근거가 되는 서술 4칸
+function exNotesDone(){ return pcExNotes.length>0&&pcExNotes.every(n=>(n.why||"").trim()&&n.fit); }
 function collectPlanDoc(){
   return {goal:pcGoal, level:pcLevel,
     goalWhy:($("pcGoalWhy").value||"").trim(), reason:($("pcReason").value||"").trim(),
     careText:($("pcCareText").value||"").trim(), careWhy:($("pcCareWhy").value||"").trim(),
     when:($("pcWhen").value||"").trim(), check:($("pcCheck").value||"").trim(),
+    aim:($("pcAim").value||"").trim(),
+    exNotes:pcExNotes.map(n=>({fit:n.fit||"",load:n.load||"",why:(n.why||"").trim()})),
     freq:+$("pcFreq").value||0, target:+$("pcTarget").value||0};
 }
 // 얼마나 채웠는지 막대로 보여 준다 — 폰에서는 아래까지 안 내려보면 알기 어렵다
 function renderPlanProg(){
   const bars=$("planDocProg").children;
   PLAN_TEXTS.forEach((id,i)=>{ if(bars[i])bars[i].classList.toggle("on",!!($(id).value||"").trim()); });
+  if(bars[4])bars[4].classList.toggle("on",exNotesDone());
 }
 PLAN_TEXTS.forEach(id=>$(id).addEventListener("input",renderPlanProg));
 function planDocApply(){
@@ -3128,6 +3182,8 @@ $("planDocSubmit").addEventListener("click",()=>{
   const blanks=[["① 왜 이 목표를 골랐나요?",d.goalWhy],["③ 왜 이렇게 계획했나요?",d.reason],
     ["④ 조심할 부위를 어떻게 고려했나요?",d.careWhy],
     ["⑥ 계획대로 되는지 어떻게 확인할까요?",d.check]].filter(([,v])=>!v).map(([t])=>t);
+  const exBlank=pcExNotes.filter(n=>!(n.why||"").trim()||!n.fit).length;
+  if(exBlank)blanks.unshift("③ 운동별 칸 "+exBlank+"개 (체력요소·선정이유)");
   if(blanks.length&&!confirm(`아직 쓰지 않은 칸이 있습니다.\n\n${blanks.join("\n")}\n\n이대로 제출할까요?`))return;
   const p=planDocApply(); if(!p)return;
   if(!fdb){msg.innerHTML='<span class="err">인터넷 연결이 필요합니다. 연결 후 다시 제출하세요.</span>';return;}
@@ -3227,6 +3283,12 @@ function showPlanDetail(cls,name){
       <br><span style="color:var(--muted)">${["하체","상체","코어","유산소"].map(x=>`${x} ${parts[x]||0}`).join(" · ")}</span>
       <br>목표 <b>${GOAL_LABEL[p.goal]||"–"}</b> · 체감 체력 <b>${LEVEL_LABEL[p.level]||"–"}</b>
        · 주 ${p.freq||"–"}회 · 목표 ${p.target||"–"}회${p.when?` · ${esc(p.when)}`:""}
+      ${p.aim?`<div style="margin-top:6px"><b style="color:var(--gold)">운동목표</b> ${esc(p.aim)}</div>`:""}
+      ${(p.exNotes&&p.exNotes.length)?`<div style="margin-top:8px"><b style="color:var(--gold)">운동별 계획</b>`
+        +p.exNotes.map((n,i)=>`<div style="margin-top:4px">${i+1}. <b>${EXNAME[n.ex]||n.ex||""}</b>
+           <span style="color:var(--muted)">${n.fit||"–"} · ${n.load||"–"}</span>
+           ${n.why?`<br><span style="padding-left:14px">${esc(n.why)}</span>`:`<br><span style="padding-left:14px;color:var(--bad)">이유 미작성</span>`}</div>`).join("")
+        +`</div>`:""}
       ${q("① 왜 이 목표를 골랐나?",p.goalWhy)}
       ${q("② 왜 이 운동들을 골랐나?",p.reason)}
       ${q("③ 조심할 부위 — "+(String(p.careText||"").trim()||"미기재"),p.careWhy)}
@@ -3240,7 +3302,7 @@ $("pvExport").addEventListener("click",()=>{
   const cs=classNames();
   if(!cs.length){alert("먼저 명렬표를 등록하세요.");return;}
   const head=["번호","이름","계획수","대표 계획명","운동 구성","하체","상체","코어","유산소",
-    "목표","체감 체력","주 실천(회)","목표 실천(회)",
+    "목표","운동목표(서술)","체감 체력","주 실천(회)","목표 실천(회)",
     "① 왜 이 목표?","② 왜 이 운동들?","조심할 부위","③ 어떻게 고려?","실천 시간·장소","④ 확인 방법","서술 작성(4칸)","총 글자수"];
   const sheets=cs.map(c=>({
     name:c,
@@ -3252,7 +3314,7 @@ $("pvExport").addEventListener("click",()=>{
       const len=(p.goalWhy||"").length+(p.reason||"").length+(p.careWhy||"").length+(p.check||"").length;
       return [s.no==null?"":Number(s.no), s.name, ps.length, p.name, sq.map(k=>EXNAME[k]||k).join("→"),
         pc["하체"]||0, pc["상체"]||0, pc["코어"]||0, pc["유산소"]||0,
-        GOAL_LABEL[p.goal]||"", LEVEL_LABEL[p.level]||"",
+        GOAL_LABEL[p.goal]||"", p.aim||"", LEVEL_LABEL[p.level]||"",
         Number(p.freq)||"", Number(p.target)||"",
         p.goalWhy||"", p.reason||"", p.careText||"", p.careWhy||"", p.when||"", p.check||"", planWrote(p), len];
     }))
@@ -3591,6 +3653,16 @@ function buildGradeBook(){
         logWrote(l)]));
   }));
   sheets.push({name:"수시성찰 원문",rows:logRows});
+
+  // ── 운동별 계획 (운동 수만큼 늘어나므로 한 줄에 하나씩) ──
+  const exHead=["반","번호","이름","계획서","순번","운동명","운동부위","체력요소","운동강도","선정이유 / 포인트"];
+  const exRows=[exHead];
+  cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
+    const p=bestPlan(plansOf(s.name,c)); if(!p||!p.exNotes)return;
+    p.exNotes.forEach((n,i)=>exRows.push([c, num(s.no), s.name, p.name, i+1,
+      EXNAME[n.ex]||n.ex||"", EX_PART[n.ex]||"", n.fit||"", n.load||"", n.why||""]));
+  }));
+  sheets.push({name:"운동별 계획",rows:exRows});
   return sheets;
 }
 $("allExport").addEventListener("click",()=>{
