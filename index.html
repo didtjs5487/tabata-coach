@@ -104,6 +104,18 @@
   .rf-q > label{display:block; font-weight:700; font-size:14px; margin-bottom:4px;}
   .rf-q textarea{width:100%; background:var(--panel); color:var(--ink); border:1px solid var(--line);
     border-radius:10px; padding:9px; font-family:inherit; font-size:14px; resize:vertical;}
+  /* 과제 카드 — 이름을 누르면 구성이 펼쳐진다 */
+  .tc-head{display:flex; align-items:center; gap:8px; width:100%; text-align:left; cursor:pointer;
+    background:none; border:0; padding:0; color:var(--ink); font-family:inherit;}
+  .tc-head .tt{flex:1; font-weight:700; font-size:15px; line-height:1.3;}
+  .tc-head .arw{color:var(--muted); font-size:13px; transition:transform .18s;}
+  .tc-head.open .arw{transform:rotate(180deg);}
+  .tc-meta{display:block; font-size:12.5px; color:var(--muted); margin-top:3px; line-height:1.45;}
+  .tc-body{display:none; margin-top:8px; padding:9px 11px; background:var(--panel3);
+    border:1px solid var(--line); border-radius:10px; font-size:13px; line-height:1.6;}
+  .tc-body.open{display:block;}
+  .tc-btns{display:flex; gap:6px; margin-top:9px; flex-wrap:wrap;}
+  .tc-btns .btn{flex:1; min-width:78px;}
   .rf-self{display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--line);}
   .rf-self .lb{flex:1; font-size:13.5px; line-height:1.35;}
   .rf-self .op{display:flex; gap:4px;}
@@ -430,13 +442,11 @@
       <div class="cfg-fixed" id="cfgFixed" style="margin-top:10px"></div>
     </div>
 
-    <div class="hint" style="margin-top:10px">운동을 골랐으면 이름을 붙여 추가하세요. <b>설명은 쓰지 않아도 됩니다.</b><br>선생님께 낼 <b>운동 계획서</b>는 <b>운동하기</b> 탭의 과제 목록에서 <b>[📝 계획서]</b>로 따로 씁니다.</div>
-
     <div class="row" style="margin-top:12px;align-items:flex-end">
       <div class="field" style="flex:1;min-width:180px"><label>이 운동의 이름</label><input type="text" id="planName" placeholder="예: 하체 집중 4분" style="width:100%"></div>
       <button class="btn btn-go" id="toWorkout">＋ 운동 추가</button>
     </div>
-    <div class="hint" id="planAddMsg" style="margin-top:6px">이름을 붙여 추가하면 <b>운동하기</b> 탭의 자율 실천 과제 목록에 쌓입니다. 거기서 혼자 하거나 친구에게 결투를 신청할 수 있어요.</div>
+    <div class="hint" id="planAddMsg" style="margin-top:6px"></div>
 
     <details class="collapsible" style="margin-top:22px">
       <summary>③ ⚔️ 결투 현황</summary>
@@ -1087,6 +1097,12 @@ $("parqOk").addEventListener("click",()=>{
 $("toWorkout").addEventListener("click",()=>{
   const msg=$("planAddMsg");
   if(!seq.length){msg.innerHTML='<span class="err">운동을 하나 이상 추가한 뒤 눌러주세요.</span>';return;}
+  // 최소 기준(4동작·4분)에 못 미치면 되묻되, 학생이 원하면 그대로 만들 수 있게 둔다
+  const total=((+$("workSec").value||20)+(+$("restSec").value||10))*(+$("rounds").value||8);
+  const lack=[];
+  if(seq.length<4)lack.push(`동작이 ${seq.length}가지입니다 (최소 4가지)`);
+  if(total<240)lack.push(`총 ${Math.round(total/60*10)/10}분입니다 (최소 4분)`);
+  if(lack.length&&!confirm(`권장 기준에 못 미칩니다.\n\n${lack.join("\n")}\n\n이대로 만들까요?`))return;
   // 운동을 만드는 데는 아무 설명도 요구하지 않는다 — 계획서는 나중에 따로 쓴다
   msg.textContent=""; commitPlan();
 });
@@ -1201,7 +1217,9 @@ function renderSeq(){
 }
 $("addBtn").addEventListener("click",()=>{
   if(!confirmTaskBreak())return;
-  if(seq.length<12){seq.push($("addEx").value);renderSeq();}
+  // 동작은 4~8가지 — 8을 넘으면 한 동작을 한 번도 못 하고 끝나는 구성이 나온다
+  if(seq.length>=8){ $("planAddMsg").innerHTML='<span class="err">동작은 최대 8가지까지 넣을 수 있어요.</span>'; return; }
+  seq.push($("addEx").value); renderSeq();
 });
 document.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click",()=>{
   if(!confirmTaskBreak())return;
@@ -1327,25 +1345,33 @@ function renderTasks(){
   const group=t=>{ const g=document.createElement("div"); g.className="pick-group"; g.textContent=t; tc.appendChild(g); };
 
   const me=myKey();
+  // 카드 하나를 만든다. 제목을 누르면 운동 구성이 펼쳐져 목록이 길어지지 않는다.
+  const card=(icon,title,meta,detail)=>{
+    const d=document.createElement("div"); d.className="task-card";
+    const h=document.createElement("button"); h.className="tc-head"; h.type="button";
+    h.innerHTML=`<span class="tt">${icon} ${title}<span class="tc-meta">${meta}</span></span><span class="arw">▾</span>`;
+    const body=document.createElement("div"); body.className="tc-body"; body.innerHTML=detail;
+    h.addEventListener("click",()=>{ h.classList.toggle("open"); body.classList.toggle("open"); });
+    const btns=document.createElement("div"); btns.className="tc-btns";
+    d.append(h,body,btns); tc.appendChild(d);
+    return {card:d, btns, add(txt,cls,fn,title2){
+      const b=document.createElement("button"); b.className="btn "+cls+" btn-sm"; b.textContent=txt;
+      if(title2)b.title=title2; b.addEventListener("click",fn); btns.appendChild(b); return b; }};
+  };
+  const cfgLine=(sq,w,r,n)=>`${sq.map(k=>EXNAME[k]||k).join(" → ")}<br>
+    <span style="color:var(--muted)">${w}초 운동 · ${r}초 휴식 × ${n}라운드 · 총 ${Math.round((+w+ +r)*n/60*10)/10}분</span>`;
+
   group("📋 공통과제 — 선생님이 낸 과제");
   if(mine.length){
-    // 최근에 낸 과제가 위로 오게
     mine.sort((a,b)=>String(assignments[b].created||"").localeCompare(String(assignments[a].created||"")));
     mine.forEach(id=>{
       const a=assignments[id];
-      // 내가 이 과제를 언제 했는지 (내 기록에서 찾는다)
       const done=records.filter(r=>r.taskId===id&&r.name===me.name&&r.cls===me.cls)
         .sort((x,y)=>String(x.date).localeCompare(String(y.date)))[0];
-      const d=document.createElement("div"); d.className="task-card";
-      d.innerHTML=`<span class="tt">📋 ${a.title}</span>
-        <span class="td">${taskDesc(a)}<br>
-          <span style="color:var(--muted)">부여 ${a.created||"–"}</span> ·
-          ${done?`<b style="color:var(--good)">실행 ${String(done.date).slice(0,10)}</b>`
-                :`<b style="color:var(--bad)">아직 안 함</b>`}</span>`;
-      const btn=document.createElement("button"); btn.className="btn btn-go btn-sm";
-      btn.textContent=done?"다시 하기":"이 과제 하기";
-      btn.addEventListener("click",()=>applyAssignment(id));
-      d.appendChild(btn); tc.appendChild(d);
+      const meta=`부여 ${a.created||"–"} · `+(done?`<b style="color:var(--good)">실행 ${String(done.date).slice(0,10)}</b>`
+        :`<b style="color:var(--bad)">아직 안 함</b>`);
+      const c=card("📋",a.title,meta,cfgLine(a.seq,a.work,a.rest,a.rounds));
+      c.add(done?"다시 하기":"이 과제 하기","btn-go",()=>applyAssignment(id));
     });
   } else {
     const none=document.createElement("div"); none.className="hint"; none.style.margin="0 0 4px 2px";
@@ -1353,31 +1379,46 @@ function renderTasks(){
     tc.appendChild(none);
   }
 
-  // 진행 중인 결투는 답·종료를 바로 할 수 있어야 하므로 목록 맨 위에 눈에 띄게 둔다
-  const live=liveBattlesFor(me);
-  if(live.length){
-    group("⚔️ 결투 — 수락하면 양쪽이 동시에 시작합니다");
-    live.forEach(([id,b])=>{
-      const iAmC=sameP(b.ch,me), other=iAmC?b.op.name:b.ch.name;
-      const c=document.createElement("div"); c.className="task-card";
-      const state=b.status==="pending"
-        ? (iAmC?'<span style="color:var(--gold)">상대의 응답을 기다리는 중…</span>'
-               :'<b style="color:var(--gold)">수락하면 함께 시작합니다</b>')
-        : '<b style="color:var(--good)">수락됨 — 함께 시작합니다</b>';
-      c.innerHTML=`<span class="tt">⚔️ vs ${other}</span>
-        <span class="td">${b.planName?`<b>${b.planName}</b> · `:""}${b.cfg.seq.map(k=>EXNAME[k]).join("→")} · ${b.cfg.work}/${b.cfg.rest}초 × ${b.cfg.rounds}R<br>${state}</span>`;
-      if(b.status==="pending"&&!iAmC){
-        const acc=document.createElement("button"); acc.className="btn btn-go btn-sm"; acc.textContent="수락";
-        acc.addEventListener("click",()=>acceptBattle(id)); c.appendChild(acc);
-      } else if(b.status==="accepted"){
-        const go=document.createElement("button"); go.className="btn btn-go btn-sm"; go.textContent="지금 시작";
-        go.addEventListener("click",()=>enterBattle(id,b)); c.appendChild(go);
+  /* ⚔️ 결투 — 여러 명에게 신청한 건은 카드 하나로 묶는다.
+     수업 중 같은 자리에서 여럿이 함께 하려고 신청하는 것이므로,
+     신청자가 [함께 시작]을 누르면 그때까지 수락한 사람들과 동시에 출발하고
+     아직 수락하지 않은 사람의 결투는 자동으로 취소된다.                    */
+  const groups={};
+  liveBattlesFor(me).forEach(([id,b])=>{
+    const key=(sameP(b.ch,me)&&b.gid)?("g:"+b.gid):("i:"+id);
+    (groups[key]=groups[key]||[]).push([id,b]);
+  });
+  const gkeys=Object.keys(groups);
+  if(gkeys.length){
+    group("⚔️ 결투");
+    gkeys.forEach(k=>{
+      const list=groups[k], b0=list[0][1];
+      const iAmC=sameP(b0.ch,me);
+      const detail=cfgLine(b0.cfg.seq,b0.cfg.work,b0.cfg.rest,b0.cfg.rounds);
+      if(iAmC){
+        const okList=list.filter(([,b])=>b.status==="accepted");
+        const names=list.map(([,b])=>b.op.name);
+        const meta=`${b0.planName?`<b>${b0.planName}</b> · `:""}${names.join(", ")}<br>`
+          +`<b style="color:${okList.length?"var(--good)":"var(--gold)"}">${names.length}명 중 ${okList.length}명 수락</b>`
+          +(okList.length?"":" — 기다리는 중");
+        const c=card("⚔️",`내가 신청한 결투 (${names.length}명)`,meta,detail);
+        const go=c.add("함께 시작","btn-go",()=>startBattleGroup(list));
+        if(!okList.length){go.disabled=true; go.style.opacity=".5";}
+        c.add("전체 취소","btn-stop",()=>{
+          if(!confirm(`${names.join(", ")}에게 보낸 결투를 모두 취소할까요?`))return;
+          list.forEach(([id])=>removeBattle(id));
+        }).style.color="var(--bad)";
+      } else {
+        const [id,b]=list[0];
+        const meta=`${b.planName?`<b>${b.planName}</b> · `:""}${b.ch.name}님의 신청<br>`
+          +(b.status==="pending"?'<b style="color:var(--gold)">수락하면 함께 시작합니다</b>'
+            :'<b style="color:var(--good)">수락함 — 신청한 친구가 시작하기를 기다리는 중</b>');
+        const c=card("⚔️",`vs ${b.ch.name}`,meta,detail);
+        if(b.status==="pending")c.add("수락","btn-go",()=>acceptBattle(id));
+        else c.add("지금 시작","btn-go",()=>enterBattle(id,b));
+        c.add(b.status==="pending"?"거절":"⛔ 종료","btn-stop",()=>endBattle(id,b.ch.name))
+          .style.color="var(--bad)";
       }
-      const end=document.createElement("button"); end.className="btn btn-stop btn-sm";
-      end.textContent=b.status==="pending"?(iAmC?"신청 취소":"거절"):"⛔ 배틀 종료";
-      end.style.color="var(--bad)";
-      end.addEventListener("click",()=>endBattle(id,other));
-      c.appendChild(end); tc.appendChild(c);
     });
   }
 
@@ -1388,28 +1429,18 @@ function renderTasks(){
     tc.appendChild(none);
   }
   myPlans.forEach(p=>{
-    const c=document.createElement("div"); c.className="task-card";
-    c.innerHTML=`<span class="tt">🌱 ${p.name||"내 운동"}</span>
-      <span class="td">${p.seq.map(k=>EXNAME[k]).join("→")} · ${p.work}/${p.rest}초 × ${p.rounds}R<br>
-        <span style="color:var(--muted)">만든 날 ${p.made||"–"} · </span>
-        <b style="color:${p.n?"var(--good)":"var(--muted)"}">${p.n?`${p.n}회 실천`:"아직 안 함"}</b>
-        <span style="color:var(--muted)">${p.last?` · 마지막 ${p.last}`:""}</span>
-        <br>${p.submitted?`<b style="color:var(--good)">📤 계획서 제출함 (${p.submitted})</b>`
-          :`<span style="color:var(--muted)">계획서 미제출</span>`}</span>`;
-    const go=document.createElement("button"); go.className="btn btn-go btn-sm"; go.textContent="혼자 하기";
-    go.addEventListener("click",()=>{
+    const meta=`<b style="color:${p.n?"var(--good)":"var(--muted)"}">${p.n?`${p.n}회 실천`:"아직 안 함"}</b>`
+      +`${p.last?` · 마지막 ${p.last}`:""} · `
+      +(p.submitted?`<b style="color:var(--good)">📤 계획서 제출함</b>`:`계획서 미제출`);
+    const c=card("🌱",p.name||"내 운동",meta,cfgLine(p.seq,p.work,p.rest,p.rounds)
+      +`<br><span style="color:var(--muted)">만든 날 ${p.made||"–"}</span>`);
+    c.add("혼자","btn-go",()=>{
       applyPlan(p); currentPlanId=p.id;
       clearTask(); currentBattle=null; updateModeBadge(); showWorkSteps();
     });
-    const duel=document.createElement("button"); duel.className="btn btn-stop btn-sm"; duel.textContent="⚔️ 결투";
-    duel.addEventListener("click",()=>openBattlePick(p));
-    const doc=document.createElement("button"); doc.className="btn btn-teal btn-sm";
-    doc.textContent=p.submitted?"📝 계획서 보기":"📝 계획서";
-    doc.title="이 운동으로 계획서를 써서 선생님께 제출합니다";
-    doc.addEventListener("click",()=>openPlanDoc(p));
-    const del=document.createElement("button"); del.className="btn btn-stop btn-sm";
-    del.textContent="✕"; del.title="이 운동 목록에서 지우기"; del.style.color="var(--bad)";
-    del.addEventListener("click",()=>{
+    c.add("⚔️ 결투","btn-stop",()=>openBattlePick(p));
+    c.add("📝 계획서","btn-teal",()=>openPlanDoc(p));
+    c.add("✕","btn-stop",()=>{
       // 이 운동으로 걸려 있는 결투를 같이 정리한다 — 안 그러면 상대 화면에 배틀이 영영 남는다
       const linked=liveBattlesFor(me).filter(([id,b])=>b.planName===p.name);
       const warn=(linked.length?`\n\n⚔️ 이 운동으로 진행 중인 결투 ${linked.length}건도 함께 종료됩니다.`:"")
@@ -1417,8 +1448,7 @@ function renderTasks(){
       if(!confirm(`'${p.name}'을(를) 목록에서 지울까요? (지금까지의 운동 기록은 그대로 남습니다)`+warn))return;
       linked.forEach(([id])=>removeBattle(id));
       myPlans=myPlans.filter(x=>x.id!==p.id); saveAll(); renderTasks(); removePlanRemote(p.id);
-    });
-    c.appendChild(go); c.appendChild(duel); c.appendChild(doc); c.appendChild(del); tc.appendChild(c);
+    },"이 운동 목록에서 지우기").style.color="var(--bad)";
   });
   // 교사: 과제 목록 칩 + 완료현황 select
   const chips=$("taskChips"); chips.innerHTML="";
@@ -1625,8 +1655,23 @@ function endBattle(id,other){
 const BATTLE_LEAD_MS=12000; // 자리 잡을 시간
 function acceptBattle(id){
   if(!fdb){alert("서버 연결이 필요합니다.");return;}
-  fmod.update(fmod.ref(fdb,"battles/"+id),{status:"accepted",startAt:Date.now()+BATTLE_LEAD_MS})
+  // 수락만 표시한다. 여러 명이 함께 하는 경우가 있어 출발은 신청한 사람이 정한다.
+  fmod.update(fmod.ref(fdb,"battles/"+id),{status:"accepted"})
+    .then(()=>toast("수락했습니다 — 신청한 친구가 시작하면 함께 출발합니다","task","⚔️"))
     .catch(()=>alert("전송 실패 — 인터넷을 확인하세요."));
+}
+// 신청자가 누르는 [함께 시작] — 수락한 사람들과 동시에 출발하고, 미수락은 정리한다
+function startBattleGroup(list){
+  const ok=list.filter(([,b])=>b.status==="accepted");
+  const wait=list.filter(([,b])=>b.status!=="accepted");
+  if(!ok.length){alert("아직 아무도 수락하지 않았습니다.");return;}
+  if(wait.length&&!confirm(`아직 수락하지 않은 ${wait.length}명(${wait.map(([,b])=>b.op.name).join(", ")})의 결투는 취소됩니다.
+
+수락한 ${ok.length}명과 함께 시작할까요?`))return;
+  const at=Date.now()+BATTLE_LEAD_MS;
+  wait.forEach(([id])=>removeBattle(id));
+  Promise.all(ok.map(([id])=>fmod.update(fmod.ref(fdb,"battles/"+id),{startAt:at})))
+    .catch(()=>alert("시작 신호 전송 실패 — 인터넷을 확인하세요."));
 }
 /* 배틀 구성을 내 화면에 적용하고 운동하기로 이동 */
 function enterBattle(id,b){
@@ -1726,14 +1771,15 @@ $("battlePickSend").addEventListener("click",()=>{
   if(!picked.length){msg.innerHTML='<span class="err">상대를 한 명 이상 고르세요.</span>';return;}
   const cfg={seq:[...p.seq], work:p.work, rest:p.rest, rounds:p.rounds, diff:1};
   msg.textContent="보내는 중…";
+  const gid=Date.now().toString(36)+Math.random().toString(36).slice(2,6); // 한 번에 보낸 신청을 묶는 표시
   Promise.all(picked.map(name=>{
     const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
     return fmod.set(fmod.ref(fdb,"battles/"+id),
-      {ch:me, op:{name,cls:me.cls}, cfg, planName:p.name, status:"pending", created:Date.now()});
+      {ch:me, op:{name,cls:me.cls}, cfg, planName:p.name, gid, status:"pending", created:Date.now()});
   }))
   .then(()=>{
     $("battlePickOverlay").style.display="none";
-    alert(`⚔️ ${picked.length}명에게 '${p.name}' 결투를 신청했습니다!\n(${picked.join(", ")})\n상대가 수락하면 알림이 옵니다.`);
+    toast(`${picked.length}명에게 결투를 신청했습니다 — 수락하면 [함께 시작]으로 출발하세요`,"task","⚔️");
   })
   .catch(()=>{ msg.innerHTML='<span class="err">전송 실패 — 인터넷을 확인하세요.</span>'; });
 });
@@ -1753,39 +1799,30 @@ function battleStatusHtml(b,mineRole){
   }
   return `<span style="color:var(--gold)">응답 대기 중…</span>`;
 }
+// 진행 중인 결투는 '운동하기' 탭 카드에서 다루므로, 여기서는 지난 결과만 보여 준다.
 function renderBattles(){
   const me=myKey(); const list=$("battleList"); list.innerHTML="";
-  const mine=Object.entries(battles)
-    .filter(([id,b])=>sameP(b.ch,me)||sameP(b.op,me))
+  if(!me.name){list.innerHTML='<div class="empty">운동 설계 탭에서 학번을 먼저 입력하세요.</div>';return;}
+  const live=liveBattlesFor(me).length;
+  const done=Object.entries(battles)
+    .filter(([id,b])=>(sameP(b.ch,me)||sameP(b.op,me))&&(b.status==="done"||(b.results&&b.results[sameP(b.ch,me)?"c":"o"])))
     .sort((a,b)=>(b[1].created||0)-(a[1].created||0)).slice(0,20);
-  if(!me.name){list.innerHTML='<div class="empty">운동 설계 탭에서 내 이름·학반을 먼저 입력하세요.</div>';return;}
-  if(!mine.length){list.innerHTML='<div class="empty">아직 배틀이 없습니다. 친구에게 결투를 신청해 보세요!</div>';return;}
-  mine.forEach(([id,b])=>{
+  if(live){
+    const n=document.createElement("div"); n.className="hint"; n.style.marginBottom="8px";
+    n.innerHTML=`⚔️ <b>진행 중인 결투 ${live}건</b> — <b>운동하기</b> 탭 맨 위에서 수락·시작·종료할 수 있어요.`;
+    list.appendChild(n);
+  }
+  if(!done.length){
+    const e=document.createElement("div"); e.className="empty";
+    e.textContent=live?"아직 끝난 결투가 없습니다.":"아직 결투 기록이 없습니다. 친구에게 신청해 보세요!";
+    list.appendChild(e); return;
+  }
+  done.forEach(([id,b])=>{
     const iAmC=sameP(b.ch,me), role=iAmC?"c":"o";
-    const other=iAmC?b.op.name:b.ch.name;
     const d=document.createElement("div"); d.className="task-card";
-    d.innerHTML=`<span class="tt">⚔️ vs ${other}</span>
+    d.innerHTML=`<span class="tt">⚔️ vs ${iAmC?b.op.name:b.ch.name}</span>
       <span class="td">${b.cfg.seq.map(k=>EXNAME[k]).join("→")} · ${b.cfg.work}/${b.cfg.rest}초 × ${b.cfg.rounds}R<br>${battleStatusHtml(b,role)}</span>`;
-    const btns=document.createElement("span");
-    const mineDone=b.results&&b.results[role];
-    if(b.status==="pending"&&!iAmC){
-      const acc=document.createElement("button"); acc.className="btn btn-go btn-sm"; acc.textContent="수락";
-      acc.addEventListener("click",()=>acceptBattle(id));
-      btns.append(acc);
-    } else if(b.status==="accepted"&&!mineDone){
-      const go=document.createElement("button"); go.className="btn btn-go btn-sm"; go.textContent="지금 시작";
-      go.addEventListener("click",()=>enterBattle(id,b));
-      btns.append(go);
-    }
-    // 어느 쪽이든, 끝나지 않은 배틀은 언제나 스스로 종료할 수 있어야 한다
-    if((b.status==="pending"||(b.status==="accepted"&&!mineDone))){
-      const end=document.createElement("button"); end.className="btn btn-stop btn-sm";
-      end.textContent=b.status==="pending"?(iAmC?"신청 취소":"거절"):"⛔ 배틀 종료";
-      end.style.marginLeft="6px"; end.style.color="var(--bad)";
-      end.addEventListener("click",()=>endBattle(id,other));
-      btns.append(end);
-    }
-    d.appendChild(btns); list.appendChild(d);
+    list.appendChild(d);
   });
 }
 async function submitBattleResult(rec){
@@ -2908,12 +2945,15 @@ function renderCfgFixed(){
   // 초기화 중에도 불리므로 위쪽 상수를 참조하지 않고 숫자를 직접 쓴다
   const w=+$("workSec").value||20, r=+$("restSec").value||10, n=+$("rounds").value||8;
   const min=Math.round((w+r)*n/60*10)/10;
-  const cycle=seq.length?(n===seq.length?"한 번씩 합니다"
-    :(n%seq.length===0?`${n/seq.length}번씩 반복합니다`
-      :`순서대로 돌아가며 ${n}번 합니다 (마지막에 일부만 더 합니다)`)):"";
-  box.innerHTML=`⏱️ <b>총 ${min}분</b> — ${w}초 운동 · ${r}초 휴식 × ${n}라운드`
-    +(cycle?`<span>고른 ${seq.length}가지를 ${cycle}</span>`:"")
-    +`<span>시간과 라운드는 내 목표와 체력에 맞게 스스로 정하세요.</span>`;
+  // 최소 기준(4동작·4분)에 못 미치면 무엇이 모자란지 알려 준다
+  const lack=[];
+  if(seq.length<4)lack.push(`동작 ${4-seq.length}개 더`);
+  if((w+r)*n<240)lack.push("시간 부족");
+  box.innerHTML=`⏱️ <b>운동 ${seq.length}동작 · ${n}라운드 · 총 ${min}분</b>`
+    +`<span>${w}초 운동 / ${r}초 휴식</span>`
+    +(lack.length
+      ? `<span style="color:var(--gold)">최소 <b>4동작 · 4분</b>은 채워 주세요 — ${lack.join(", ")}</span>`
+      : `<span style="color:var(--good)">최소 기준(4동작 · 4분)을 채웠습니다 ✔</span>`);
 }
 
 function bindPcChips(id){
