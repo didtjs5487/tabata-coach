@@ -104,6 +104,29 @@
   .rf-q > label{display:block; font-weight:700; font-size:14px; margin-bottom:4px;}
   .rf-q textarea{width:100%; background:var(--panel); color:var(--ink); border:1px solid var(--line);
     border-radius:10px; padding:9px; font-family:inherit; font-size:14px; resize:vertical;}
+  /* 학생이 폰으로 길게 쓰는 화면(계획서·성찰)은 전체를 덮는 시트로 연다 */
+  .sheet{position:fixed; inset:0; z-index:10005; background:rgba(28,32,66,.93);
+    align-items:center; justify-content:center; padding:10px;}
+  .sheet-in{background:var(--panel); border-radius:16px; padding:16px;
+    width:min(580px,100%); max-height:96vh; display:flex; flex-direction:column;}
+  .sheet-hd{position:sticky; top:0; background:var(--panel); padding-bottom:8px; z-index:2;}
+  .sheet-bd{overflow-y:auto; flex:1; -webkit-overflow-scrolling:touch;}
+  .sheet-ft{position:sticky; bottom:0; background:var(--panel); padding-top:10px;
+    margin-top:10px; border-top:1px solid var(--line); display:flex; gap:6px; flex-wrap:wrap; align-items:center;}
+  .sheet-ft .btn{flex:1; min-width:96px;}
+  /* iOS는 글자가 16px보다 작으면 입력할 때 화면을 확대해 버린다 — 뒤에 오는 규칙에 지지 않도록 구체적으로 */
+  .sheet .pc-q textarea, .sheet .rf-q textarea, .sheet textarea,
+  .sheet .pc-q input[type=text], .sheet input[type=text],
+  .sheet .field input, .sheet input[type=number]{font-size:16px;}
+  .sheet .pc-opts button{padding:9px 14px; font-size:14px;}
+  .sheet .rf-self .op button{padding:9px 10px; font-size:13px;}
+  @media(max-width:600px){
+    .sheet{padding:0; align-items:stretch;}
+    .sheet-in{border-radius:0; max-height:100%; height:100%; width:100%; padding:14px 12px;}
+  }
+  .doc-prog{display:flex; gap:4px; margin-top:6px;}
+  .doc-prog i{flex:1; height:4px; border-radius:99px; background:var(--line);}
+  .doc-prog i.on{background:var(--good);}
   /* 과제 카드 — 이름을 누르면 구성이 펼쳐진다 */
   .tc-head{display:flex; align-items:center; gap:8px; width:100%; text-align:left; cursor:pointer;
     background:none; border:0; padding:0; color:var(--ink); font-family:inherit;}
@@ -195,6 +218,12 @@
   .timer.work .big{color:var(--work); text-shadow:0 0 40px rgba(255,176,32,.35);}
   .timer.rest .big{color:var(--rest); text-shadow:0 0 40px rgba(53,208,186,.35);}
   .fb{align-self:center; font-weight:600; font-size:clamp(15px,2.6vw,22px); padding:7px 16px; border-radius:12px; background:rgba(0,0,0,.55);}
+  /* 정면에서 관절 각도를 재기 어려운 동작에서 옆으로 서라고 안내 */
+  .side-tip{align-self:center; margin-top:8px; text-align:center; padding:9px 18px; border-radius:14px;
+    background:rgba(255,176,32,.92); color:#241a00; font-size:clamp(14px,2.4vw,20px); line-height:1.35;
+    box-shadow:0 6px 20px rgba(0,0,0,.35); animation:sidePulse 1.1s ease-in-out infinite;}
+  .side-tip span{display:block; font-size:clamp(11px,1.7vw,14px); font-weight:600; opacity:.8; margin-top:2px;}
+  @keyframes sidePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
   .bottom{display:flex; justify-content:space-between; align-items:flex-end;}
   .metric .n{font-family:"Barlow Condensed"; font-weight:700; font-size:clamp(40px,10vw,80px); line-height:.85;}
   .metric .l{color:var(--muted); font-size:12px; letter-spacing:2px; text-transform:uppercase;}
@@ -508,6 +537,7 @@
         </div>
         <div class="timer" id="timerBox"><div class="big num" id="timerBig">0</div></div>
         <div class="fb" id="fb">자세를 잡아주세요</div>
+        <div class="side-tip" id="sideTip" style="display:none">📐 <b>몸을 옆으로 돌려 주세요</b><span>카메라가 옆모습을 봐야 동작을 셀 수 있어요</span></div>
         <div class="bottom">
           <div class="metric"><div class="n num" id="repN">0</div><div class="l" id="repL">횟수</div></div>
           <div class="jcount" id="jCount" style="display:none"></div>
@@ -525,6 +555,12 @@
     <div class="row" style="margin-top:8px">
       <button class="btn btn-go" id="startBtn">시작</button>
       <button class="btn btn-stop" id="musicBtn">🎵 음악 ON</button>
+      <button class="btn btn-stop" id="soundTest" title="폰 스피커에서 소리가 나는지 확인">🔊 소리 확인</button>
+    </div>
+    <div class="row" id="volRow" style="margin:8px 0 0;align-items:center">
+      <span class="hint" style="white-space:nowrap">소리 크기</span>
+      <input type="range" id="bgmVol" min="0" max="5" step="0.2" value="2.6" style="flex:1;min-width:120px">
+      <span class="hint" id="bgmVolTxt" style="white-space:nowrap">보통</span>
     </div>
 
     <!-- STEP 3 · 운동 후 심박수 (항상 표시 — 심박수→운동→심박수 순서) -->
@@ -776,10 +812,10 @@
       <div class="kpi"><div class="v num c1" id="pvDone">0</div><div class="k">제출</div></div>
       <div class="kpi"><div class="v num" style="color:var(--bad)" id="pvUndone">0</div><div class="k">미제출</div></div>
       <div class="kpi"><div class="v num c2" id="pvRate">–</div><div class="k">제출률</div></div>
-      <div class="kpi"><div class="v num" style="color:var(--good)" id="pvFull">0</div><div class="k">서술 3칸 완성</div></div>
+      <div class="kpi"><div class="v num" style="color:var(--good)" id="pvFull">0</div><div class="k">서술 4칸 완성</div></div>
     </div>
     <div class="hint" id="pvMissing" style="margin:6px 0 10px"></div>
-    <table><thead><tr><th>번호</th><th>이름</th><th>제출</th><th>계획서 이름</th><th>목표</th><th>체감 체력</th><th>서술 작성</th><th>분량</th></tr></thead>
+    <table><thead><tr><th>번호</th><th>이름</th><th>제출</th><th>계획서 이름</th><th>목표</th><th>체감 체력</th><th>서술 4칸</th><th>분량</th></tr></thead>
       <tbody id="pvRows"><tr><td colspan="8" class="empty">반을 고르면 학생별 계획이 표시됩니다.</td></tr></tbody></table>
     <div id="pvDetail" style="margin-top:10px"></div>
     </details>
@@ -924,12 +960,14 @@
     </div>
   </div>
 </div>
-<div id="rfDocOverlay" style="display:none;position:fixed;inset:0;z-index:10005;background:rgba(28,32,66,.93);align-items:center;justify-content:center;padding:10px">
-  <div style="background:var(--panel);border-radius:16px;padding:16px;width:min(560px,98vw);max-height:96vh;display:flex;flex-direction:column">
-    <div style="font-weight:800;font-size:18px">✍️ 자기성찰 일지</div>
-    <div class="hint" id="rfDocWhen" style="margin:2px 0 8px"></div>
-    <div class="cfg-fixed" id="rfDocData" style="margin-bottom:8px"></div>
-    <div style="overflow-y:auto;flex:1">
+<div id="rfDocOverlay" class="sheet" style="display:none">
+  <div class="sheet-in">
+    <div class="sheet-hd">
+      <div style="font-weight:800;font-size:18px">✍️ 자기성찰 일지</div>
+      <div class="hint" id="rfDocWhen" style="margin:2px 0 6px"></div>
+      <div class="cfg-fixed" id="rfDocData"></div>
+    </div>
+    <div class="sheet-bd">
       <div class="rf-q"><label>1. 운동 강도 돌아보기</label>
         <div class="hint" style="margin-bottom:4px">위 심박수를 근거로, 내가 충분한 강도로 운동했는지 스스로 평가해 보세요.</div>
         <textarea id="rq1" rows="3" placeholder="예: 운동 전 72에서 후 138까지 올라 충분히 힘을 냈다고 생각한다"></textarea></div>
@@ -949,19 +987,22 @@
       <div class="rf-q"><label>오늘의 자기 평가</label>
         <div id="rfSelfList"></div></div>
     </div>
-    <div class="row" style="margin:12px 0 0">
+    <div class="sheet-ft">
       <button class="btn btn-go btn-sm" id="rfDocSave">💾 성찰 저장</button>
       <button class="btn btn-stop btn-sm" id="rfDocClose">닫기</button>
-      <span class="hint" id="rfDocMsg"></span>
+      <span class="hint" id="rfDocMsg" style="flex-basis:100%"></span>
     </div>
   </div>
 </div>
-<div id="planDocOverlay" style="display:none;position:fixed;inset:0;z-index:10005;background:rgba(28,32,66,.93);align-items:center;justify-content:center;padding:14px">
-  <div style="background:var(--panel);border-radius:18px;padding:20px;width:min(580px,96vw);max-height:94vh;display:flex;flex-direction:column">
-    <div style="font-weight:800;font-size:19px">📝 운동 계획서</div>
-    <div class="hint" style="margin:3px 0 8px">정답은 없습니다. <b>왜 그렇게 정했는지</b> 자기 생각을 쓰는 것이 계획서의 전부입니다.</div>
-    <div class="cfg-fixed" id="planDocCfg" style="margin-bottom:6px"></div>
-    <div style="overflow-y:auto;flex:1">
+<div id="planDocOverlay" class="sheet" style="display:none">
+  <div class="sheet-in">
+    <div class="sheet-hd">
+      <div style="font-weight:800;font-size:18px">📝 운동 계획서</div>
+      <div class="hint" style="margin:2px 0 6px">정답은 없습니다. <b>왜 그렇게 정했는지</b> 자기 생각을 쓰는 것이 계획서의 전부예요.</div>
+      <div class="cfg-fixed" id="planDocCfg" style="margin-bottom:6px"></div>
+      <div class="doc-prog" id="planDocProg"><i></i><i></i><i></i><i></i></div>
+    </div>
+    <div class="sheet-bd">
       <div class="pc-q"><label>① 내 운동 목표는?</label>
         <div class="pc-opts" id="pcGoal">
           <button type="button" data-v="fat">🔥 체중 감량</button>
@@ -969,10 +1010,8 @@
           <button type="button" data-v="car">🫁 심폐지구력 증가</button>
           <button type="button" data-v="str">💪 근력 증가</button>
         </div>
-        <div style="margin-top:8px">
-          <div class="hint" style="margin-bottom:4px">왜 이 목표를 골랐나요?</div>
-          <textarea id="pcGoalWhy" rows="2" placeholder="예: 계단만 올라도 숨이 차서 오래 움직여도 지치지 않는 몸을 만들고 싶다"></textarea>
-        </div></div>
+        <div class="hint" style="margin:8px 0 4px">왜 이 목표를 골랐나요? <b>내 몸 상태나 바라는 점</b>을 들어서.</div>
+        <textarea id="pcGoalWhy" rows="3" placeholder="예: 계단만 올라도 숨이 차서 오래 움직여도 지치지 않는 몸을 만들고 싶다"></textarea></div>
 
       <div class="pc-q"><label>② 요즘 내 체력은 어느 정도라고 느끼나요?</label>
         <div class="pc-opts" id="pcLevel">
@@ -982,25 +1021,31 @@
         </div></div>
 
       <div class="pc-q"><label>③ 왜 이렇게 계획했나요? <span style="font-weight:400;color:var(--muted)">— 계획서의 핵심</span></label>
-        <div class="hint" style="margin-bottom:4px">내 <b>목표</b>와 <b>체력</b>에 비추어 <b>고른 동작</b>과 <b>운동·휴식 시간, 라운드 수</b>를 왜 그렇게 정했는지 설명하세요.</div>
-        <textarea id="pcReason" rows="3" placeholder="예: 심폐지구력을 키우고 싶어서 점핑잭·하이니처럼 쉬지 않고 움직이는 동작을 넣었다. 오래 이어가는 게 중요해서 라운드를 10으로 늘렸고, 대신 힘드니까 휴식을 15초로 잡았다."></textarea></div>
+        <div class="hint" style="margin-bottom:4px">내 <b>목표</b>와 <b>체력</b>에 비추어, <b>고른 동작</b>과 <b>운동·휴식 시간, 라운드 수</b>를 왜 그렇게 정했는지 설명하세요.</div>
+        <textarea id="pcReason" rows="4" placeholder="예: 심폐지구력을 키우고 싶어서 점핑잭·하이니처럼 쉬지 않고 움직이는 동작을 넣었다. 오래 이어가는 게 중요해서 라운드를 10으로 늘렸고, 대신 힘드니까 휴식을 15초로 잡았다."></textarea></div>
 
       <div class="pc-q"><label>④ 아프거나 조심해야 할 부위가 있나요?</label>
-        <input type="text" id="pcCareText" placeholder="예: 왼쪽 무릎 / 없으면 '없음'이라고 쓰세요" style="width:100%">
+        <input type="text" id="pcCareText" placeholder="예: 왼쪽 무릎 / 없으면 '없음'" style="width:100%">
         <div class="hint" style="margin:7px 0 4px">그 부위를 생각해서 계획을 어떻게 짰나요?</div>
-        <textarea id="pcCareWhy" rows="2" placeholder="예: 무릎이 아파서 점프스쿼트를 빼고 크런치를 넣었다. 런지는 천천히 하기로 했다."></textarea></div>
+        <textarea id="pcCareWhy" rows="3" placeholder="예: 무릎이 아파서 점프스쿼트를 빼고 크런치를 넣었다. 런지는 천천히 하기로 했다."></textarea></div>
 
-      <div class="pc-q"><label>⑤ 얼마나 자주 실천할까요?</label>
-        <div class="row" style="margin:0">
-          <div class="field"><label>주 몇 회</label><input type="number" id="pcFreq" value="3" min="1" max="7" style="width:80px"></div>
-          <div class="field"><label>목표 실천 횟수</label><input type="number" id="pcTarget" value="10" min="1" max="60" style="width:90px"></div>
-        </div></div>
+      <div class="pc-q"><label>⑤ 언제, 얼마나 실천할까요?</label>
+        <div class="row" style="margin:0 0 8px">
+          <div class="field"><label>주 몇 회</label><input type="number" id="pcFreq" value="3" min="1" max="7" style="width:84px"></div>
+          <div class="field"><label>목표 실천 횟수</label><input type="number" id="pcTarget" value="10" min="1" max="60" style="width:94px"></div>
+        </div>
+        <div class="hint" style="margin-bottom:4px">언제·어디서 할지 정해 두면 지키기 쉬워요.</div>
+        <textarea id="pcWhen" rows="2" placeholder="예: 화·목·토 저녁 먹기 전에 방에서 한다"></textarea></div>
+
+      <div class="pc-q"><label>⑥ 계획대로 되고 있는지 어떻게 확인할까요?</label>
+        <div class="hint" style="margin-bottom:4px">무엇을 보면 나아지고 있다고 말할 수 있을까요? (앱의 점수·정확도·심박수를 써도 좋아요)</div>
+        <textarea id="pcCheck" rows="3" placeholder="예: 운동 후 심박수가 130 넘게 올라가는지 보고, 종합 점수가 처음보다 10점 오르면 잘되고 있다고 보겠다"></textarea></div>
     </div>
-    <div class="row" style="margin:12px 0 0">
+    <div class="sheet-ft">
       <button class="btn btn-go btn-sm" id="planDocSubmit">📤 선생님께 제출</button>
       <button class="btn btn-stop btn-sm" id="planDocSave">임시 저장</button>
       <button class="btn btn-stop btn-sm" id="planDocClose">닫기</button>
-      <span class="hint" id="planDocMsg"></span>
+      <span class="hint" id="planDocMsg" style="flex-basis:100%"></span>
     </div>
   </div>
 </div>
@@ -2140,11 +2185,60 @@ function procHold(lm,def){
 }
 
 /* ---------- audio ---------- */
-let audio=null;
+/* ---------- 오디오 출력 ----------
+   폰 스피커에서 소리가 안 들리던 문제:
+   ① AudioContext.destination으로 바로 내보내면 iOS의 무음(벨소리) 스위치에 막히고,
+      카메라가 켜져 있을 때 수화기 쪽으로 빠지는 일이 있다. 이어폰만 들리던 이유다.
+   ② 폰 스피커는 작아서 원래 음량(0.1 안팎)으로는 체육관에서 들리지 않는다.
+   그래서 <audio> 요소를 거쳐 '미디어 재생'으로 내보내고, 마스터 볼륨을 따로 둔다.   */
+let audio=null, masterGain=null, bgmDest=null, bgmEl=null;
+let BGM_VOL=2.6;                      // 폰 스피커 기준 기본 배율
+function ensureAudio(){
+  try{
+    if(!audio){
+      audio=new (window.AudioContext||window.webkitAudioContext)();
+      masterGain=audio.createGain();
+      masterGain.gain.value=BGM_VOL;
+      // 미디어 요소 경로를 먼저 시도하고, 안 되면 기본 출력으로 되돌린다
+      let routed=false;
+      try{
+        if(audio.createMediaStreamDestination){
+          bgmDest=audio.createMediaStreamDestination();
+          bgmEl=document.createElement("audio");
+          bgmEl.setAttribute("playsinline","");
+          bgmEl.autoplay=true; bgmEl.loop=true; bgmEl.volume=1;
+          bgmEl.srcObject=bgmDest.stream;
+          bgmEl.style.display="none";
+          document.body.appendChild(bgmEl);
+          masterGain.connect(bgmDest);
+          routed=true;
+        }
+      }catch(e){ bgmDest=null; bgmEl=null; }
+      if(!routed)masterGain.connect(audio.destination);
+    }
+    if(audio.state==="suspended")audio.resume().catch(()=>{});
+    if(bgmEl&&bgmEl.paused){
+      bgmEl.play().catch(()=>{           // 재생이 막히면 기본 출력으로 되돌린다
+        try{ masterGain.disconnect(); masterGain.connect(audio.destination); bgmEl=null; bgmDest=null; }catch(e){}
+      });
+    }
+  }catch(e){}
+  return audio;
+}
+function audioOut(){ return masterGain||(audio&&audio.destination); }
+function setBgmVol(v){
+  BGM_VOL=Math.max(0,Math.min(5,v));
+  if(masterGain)masterGain.gain.value=BGM_VOL;
+  try{localStorage.setItem("tabataVol",String(BGM_VOL));}catch(e){}
+}
+// 사용자의 첫 조작에서 오디오를 깨운다 (브라우저 자동재생 정책)
+["pointerdown","touchstart","keydown"].forEach(ev=>
+  document.addEventListener(ev,()=>ensureAudio(),{passive:true}));
+
 function beep(f=880,d=.12,v=.2){try{
-  audio=audio||new (window.AudioContext||window.webkitAudioContext)();
+  ensureAudio(); if(!audio)return;
   const o=audio.createOscillator(),g=audio.createGain();
-  o.frequency.value=f;o.connect(g);g.connect(audio.destination);
+  o.frequency.value=f;o.connect(g);g.connect(audioOut());
   g.gain.setValueAtTime(v,audio.currentTime);
   g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);
   o.start();o.stop(audio.currentTime+d);
@@ -2196,7 +2290,7 @@ function note(freq,dur,vol,type){
   if(!audio)return;
   const o=audio.createOscillator(),g=audio.createGain();
   o.type=type||"triangle"; o.frequency.value=freq;
-  o.connect(g); g.connect(audio.destination);
+  o.connect(g); g.connect(audioOut());
   g.gain.setValueAtTime(0,audio.currentTime);
   g.gain.linearRampToValueAtTime(vol,audio.currentTime+.02);
   g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);
@@ -2230,7 +2324,7 @@ function startBgm(mode){
   else if(mode==="cd")BGM_CD=pickBgm(BGM_CD_SET);
   if(bgmTimer)clearInterval(bgmTimer);
   if(!bgmOn)return;
-  try{audio=audio||new (window.AudioContext||window.webkitAudioContext)(); if(audio.state==="suspended")audio.resume();}catch(e){}
+  ensureAudio();
   // 운동 템포도 조금씩 흔들어 매번 똑같이 들리지 않게 한다
   const bpm = mode==="work"?(140+Math.floor(Math.random()*25)) : mode==="rest"?90 : 120;
   bgmTimer=setInterval(bgmTick, 60000/bpm/2); // 8분음표 간격
@@ -2290,6 +2384,18 @@ function loop(){
 /* ---------- tabata engine ---------- */
 let phase="idle",roundIdx=0,totalRounds=8,timeLeft=0,tickId=null,workSec=20,restSec=10,curEx="squat";
 let log=[]; // per-round {ex,reps,acc,type,hold}
+/* 엎드리거나 누워서 하는 동작은 정면에서 팔·몸통 각도가 겹쳐 보여 카운트가 잘 안 된다.
+   해당 동작 차례가 되면 옆으로 서라고 크게 안내한다. */
+const SIDE_VIEW={pushup:1,pushupknee:1,plank:1,crunch:1,legraise:1,burpee:1};
+let sideTipTimer=null;
+function showSideTip(ex,ms){
+  const el=$("sideTip"); if(!el)return;
+  if(sideTipTimer){clearTimeout(sideTipTimer);sideTipTimer=null;}
+  if(!SIDE_VIEW[ex]){ el.style.display="none"; return; }
+  el.style.display="block";
+  if(ms)sideTipTimer=setTimeout(()=>{el.style.display="none";},ms);
+}
+function hideSideTip(){ if(sideTipTimer){clearTimeout(sideTipTimer);sideTipTimer=null;} const el=$("sideTip"); if(el)el.style.display="none"; }
 function setUI(){
   $("timerBox").className="timer "+(phase==="work"?"work":"rest");
   $("phasePill").className="pill "+(phase==="work"?"p-work":"p-rest");
@@ -2304,6 +2410,7 @@ function startWork(){
   $("nextPreview").style.display="none";
   $("repN").textContent="0"; $("accN").textContent="–";
   $("fb").textContent=EXNAME[curEx]+" 시작!"; setUI(); beep(1046,.15);
+  showSideTip(curEx,8000);   // 자세를 잡을 동안만 띄운다
   startBgm("work");
 }
 function startRest(){
@@ -2312,8 +2419,9 @@ function startRest(){
   $("fb").textContent="다음: "+EXNAME[next]; setUI(); beep(660,.15);
   $("npArt").innerHTML=exerciseArt(next);
   $("npName").textContent=EXNAME[next];
-  $("npTip").textContent=EXTIP[next]||"";
+  $("npTip").textContent=(SIDE_VIEW[next]?"📐 몸을 옆으로 돌려 주세요 — ":"")+(EXTIP[next]||"");
   $("nextPreview").style.display="flex";
+  showSideTip(next,0);       // 휴식 내내 띄워 미리 자리를 잡게 한다
   startBgm("rest");
 }
 function endRound(){
@@ -2382,7 +2490,7 @@ function addPlan(name){
     rounds:+$("rounds").value||8, made:todayStr(), last:"", n:0,
     // 계획서 서술은 비워 둔다 — 나중에 [📝 계획서]에서 쓰고 제출한다
     goal:"", level:"", goalWhy:"", reason:"", careText:"", careWhy:"",
-    freq:0, target:0, submitted:""};
+    when:"", check:"", freq:0, target:0, submitted:""};
   myPlans.unshift(p);
   myPlans=myPlans.slice(0,12);
   saveAll();
@@ -2397,6 +2505,7 @@ function pushPlan(p){
     made:p.made, goal:p.goal||"", level:p.level||"",
     goalWhy:p.goalWhy||"", reason:p.reason||"",
     careText:p.careText||"", careWhy:p.careWhy||"",
+    when:p.when||"", check:p.check||"",
     freq:p.freq||0, target:p.target||0, submitted:todayStr()
   }); // 실패는 호출한 쪽에서 학생에게 알려야 하므로 여기서 삼키지 않는다
 }
@@ -2982,16 +3091,26 @@ function openPlanDoc(p){
   $("pcGoalWhy").value=p.goalWhy||""; $("pcReason").value=p.reason||"";
   $("pcCareText").value=p.careText||""; $("pcCareWhy").value=p.careWhy||"";
   $("pcFreq").value=p.freq||3; $("pcTarget").value=p.target||10;
+  $("pcWhen").value=p.when||""; $("pcCheck").value=p.check||"";
+  renderPlanProg();
   $("planDocMsg").innerHTML=p.submitted
     ? `<span style="color:var(--good)">${p.submitted}에 제출함 — 고쳐서 다시 낼 수 있어요</span>` : "";
   $("planDocOverlay").style.display="flex";
 }
+const PLAN_TEXTS=["pcGoalWhy","pcReason","pcCareWhy","pcCheck"]; // 채점의 근거가 되는 서술 4칸
 function collectPlanDoc(){
   return {goal:pcGoal, level:pcLevel,
     goalWhy:($("pcGoalWhy").value||"").trim(), reason:($("pcReason").value||"").trim(),
     careText:($("pcCareText").value||"").trim(), careWhy:($("pcCareWhy").value||"").trim(),
+    when:($("pcWhen").value||"").trim(), check:($("pcCheck").value||"").trim(),
     freq:+$("pcFreq").value||0, target:+$("pcTarget").value||0};
 }
+// 얼마나 채웠는지 막대로 보여 준다 — 폰에서는 아래까지 안 내려보면 알기 어렵다
+function renderPlanProg(){
+  const bars=$("planDocProg").children;
+  PLAN_TEXTS.forEach((id,i)=>{ if(bars[i])bars[i].classList.toggle("on",!!($(id).value||"").trim()); });
+}
+PLAN_TEXTS.forEach(id=>$(id).addEventListener("input",renderPlanProg));
 function planDocApply(){
   const p=myPlans.find(x=>x.id===planDocId); if(!p)return null;
   Object.assign(p,collectPlanDoc()); saveAll(); return p;
@@ -3007,7 +3126,8 @@ $("planDocSubmit").addEventListener("click",()=>{
   if(!pcGoal||!pcLevel){msg.innerHTML='<span class="err">① 운동 목표와 ② 체감 체력을 골라 주세요.</span>';return;}
   const d=collectPlanDoc();
   const blanks=[["① 왜 이 목표를 골랐나요?",d.goalWhy],["③ 왜 이렇게 계획했나요?",d.reason],
-    ["④ 조심할 부위를 어떻게 고려했나요?",d.careWhy]].filter(([,v])=>!v).map(([t])=>t);
+    ["④ 조심할 부위를 어떻게 고려했나요?",d.careWhy],
+    ["⑥ 계획대로 되는지 어떻게 확인할까요?",d.check]].filter(([,v])=>!v).map(([t])=>t);
   if(blanks.length&&!confirm(`아직 쓰지 않은 칸이 있습니다.\n\n${blanks.join("\n")}\n\n이대로 제출할까요?`))return;
   const p=planDocApply(); if(!p)return;
   if(!fdb){msg.innerHTML='<span class="err">인터넷 연결이 필요합니다. 연결 후 다시 제출하세요.</span>';return;}
@@ -3025,9 +3145,9 @@ $("planDocSubmit").addEventListener("click",()=>{
 const plans={};   // Firebase /plans 미러 {반:{이름:{계획id:{...}}}}
 let pvOpen="";
 function plansOf(name,cls){ const o=(plans[cls]||{})[name]||{}; return Object.entries(o).map(([id,v])=>({id,...v})); }
-function planWrote(p){ // 서술 3칸 중 몇 칸을 채웠는지
+function planWrote(p){ // 서술 4칸 중 몇 칸을 채웠는지
   if(!p)return 0;
-  return [p.goalWhy,p.reason,p.careWhy].filter(t=>(t||"").trim()).length;
+  return [p.goalWhy,p.reason,p.careWhy,p.check].filter(t=>(t||"").trim()).length;
 }
 // 대표 계획은 '얼마나 충실히 썼는가'로 고른다
 function bestPlan(list){
@@ -3040,7 +3160,7 @@ function bestPlan(list){
 function classPlanStat(cls){
   const list=rosters[cls]||[];
   const done=list.filter(s=>plansOf(s.name,cls).length).length;
-  const full=list.filter(s=>{const b=bestPlan(plansOf(s.name,cls));return b&&planWrote(b)===3;}).length;
+  const full=list.filter(s=>{const b=bestPlan(plansOf(s.name,cls));return b&&planWrote(b)===4;}).length;
   return {total:list.length, done, full, undone:list.length-done,
     rate:list.length?Math.round(done/list.length*100):0,
     missing:list.filter(s=>!plansOf(s.name,cls).length).map(s=>s.name)};
@@ -3082,7 +3202,7 @@ function renderPlanAdmin(){
       <td>${b?b.name:"–"}</td>
       <td>${b?(GOAL_LABEL[b.goal]||"–"):"–"}</td>
       <td>${b?(LEVEL_LABEL[b.level]||"–"):"–"}</td>
-      <td class="num" style="color:${w===3?"var(--good)":w?"var(--gold)":"var(--bad)"}"><b>${b?w+"/3":"–"}</b></td>
+      <td class="num" style="color:${w===4?"var(--good)":w?"var(--gold)":"var(--bad)"}"><b>${b?w+"/4":"–"}</b></td>
       <td class="num" style="color:var(--muted)">${len?len+"자":"–"}</td>`;
     tr.querySelector("b").addEventListener("click",()=>{ pvOpen=(pvOpen===s.name?"":s.name); showPlanDetail(cls,s.name); });
     tb.appendChild(tr);
@@ -3106,10 +3226,11 @@ function showPlanDetail(cls,name){
       <br>${sq.map(k=>EXNAME[k]||k).join("→")} · ${p.work}/${p.rest}초 × ${p.rounds}동작
       <br><span style="color:var(--muted)">${["하체","상체","코어","유산소"].map(x=>`${x} ${parts[x]||0}`).join(" · ")}</span>
       <br>목표 <b>${GOAL_LABEL[p.goal]||"–"}</b> · 체감 체력 <b>${LEVEL_LABEL[p.level]||"–"}</b>
-       · 주 ${p.freq||"–"}회 · 목표 ${p.target||"–"}회
+       · 주 ${p.freq||"–"}회 · 목표 ${p.target||"–"}회${p.when?` · ${esc(p.when)}`:""}
       ${q("① 왜 이 목표를 골랐나?",p.goalWhy)}
       ${q("② 왜 이 운동들을 골랐나?",p.reason)}
       ${q("③ 조심할 부위 — "+(String(p.careText||"").trim()||"미기재"),p.careWhy)}
+      ${q("④ 계획대로 되는지 확인하는 방법",p.check)}
     </div>`;
   });
   box.innerHTML=h+"</div>";
@@ -3120,7 +3241,7 @@ $("pvExport").addEventListener("click",()=>{
   if(!cs.length){alert("먼저 명렬표를 등록하세요.");return;}
   const head=["번호","이름","계획수","대표 계획명","운동 구성","하체","상체","코어","유산소",
     "목표","체감 체력","주 실천(회)","목표 실천(회)",
-    "① 왜 이 목표?","② 왜 이 운동들?","조심할 부위","③ 어떻게 고려?","서술 작성(3칸)","총 글자수"];
+    "① 왜 이 목표?","② 왜 이 운동들?","조심할 부위","③ 어떻게 고려?","실천 시간·장소","④ 확인 방법","서술 작성(4칸)","총 글자수"];
   const sheets=cs.map(c=>({
     name:c,
     rows:[head].concat((rosters[c]||[]).map(s=>{
@@ -3128,12 +3249,12 @@ $("pvExport").addEventListener("click",()=>{
       if(!p)return [s.no==null?"":Number(s.no), s.name, 0].concat(new Array(head.length-3).fill(""));
       const sq=String(p.seq||"").split(",").filter(Boolean);
       const pc={}; sq.forEach(k=>{const q=EX_PART[k]||"기타";pc[q]=(pc[q]||0)+1;});
-      const len=(p.goalWhy||"").length+(p.reason||"").length+(p.careWhy||"").length;
+      const len=(p.goalWhy||"").length+(p.reason||"").length+(p.careWhy||"").length+(p.check||"").length;
       return [s.no==null?"":Number(s.no), s.name, ps.length, p.name, sq.map(k=>EXNAME[k]||k).join("→"),
         pc["하체"]||0, pc["상체"]||0, pc["코어"]||0, pc["유산소"]||0,
         GOAL_LABEL[p.goal]||"", LEVEL_LABEL[p.level]||"",
         Number(p.freq)||"", Number(p.target)||"",
-        p.goalWhy||"", p.reason||"", p.careText||"", p.careWhy||"", planWrote(p), len];
+        p.goalWhy||"", p.reason||"", p.careText||"", p.careWhy||"", p.when||"", p.check||"", planWrote(p), len];
     }))
   }));
   const a=document.createElement("a");
@@ -3406,7 +3527,7 @@ function buildGradeBook(){
 
   // ── 시트 1: 전 학급 요약 (한눈에 채점 상태 파악) ──
   const sumHead=["반","번호","이름","성별",
-    "㉮ 계획서 제출","㉮ 서술(3칸)","㉯ 실천점수(20)","㉯ 이수율(%)","㉯ 세션수",
+    "㉮ 계획서 제출","㉮ 서술(4칸)","㉯ 실천점수(20)","㉯ 이수율(%)","㉯ 세션수",
     "㉰ 수시성찰(회)","㉰ 마무리성찰"];
   const sumRows=[sumHead];
   cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
@@ -3421,7 +3542,7 @@ function buildGradeBook(){
   const head=["번호","이름","성별",
     // ㉮ 운동계획
     "㉮제출","㉮계획서 이름","㉮운동 구성","㉮설정","㉮목표","㉮체감 체력",
-    "㉮왜 이 목표?","㉮왜 이렇게 계획?","㉮조심할 부위","㉮어떻게 고려?","㉮주 실천(회)","㉮목표 실천(회)","㉮서술 칸수",
+    "㉮왜 이 목표?","㉮왜 이렇게 계획?","㉮조심할 부위","㉮어떻게 고려?","㉮실천 시간·장소","㉮확인 방법","㉮주 실천(회)","㉮목표 실천(회)","㉮서술 칸수",
     // ㉯ 운동실천
     "㉯①과제제출","㉯②심박","㉯③정확도","㉯④자율실천","㉯⑤향상","㉯만족개수","㉯실천점수(20)",
     "㉯배정차시","㉯이수차시","㉯이수율(%)","㉯세션수","㉯심박달성","㉯평균정확도(%)","㉯향상률(%)","㉯최고점수","㉯최근수행일",
@@ -3445,6 +3566,7 @@ function buildGradeBook(){
         p?`${p.work}/${p.rest}초 × ${p.rounds}R`:"",
         p?(GOAL_LABEL[p.goal]||""):"", p?(LEVEL_LABEL[p.level]||""):"",
         p?(p.goalWhy||""):"", p?(p.reason||""):"", p?(p.careText||""):"", p?(p.careWhy||""):"",
+        p?(p.when||""):"", p?(p.check||""):"",
         p?(num(p.freq)||""):"", p?(num(p.target)||""):"", p?planWrote(p):"",
         OX(g.items[0]),OX(g.items[1]),OX(g.items[2]),OX(g.items[3]),OX(g.items[4]),g.met,num(g.score),
         g.assigned, g.done, g.assigned?num(g.rate):"", g.n, g.dil, g.n?num(g.acc):"",
@@ -3727,6 +3849,7 @@ async function start(opts){
     else{clearInterval(cd);startWork();tickId=setInterval(tick,1000);}},1000);
 }
 function stopAll(){
+  hideSideTip();
   running=false; if(rafId)cancelAnimationFrame(rafId); if(tickId)clearInterval(tickId);
   $("startBtn").disabled=false;
   $("nextPreview").style.display="none";
@@ -3765,6 +3888,22 @@ $("musicBtn").addEventListener("click",()=>{
   else if(phase==="work")startBgm("work"); else if(phase==="rest")startBgm("rest");
   try{localStorage.setItem("tabataBgm",bgmOn?"1":"0");}catch(e){}
 });
+/* 스피커에서 실제로 들리는지 확인하고 크기를 맞춘다 (체육관은 시끄럽다) */
+const VOL_TXT=v=>v===0?"꺼짐":v<1.5?"작게":v<3?"보통":v<4?"크게":"아주 크게";
+$("bgmVol").addEventListener("input",e=>{
+  setBgmVol(+e.target.value);
+  $("bgmVolTxt").textContent=VOL_TXT(BGM_VOL);
+});
+$("soundTest").addEventListener("click",()=>{
+  ensureAudio();
+  const st=audio?audio.state:"없음";
+  let i=0;
+  const seqNotes=[523,659,784,1047];
+  const t=setInterval(()=>{ beep(seqNotes[i],.18,.25); if(++i>=seqNotes.length)clearInterval(t); },170);
+  toast(st==="running"
+    ? "소리가 안 들리면 폰 음량을 올리고, 아이폰은 옆면 무음 스위치를 풀어 주세요"
+    : "소리 장치를 여는 중입니다 — 한 번 더 눌러 주세요","task","🔊");
+});
 // 지금 나오는 음악이 마음에 안 들면 바로 다른 조합으로 바꾼다 (운동 중에도 눌러도 됨)
 $("musicNext").addEventListener("click",()=>{
   if(!bgmOn){ toast("먼저 [🎵 음악 ON]을 켜주세요","task","🔇"); return; }
@@ -3783,15 +3922,22 @@ function startBgmKeep(mode){
   bgmMode=mode; bgmStep=0;
   if(bgmTimer)clearInterval(bgmTimer);
   if(!bgmOn)return;
-  try{audio=audio||new (window.AudioContext||window.webkitAudioContext)(); if(audio.state==="suspended")audio.resume();}catch(e){}
+  ensureAudio();
   const bpm = mode==="work"?(140+Math.floor(Math.random()*25)) : mode==="rest"?90 : 120;
   bgmTimer=setInterval(bgmTick, 60000/bpm/2);
 }
 try{ if(localStorage.getItem("tabataBgm")==="0"){bgmOn=false; $("musicBtn").textContent="🔇 음악 OFF"; $("musicBtn").classList.remove("btn-go"); $("musicBtn").classList.add("btn-stop");} else {$("musicBtn").classList.add("btn-go");$("musicBtn").classList.remove("btn-stop");} }catch(e){}
+// 저장해 둔 소리 크기 복원
+try{ const v=parseFloat(localStorage.getItem("tabataVol"));
+  if(isFinite(v)){ BGM_VOL=v; $("bgmVol").value=v; } }catch(e){}
+$("bgmVolTxt").textContent=VOL_TXT(BGM_VOL);
 document.addEventListener("fullscreenchange",()=>{
   // 시스템 뒤로가기/ESC로 네이티브 전체화면을 빠져나온 경우 CSS도 정리
   if(!document.fullscreenElement && running) resizeOverlay();
+  ensureAudio(); // 전체화면 전환에서 오디오가 멈추는 기기가 있어 다시 깨운다
 });
+// 화면을 껐다 켜거나 앱을 다녀오면 컨텍스트가 멈출 수 있다
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden)ensureAudio(); });
 
 /* ---------- heart rate: camera PPG ---------- */
 // 성실 수행 판정: 운동 후 심박이 절대값 기준 이상이거나, 안정 시(운동 전) 대비 충분히 올랐으면 인정.
