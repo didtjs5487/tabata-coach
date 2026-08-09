@@ -232,13 +232,15 @@
     font-family:"Barlow Condensed",sans-serif; font-weight:700; font-size:16px; cursor:pointer;}
   video,canvas.ov{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1);}
   .hud{position:absolute; inset:0; pointer-events:none; display:flex; flex-direction:column; justify-content:space-between; padding:14px;}
-  .hud .top{display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap;}
+  .hud .top{display:flex; justify-content:flex-start; gap:8px; flex-wrap:wrap;}
   .pill{font-family:"Barlow Condensed"; font-weight:700; text-transform:uppercase; letter-spacing:1px; font-size:18px; padding:5px 14px; border-radius:999px; background:rgba(0,0,0,.5); backdrop-filter:blur(4px);}
   .p-work{color:var(--work); box-shadow:inset 0 0 0 2px var(--work);}
   .p-rest{color:var(--rest); box-shadow:inset 0 0 0 2px var(--rest);}
   .p-ex{color:var(--ink);}
-  .timer{align-self:center; text-align:center;}
-  .timer .big{font-family:"Barlow Condensed"; font-weight:700; font-size:min(24vw,180px); line-height:.9;}
+  /* 남은 시간은 좌측 상단에 둔다. 가운데에 크게 띄우면 정작 봐야 할 자세를 가린다. */
+  .timer{position:absolute; top:52px; left:14px; text-align:left; align-self:auto;
+    background:rgba(0,0,0,.42); border-radius:14px; padding:2px 14px 4px; backdrop-filter:blur(3px);}
+  .timer .big{font-family:"Barlow Condensed"; font-weight:700; font-size:min(13vw,76px); line-height:1;}
   .timer.work .big{color:var(--work); text-shadow:0 0 40px rgba(255,176,32,.35);}
   .timer.rest .big{color:var(--rest); text-shadow:0 0 40px rgba(53,208,186,.35);}
   .fb{align-self:center; font-weight:600; font-size:clamp(15px,2.6vw,22px); padding:7px 16px; border-radius:12px; background:rgba(0,0,0,.55);}
@@ -2493,7 +2495,7 @@ function startWork(){
   $("nextPreview").style.display="none";
   $("repN").textContent="0"; $("accN").textContent="–";
   $("fb").textContent=EXNAME[curEx]+" 시작!"; setUI(); beep(1046,.15);
-  showSideTip(curEx,8000);   // 자세를 잡을 동안만 띄운다
+  hideSideTip();             // 운동이 시작되면 안내를 치운다
   startBgm("work");
 }
 function startRest(){
