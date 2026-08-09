@@ -655,6 +655,10 @@
     <h3>내 기록</h3>
     <div class="hint">내가 한 것이 모두 여기에 모입니다 — <b>계획 → 실천 → 결투 → 성찰</b> 순서예요.</div>
     <div class="step-box" id="mineTodo" style="margin-top:10px"></div>
+    <div class="row" style="margin:8px 0 0">
+      <button class="btn btn-teal btn-sm" id="resyncBtn">☁️ 서버로 다시 보내기</button>
+      <span class="hint" id="resyncMsg" style="flex:1;min-width:160px">선생님 화면에 내 계획서·성찰이 안 보인다면 눌러 주세요.</span>
+    </div>
     <div class="kpis" style="margin-top:12px">
       <div class="kpi"><div class="v num c1" id="mineCount">0</div><div class="k">누적 세션</div></div>
       <div class="kpi"><div class="v num c2" id="mineBest">–</div><div class="k">최고 점수</div></div>
@@ -3923,6 +3927,33 @@ function renderMine(){
   renderMineTrend(rs,name,cls);
   renderFinalReflect(); renderRfLogs(); renderMineTodo(); renderMinePlans(); renderMineDuels(); renderMineSessions();
 }
+/* ---------- ☁️ 서버로 다시 보내기 ----------
+   기기에는 남아 있는데 서버에 없는 경우(인터넷 끊김, 서버 쪽 자료 유실 등)를 위해
+   내 계획서와 성찰을 통째로 다시 올린다. 학생이 다시 쓸 필요가 없다. */
+$("resyncBtn").addEventListener("click",async()=>{
+  const me=myKey(), msg=$("resyncMsg");
+  if(!me.name){msg.innerHTML='<span class="err">운동 설계 탭에서 학번을 먼저 입력하세요.</span>';return;}
+  if(!fdb){msg.innerHTML='<span class="err">인터넷 연결이 필요합니다.</span>';return;}
+  const plansToSend=myPlans.filter(p=>p.submitted);
+  const logKeys=Object.keys(myLogsLocal||{});
+  const hasFinal=!!(myFinalLocal&&[1,2,3,4,5].some(i=>String(myFinalLocal["q"+i]||"").trim()));
+  if(!plansToSend.length&&!logKeys.length&&!hasFinal){
+    msg.innerHTML='<span class="hint">보낼 것이 없습니다 — 아직 제출한 계획서나 성찰이 없어요.</span>';return;
+  }
+  $("resyncBtn").disabled=true; msg.textContent="보내는 중…";
+  let ok=0, fail=0;
+  const jobs=[];
+  plansToSend.forEach(p=>jobs.push(pushPlan(p).then(()=>ok++).catch(()=>fail++)));
+  logKeys.forEach(k=>jobs.push(
+    fmod.set(reflectRef(me,"logs/"+k),myLogsLocal[k]).then(()=>ok++).catch(()=>fail++)));
+  if(hasFinal)jobs.push(fmod.set(reflectRef(me,"final"),myFinalLocal).then(()=>ok++).catch(()=>fail++));
+  await Promise.all(jobs);
+  $("resyncBtn").disabled=false;
+  msg.innerHTML=fail
+    ? `<span class="err">${ok}건 보냄 · ${fail}건 실패 — 인터넷을 확인하고 다시 눌러 주세요.</span>`
+    : `<b style="color:var(--good)">${ok}건을 다시 보냈습니다 ✔ 선생님 화면에 나타납니다.</b>`;
+  if(!fail)toast(`계획서·성찰 ${ok}건을 서버로 다시 보냈습니다`,"good","☁️");
+});
 /* ---------- 내 기록: 구역 접기 ---------- */
 document.querySelectorAll("#pgMine .mine-sec").forEach((h,i)=>{
   const body=h.nextElementSibling;
