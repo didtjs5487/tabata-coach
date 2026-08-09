@@ -196,9 +196,9 @@
   .mk{width:24px; height:24px; border-radius:7px; display:inline-flex; align-items:center;
     justify-content:center; font-size:12px; font-weight:800; letter-spacing:-.5px;
     border:1.5px solid var(--line); color:var(--muted); background:transparent; flex-shrink:0;}
-  .mk.ok{background:var(--good); border-color:var(--good); color:#06281f;}
-  .mk.half{background:var(--gold); border-color:var(--gold); color:#2a1e00;}
-  .mk.no{opacity:.45;}
+  .mk.ok{background:var(--c); border-color:var(--c); color:var(--ct);}     /* 완료 — 제 색으로 꽉 참 */
+  .mk.half{border-color:var(--c); color:var(--c); background:transparent;} /* 일부 — 테두리만 */
+  .mk.no{opacity:.35;}                                                      /* 없음 — 흐림 */
   .sb-score{font-family:"Barlow Condensed"; font-weight:700; font-size:15px; min-width:30px;
     text-align:right; flex-shrink:0;}
   .stu-row{display:flex; align-items:center; gap:8px; width:100%; text-align:left; cursor:pointer;
@@ -235,7 +235,8 @@
   .pv-stats{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:7px;}
   .pv-stat{background:var(--panel); border:1px solid var(--line); border-radius:10px;
     padding:8px 10px; cursor:pointer; text-align:left; font-family:inherit; color:var(--ink);}
-  .pv-stat.on{border-color:var(--primary); background:rgba(124,108,255,.18);}
+  .pv-stat.on{border-color:var(--primary); background:rgba(124,108,255,.28);
+    box-shadow:0 0 0 2px var(--primary) inset;}
   .pv-stat .t{display:flex; justify-content:space-between; align-items:baseline; font-size:13.5px; font-weight:700;}
   .pv-stat .t b{font-size:15px;}
   .pv-stat .bar{height:6px; border-radius:99px; background:var(--panel3); margin-top:6px; overflow:hidden;}
@@ -858,12 +859,12 @@
     <summary>📊 학생별 종합 현황</summary>
     <div class="hint" style="margin:10px 0 8px">한 학생당 한 줄입니다. <b>이름을 누르면</b> 성적·계획서·성찰이 모두 펼쳐집니다.</div>
 
-    <div class="hint" style="margin:12px 0 5px"><b>반별 제출 현황</b> — 반을 누르면 그 반으로 넘어갑니다</div>
+    <div class="hint" style="margin:12px 0 5px"><b>반별 제출 현황</b> — 볼 반을 누르세요</div>
     <div id="pvClassStats" class="pv-stats"></div>
 
-    <div class="row" style="align-items:flex-end;margin-top:14px">
-      <div class="field"><label>반 선택</label><select id="pvClass"><option value="">반을 등록하세요</option></select></div>
-      <button class="btn btn-stop btn-sm" id="pvReload">🔄 다시 불러오기</button>
+    <div class="row" style="align-items:center;margin-top:12px">
+      <div id="pvNow" style="font-weight:800;font-size:16px"></div>
+      <button class="btn btn-stop btn-sm" id="pvReload" style="margin-left:auto">🔄 다시 불러오기</button>
     </div>
     <div class="hint" id="pvServerInfo" style="margin:6px 0 0"></div>
 
@@ -876,10 +877,12 @@
     <div class="hint" id="pvMissing" style="margin:6px 0 10px"></div>
 
     <div class="sb-legend">
-      <span><i class="mk ok">과</i>공통과제</span><span><i class="mk ok">운</i>운동</span>
-      <span><i class="mk ok">계</i>계획서</span><span><i class="mk ok">성</i>성찰</span>
-      <span><i class="mk ok">마</i>마무리</span>
-      <span style="margin-left:auto">채움=완료 · <span style="color:var(--gold)">노랑</span>=일부 · 흐림=없음</span>
+      <span><i class="mk ok" style="--c:#F45B69;--ct:#fff">과</i>공통과제</span>
+      <span><i class="mk ok" style="--c:#FF9F1C;--ct:#2a1800">자</i>자율실천</span>
+      <span><i class="mk ok" style="--c:#FFD23F;--ct:#2a2200">계</i>계획서</span>
+      <span><i class="mk ok" style="--c:#35D0BA;--ct:#06281f">성</i>성찰</span>
+      <span><i class="mk ok" style="--c:#8B80F9;--ct:#fff">마</i>마무리</span>
+      <span style="margin-left:auto">채움=완료 · 테두리=일부 · 흐림=없음</span>
     </div>
     <div class="row" style="margin:0 0 8px">
       <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)">
@@ -926,7 +929,7 @@
 
     <!-- 아래는 기존 계산·내보내기 코드가 참조하는 숨은 요소들 -->
     <div style="display:none">
-      <select id="viewClass"></select><select id="rfViewClass"></select>
+      <select id="viewClass"></select><select id="rfViewClass"></select><select id="pvClass"></select>
       <label><input type="checkbox" id="dashToday" checked></label>
       <span id="dashDone"></span><span id="dashUndone"></span><span id="dashDiligent"></span><span id="dashAvg"></span>
       <table><tbody id="stuRows"></tbody></table>
@@ -3428,7 +3431,13 @@ $("pvReload").addEventListener("click",()=>{
    한 학생당 한 줄. 5가지 상태를 점으로만 보여 폰에서도 짧게 유지하고,
    이름을 누르면 성적·계획서·성찰을 한꺼번에 펼친다.                     */
 let sbOpen="";
-function sbMk(state,ch){ return `<i class="mk ${state}">${ch}</i>`; }
+// 빨 주 노 초 보 — 자리마다 색이 달라 위치로도 구분된다
+const MK_COLOR={ "과":["#F45B69","#fff"], "자":["#FF9F1C","#2a1800"], "계":["#FFD23F","#2a2200"],
+                 "성":["#35D0BA","#06281f"], "마":["#8B80F9","#fff"] };
+function sbMk(state,ch){
+  const c=MK_COLOR[ch]||["#8B80F9","#fff"];
+  return `<i class="mk ${state}" style="--c:${c[0]};--ct:${c[1]}">${ch}</i>`;
+}
 function stuStatus(name,cls){
   const g=practiceScore(name,cls);
   const ps=plansOf(name,cls), best=bestPlan(ps);
@@ -3437,7 +3446,7 @@ function stuStatus(name,cls){
   return {
     g, best, rf, nLog, selfN,
     task: !g.assigned?"no":(g.done>=g.assigned?"ok":(g.done?"half":"no")),
-    work: g.n>=4?"ok":(g.n?"half":"no"),
+    self: selfN>=(+rubric.selfN||5)?"ok":(selfN?"half":"no"),
     plan: !best?"no":(planWrote(best)===5?"ok":"half"),
     log:  nLog>=4?"ok":(nLog?"half":"no"),
     fin:  hasFinal(rf)?"ok":"no"
@@ -3457,18 +3466,19 @@ function renderStuBoard(){
   let shown=0;
   list.forEach(s=>{
     const st=stuStatus(s.name,cls);
-    const dn=[st.task,st.work,st.plan,st.log,st.fin].filter(x=>x==="ok").length;
+    const dn=[st.task,st.self,st.plan,st.log,st.fin].filter(x=>x==="ok").length;
     if(onlyTodo&&dn===5)return;
     shown++;
     const b=document.createElement("button"); b.className="stu-row"+(sbOpen===s.name?" on":"");
     b.innerHTML=`<span class="no">${s.no||""}</span><span class="nm">${s.name}</span>`
-      +`<span class="dots">${sbMk(st.task,"과")}${sbMk(st.work,"운")}${sbMk(st.plan,"계")}${sbMk(st.log,"성")}${sbMk(st.fin,"마")}</span>`
+      +`<span class="dots">${sbMk(st.task,"과")}${sbMk(st.self,"자")}${sbMk(st.plan,"계")}${sbMk(st.log,"성")}${sbMk(st.fin,"마")}</span>`
       +`<span class="sb-score" style="color:${dn===5?"var(--good)":dn>=3?"var(--gold)":"var(--muted)"}">${dn}/5</span>`;
     b.addEventListener("click",()=>{ sbOpen=(sbOpen===s.name?"":s.name); renderStuBoard(); showStuDetail(cls,sbOpen); });
     box.appendChild(b);
     if(sbOpen===s.name){ const holder=document.createElement("div"); holder.id="sbDetailHere"; box.appendChild(holder); }
   });
   $("sbCount").textContent=onlyTodo?`${shown}명 / 전체 ${list.length}명`:`전체 ${list.length}명`;
+  $("pvNow").innerHTML=`📋 <b style="color:var(--primary)">${shortCls(cls)}반</b> 보는 중`;
   if(onlyTodo&&!shown)box.innerHTML='<div class="hint" style="color:var(--good)">🎉 모두 다 냈습니다.</div>';
   if(sbOpen)showStuDetail(cls,sbOpen);
 }
@@ -3491,7 +3501,7 @@ function showStuDetail(cls,name){
 
   let h=`<div class="stu-detail"><div class="sd-sum">`
     +line(st.task,"📋","공통과제", g.assigned?`${g.done}/${g.assigned}차시 이수`:"배정된 과제 없음")
-    +line(st.work,"🏃","운동", g.n?`${g.n}회 수행 (자율 ${st.selfN}회)`:"기록 없음")
+    +line(st.self,"🏃","자율 실천", st.selfN?`${st.selfN}회 (전체 세션 ${g.n}회)`:"기록 없음")
     +line(st.plan,"📝","계획서", st.best?`제출 · 서술 ${planWrote(st.best)}/5칸`:"미제출")
     +line(st.log,"✍️","성찰 일지", logs.length?`${logs.length}회${lateN?` · 당일 아님 ${lateN}건`:""}`:"작성 없음")
     +line(st.fin,"🏁","마무리 성찰", hasFinal(st.rf)?"작성함":"미작성")
