@@ -4928,6 +4928,16 @@ function loadAll(){
   renderRubric();
 }
 /* ---------- 채점 기준 설정 ---------- */
+// 채점 기준은 두 교사가 같은 값을 써야 하므로 서버에 함께 둔다.
+// (규칙에 rubric 노드가 없으면 저장이 거부되므로 그때는 이 기기에만 남는다)
+function pushRubric(){
+  const msg=$("rbMsg");
+  if(!fdb){ if(msg)msg.innerHTML='<b style="color:var(--gold)">이 기기에만 저장됨 (서버 미연결)</b>'; return; }
+  if(msg)msg.textContent="저장 중…";
+  fmod.set(fmod.ref(fdb,"rubric"),rubric)
+    .then(()=>{ if(msg)msg.innerHTML='<b style="color:var(--good)">저장했습니다 — 다른 기기에도 같이 적용됩니다.</b>'; })
+    .catch(e=>{ if(msg)msg.innerHTML='<span class="err">이 기기에만 저장됨 — Firebase 규칙에 <b>rubric</b>을 추가하면 기기끼리 맞춰집니다.</span>'; });
+}
 function renderRubric(){
   if(!$("rbHr"))return;
   $("rbHr").value=rubric.hr; $("rbHrRate").value=rubric.hrRate;
@@ -4940,12 +4950,10 @@ if($("rbSave"))$("rbSave").addEventListener("click",()=>{
     doneRate:+$("rbDone").value||0, acc:+$("rbAcc").value||0,
     selfN:+$("rbSelf").value||0, gain:+$("rbGain").value||0,
     keep:+$("rbKeep").value||85, useRise:$("rbRise").checked, rise:40};
-  saveAll(); renderStats();
-  $("rbMsg").innerHTML='<b style="color:var(--good)">저장했습니다 — 성적 엑셀에 바로 반영됩니다.</b>';
+  saveAll(); renderStats(); pushRubric();
 });
 if($("rbReset"))$("rbReset").addEventListener("click",()=>{
-  rubric={...RUBRIC_DEFAULT}; renderRubric(); saveAll(); renderStats();
-  $("rbMsg").textContent="평가계획서 기본값으로 되돌렸습니다.";
+  rubric={...RUBRIC_DEFAULT}; renderRubric(); saveAll(); renderStats(); pushRubric();
 });
 
 /* ---------- Firebase 실시간 연동 ---------- */
@@ -5199,6 +5207,12 @@ function attachFbListeners(){
     checkBattleAutoStart();                               // 수락된 배틀이 있으면 동시 시작 카운트다운
   });
   attachProtected(onValue,ref);
+  // 채점 기준은 서버 값을 따른다 — 교사 기기마다 학생 점수가 달라지지 않게
+  onValue(ref(fdb,"rubric"),snap=>{
+    const v=snap.val(); if(!v)return;
+    rubric={...RUBRIC_DEFAULT,...v};
+    renderRubric(); renderStats(); saveAll();
+  },()=>{});
   onValue(ref(fdb,"rosters"),snap=>{
     const v=snap.val(); if(!v)return;
     // 서버에서 지운 반이 다른 기기에 계속 남지 않도록 서버 상태를 그대로 반영한다
