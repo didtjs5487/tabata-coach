@@ -159,8 +159,13 @@
   .rf-self .op button{background:var(--panel); border:1px solid var(--line); border-radius:8px;
     padding:6px 9px; cursor:pointer; color:var(--muted); font-size:12.5px; font-weight:700; font-family:inherit; white-space:nowrap;}
   .rf-self .op button.on{border-color:var(--primary); background:rgba(124,108,255,.25); color:#fff;}
-  .mine-sec{margin:22px 0 8px; font-weight:800; font-size:16px; padding-bottom:6px;
-    border-bottom:2px solid var(--primary2);}
+  .mine-sec{margin:20px 0 0; font-weight:800; font-size:16px; padding:8px 2px;
+    border-bottom:2px solid var(--primary2); cursor:pointer; display:flex; align-items:center; gap:8px;
+    background:none; border-top:0; border-left:0; border-right:0; width:100%; text-align:left;
+    color:var(--ink); font-family:inherit;}
+  .mine-sec .arw{margin-left:auto; color:var(--muted); font-size:13px; transition:transform .18s;}
+  .mine-sec.open .arw{transform:rotate(180deg);}
+  .mine-body{display:none; padding-top:10px;} .mine-body.open{display:block;}
   .mine-todo{display:flex; gap:8px; flex-wrap:wrap;}
   .mine-todo span{background:var(--panel); border:1px solid var(--line); border-radius:99px;
     padding:5px 12px; font-size:13px; font-weight:700;}
@@ -496,7 +501,7 @@
     </div>
     <div class="hint" id="planAddMsg" style="margin-top:6px"></div>
 
-    <details class="collapsible" style="margin-top:22px">
+    <details class="collapsible" style="margin-top:22px;display:none">
       <summary>③ ⚔️ 결투 현황</summary>
       <div class="hint" style="margin:10px 0 8px">결투 신청은 <b>운동하기</b> 탭의 자율 실천 과제에서 <b>[⚔️ 결투]</b>로 보냅니다. 여기서는 주고받은 결투를 확인하고 수락·거절합니다.</div>
       <div class="hint" id="bCfgHint"></div>
@@ -660,25 +665,27 @@
       <div><div class="hint">직전 세션 대비</div><div class="trend-delta" id="mineDelta">–</div></div>
       <div style="flex:1;min-width:200px"><div class="hint" id="mineRank" style="margin-bottom:4px"></div><canvas id="mineSpark" width="420" height="64"></canvas></div>
     </div>
-    <div class="mine-sec">📝 내 운동 계획서</div>
-    <div class="hint" style="margin-bottom:6px">운동 설계에서 만든 구성입니다. 누르면 계획서를 쓰거나 고칠 수 있어요.</div>
-    <div id="minePlans"></div>
-
-    <div class="mine-sec">🏃 운동 기록</div>
-    <table><thead><tr><th>일시</th><th>구분</th><th>운동구성</th><th>정확도</th><th>판정(퍼·그·굿·오·미)</th><th>심박(전→후)</th><th>종합</th><th>획득P</th></tr></thead>
-      <tbody id="mineRows"><tr><td colspan="8" class="empty">아직 기록이 없습니다.</td></tr></tbody></table>
-
-    <div class="mine-sec">⚔️ 결투 결과</div>
-    <div id="mineDuels"></div>
-
-    <div class="mine-sec">✍️ 성찰 일지</div>
-    <div class="step-box" id="rfLogBox" style="margin-top:0">
-      <div style="font-weight:700;font-size:16px">내가 쓴 성찰 일지</div>
-      <div class="hint" style="margin:2px 0 10px">누르면 그때 쓴 내용을 다시 보고 고칠 수 있어요.</div>
+    <button class="mine-sec" type="button">📝 내 운동 계획서<span class="arw">▾</span></button>
+    <div class="mine-body">
+      <div class="hint" style="margin-bottom:6px">운동 설계에서 만든 구성입니다. 누르면 계획서를 쓰거나 고칠 수 있어요.</div>
+      <div id="minePlans"></div>
+    </div>
+    <button class="mine-sec" type="button">🏃 운동 기록<span class="arw">▾</span></button>
+    <div class="mine-body">
+      <div class="hint" style="margin-bottom:6px">운동을 누르면 그날의 상세 결과가 펼쳐집니다.</div>
+      <div id="mineSessions"></div>
+    </div>
+    <button class="mine-sec" type="button">⚔️ 결투 결과<span class="arw">▾</span></button>
+    <div class="mine-body">
+      <div id="mineDuels"></div>
+    </div>
+    <button class="mine-sec" type="button">✍️ 성찰 일지<span class="arw">▾</span></button>
+    <div class="mine-body">
+      <div class="hint" style="margin-bottom:6px">운동한 날에만 쓸 수 있고, 저장하면 고칠 수 없습니다.</div>
       <div id="rfLogList"></div>
     </div>
-
-    <div class="mine-sec">🏁 단원 마무리 성찰</div>
+    <button class="mine-sec" type="button">🏁 단원 마무리 성찰<span class="arw">▾</span></button>
+    <div class="mine-body">
     <div class="step-box" id="finalRfBox" style="margin-top:0">
       <div style="font-weight:700;font-size:16px">단원 전체를 돌아보기</div>
       <div class="hint" style="margin:2px 0 10px">모든 수업이 끝난 뒤 <b>한 번</b> 작성합니다. 저장한 뒤에도 언제든 고칠 수 있어요.</div>
@@ -700,6 +707,7 @@
         <button class="btn btn-go btn-sm" id="frSave">🏁 마무리 성찰 저장</button>
         <span class="hint" id="frMsg"></span>
       </div>
+    </div>
     </div>
   </section>
 
@@ -881,8 +889,8 @@
       <div class="field"><label>반 선택</label><select id="rfViewClass"><option value="">반을 등록하세요</option></select></div>
       <button class="btn btn-teal btn-sm" id="rfExport">⬇ 성찰 엑셀 내려받기</button>
     </div>
-    <table><thead><tr><th>번호</th><th>이름</th><th>수시 성찰</th><th>공통/자율</th><th>자기평가 평균</th><th>마무리 성찰</th><th>최근 작성</th></tr></thead>
-      <tbody id="rfRows"><tr><td colspan="7" class="empty">반을 고르면 학생별 성찰 현황이 표시됩니다.</td></tr></tbody></table>
+    <table><thead><tr><th>번호</th><th>이름</th><th>수시 성찰</th><th>공통/자율</th><th>미제출</th><th>자기평가 평균</th><th>마무리 성찰</th><th>최근 작성</th></tr></thead>
+      <tbody id="rfRows"><tr><td colspan="8" class="empty">반을 고르면 학생별 성찰 현황이 표시됩니다.</td></tr></tbody></table>
     <div id="rfDetail" style="margin-top:10px"></div>
     </details>
 
@@ -1545,7 +1553,7 @@ function renderTasks(){
     tc.appendChild(none);
   }
   myPlans.forEach(p=>{
-    const meta=`<b style="color:${p.n?"var(--good)":"var(--muted)"}">${p.n?`${p.n}회 실천`:"아직 안 함"}</b>`
+    const meta=`<b style="color:${p.n?"var(--good)":"var(--muted)"}">${p.n?`${p.n}회 실천 · 다음 ${p.n+1}회차`:"아직 안 함 · 1회차"}</b>`
       +`${p.last?` · 마지막 ${p.last}`:""} · `
       +(p.submitted?`<b style="color:var(--good)">📤 계획서 제출함</b>`:`계획서 미제출`);
     const c=card("🌱",p.name||"내 운동",meta,cfgLine(p.seq,p.work,p.rest,p.rounds)
@@ -1553,8 +1561,12 @@ function renderTasks(){
     c.add("혼자","btn-go",()=>{
       applyPlan(p); currentPlanId=p.id;
       clearTask(); currentBattle=null; updateModeBadge(); showWorkSteps();
+      toast(`'${p.name}' ${(p.n||0)+1}회차 시작 — 준비되면 [시작]을 누르세요`,"task","🌱");
     });
-    c.add("⚔️ 결투","btn-stop",()=>openBattlePick(p));
+    c.add("⚔️ 결투","btn-stop",()=>{
+      toast(`'${p.name}' ${(p.n||0)+1}회차 — 함께할 친구를 고르세요`,"task","⚔️");
+      openBattlePick(p);
+    });
     c.add("📝 계획서","btn-teal",()=>openPlanDoc(p));
     c.add("✕","btn-stop",()=>{
       // 이 운동으로 걸려 있는 결투를 같이 정리한다 — 안 그러면 상대 화면에 배틀이 영영 남는다
@@ -1679,7 +1691,7 @@ function renderTaskRows(){
       tr.innerHTML=r
         ?`<td class="num">${s.no}</td><td>${s.name}</td><td>${shortCls(cls)}</td>${cell(r)}`
         :`<td class="num">${s.no}</td><td>${s.name}</td><td>${shortCls(cls)}</td><td colspan="5" style="color:var(--muted)">미완료</td>`;
-      tb.appendChild(tr);
+      if(tb)tb.appendChild(tr);
     });
     const list=Object.values(done);
     const on=list.filter(r=>String(r.date).slice(0,10)===givenFor(cls)).length;
@@ -3160,7 +3172,7 @@ const HABIT_QS=[
   {k:"diet",    t:"식습관",    h:"골고루·규칙적으로 먹나"},
   {k:"sleep",   t:"수면 습관", h:"충분히 자고 일정한가"}
 ];
-const HABIT_LABEL={3:"좋음",2:"보통",1:"부족함"};
+const HABIT_LABEL={3:"좋음",2:"보통",1:"부족"};
 let pcHabit={};
 function renderHabits(){
   const box=$("pcHabitList"); box.innerHTML="";
@@ -3486,7 +3498,10 @@ function nowStamp(){
 }
 
 /* ---------- 성찰 일지 쓰기·다시보기 (하나의 화면으로 처리) ---------- */
-let rfDocKey=null, rfSelf=[0,0,0,0], rfDocMode="", rfDocTitle="";
+let rfDocKey=null, rfSelf=[0,0,0,0], rfDocMode="", rfDocTitle="", rfDocLocked=false, rfWorkDate="";
+// 성찰은 운동한 날에 쓰는 것이 원칙 — 날짜가 다르면 미제출로 본다
+function dayOf(t){ return String(t||"").slice(0,10); }
+function sameDayOK(){ return rfWorkDate && dayOf(rfWorkDate)===todayStr(); }
 function renderRfSelf(){
   const box=$("rfSelfList"); box.innerHTML="";
   RF_SELF.forEach((t,i)=>{
@@ -3516,7 +3531,9 @@ function openReflectDoc(entry){
   const acc=entry?src.acc:(rec&&rec.acc)||"";
   const score=entry?src.score:(rec&&rec.score)||"";
   const badge=mode?("  ·  "+mode+(modeTitle?" ("+modeTitle+")":"")):"";
-  $("rfDocWhen").textContent=(entry?src.date:nowStamp())+(entry?" 에 쓴 일지":" · 방금 마친 운동")+badge;
+  rfWorkDate=entry?(src.workDate||src.date||""):((rec&&rec.date)||nowStamp());
+  const late=entry?(src.late?" · <b style=\"color:var(--bad)\">미제출(당일 아님)</b>":""):"";
+  $("rfDocWhen").innerHTML=(entry?src.date:nowStamp())+(entry?" 에 쓴 일지":" · 방금 마친 운동")+badge+late;
   rfDocMode=mode; rfDocTitle=modeTitle;
   $("rfDocData").innerHTML=`<b>내 운동 데이터</b>`
     +`<span>운동 전 심박 ${hrPre||"–"} → 운동 후 ${hr||"– (아직 측정 안 함)"}</span>`
@@ -3524,12 +3541,23 @@ function openReflectDoc(entry){
   [1,2,3,4,5].forEach(i=>$("rq"+i).value=src["q"+i]||"");
   rfSelf=[1,2,3,4].map(i=>+src["s"+i]||0);
   renderRfSelf();
-  $("rfDocMsg").textContent="";
+  // 한 번 저장한 일지는 고칠 수 없다 — 그날의 생각을 그대로 남기기 위해서다
+  const locked=!!(entry&&myLogsLocal[rfDocKey]);
+  rfDocLocked=locked;
+  [1,2,3,4,5].forEach(i=>$("rq"+i).readOnly=locked);
+  $("rfSelfList").style.pointerEvents=locked?"none":"";
+  $("rfSelfList").style.opacity=locked?".7":"";
+  $("rfDocSave").style.display=locked?"none":"";
+  $("rfDocClose").textContent=locked?"닫기":"닫기";
+  $("rfDocMsg").innerHTML=locked
+    ?'<b style="color:var(--good)">제출한 일지입니다 — 읽기만 가능합니다</b>'
+    :(sameDayOK()?"":'<span class="err">운동한 날이 지나 <b>미제출</b>로 기록됩니다. 그래도 남겨두면 선생님이 참고합니다.</span>');
   $("rfDocOverlay").style.display="flex";
 }
 $("rfOpenBtn").addEventListener("click",()=>openReflectDoc(null));
 $("rfDocClose").addEventListener("click",()=>{ $("rfDocOverlay").style.display="none"; });
 $("rfDocSave").addEventListener("click",()=>{
+  if(rfDocLocked)return;
   const me=myKey(), msg=$("rfDocMsg");
   if(!me.name){msg.innerHTML='<span class="err">운동 설계 탭에서 학번을 먼저 입력하세요.</span>';return;}
   const entry={date:$("rfDocWhen").textContent.slice(0,16)};
@@ -3546,6 +3574,9 @@ $("rfDocSave").addEventListener("click",()=>{
   entry.date=old.date||entry.date;
   entry.mode=old.mode||rfDocMode||"";
   entry.taskTitle=old.taskTitle||rfDocTitle||"";
+  entry.workDate=old.workDate||rfWorkDate||"";           // 운동한 날
+  entry.writeDate=todayStr();                            // 쓴 날
+  entry.late=dayOf(entry.workDate)!==entry.writeDate;    // 다르면 미제출 처리
   myLogsLocal[rfDocKey]=entry; saveAll();   // 기기에 먼저 남긴다
   renderRfLogs(); markReflectDone();
   if(!fdb){msg.textContent="이 기기에만 저장됨 (인터넷 연결 시 전송)";return;}
@@ -3577,7 +3608,8 @@ function renderRfLogs(){
   logs.forEach(l=>{
     const b=document.createElement("button"); b.className="rf-log";
     const pv=[l.q1,l.q2,l.q3,l.q4,l.q5].find(t=>String(t||"").trim())||"(내용 없음)";
-    const tag=l.mode?`<span class="pt">${l.mode}</span>`:"";
+    const tag=(l.mode?`<span class="pt">${l.mode}</span>`:"")
+      +(l.late?`<span class="pt" style="color:var(--bad);border-color:var(--bad)">미제출</span>`:"");
     b.innerHTML=`<span class="dt">${String(l.date||"").replace(" ","<br>")}</span>${tag}
       <span class="pv">${String(pv).replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]))}</span>
       <span class="num" style="color:var(--muted);font-size:12px">${logWrote(l)}/5</span>`;
@@ -3626,11 +3658,11 @@ function renderReflectAdmin(){
   const cls=$("rfViewClass").value, tb=$("rfRows"); tb.innerHTML="";
   $("rfDetail").innerHTML="";
   if(fdb&&!isTeacher()){
-    tb.innerHTML='<tr><td colspan="7" class="empty">🔐 교사 로그인이 필요합니다 — 로그인 전에는 학생 성찰을 볼 수 없습니다.</td></tr>';
+    tb.innerHTML='<tr><td colspan="8" class="empty">🔐 교사 로그인이 필요합니다 — 로그인 전에는 학생 성찰을 볼 수 없습니다.</td></tr>';
     return;
   }
   const list=rosters[cls]||[];
-  if(!cls||!list.length){ tb.innerHTML='<tr><td colspan="7" class="empty">반을 고르면 학생별 성찰 현황이 표시됩니다.</td></tr>'; return; }
+  if(!cls||!list.length){ tb.innerHTML='<tr><td colspan="8" class="empty">반을 고르면 학생별 성찰 현황이 표시됩니다.</td></tr>'; return; }
   list.forEach(s=>{
     const rf=reflectOf(s.name,cls), nLog=logCount(rf), fin=hasFinal(rf), fe=avgSelf(rf);
     const last=Object.values((rf&&rf.logs)||{}).map(l=>l.date||"").sort().slice(-1)[0]
@@ -3640,6 +3672,7 @@ function renderReflectAdmin(){
       <td><b style="cursor:pointer;color:var(--primary)">${s.name}</b></td>
       <td class="num" style="color:${nLog?"var(--good)":"var(--muted)"}">${nLog}회</td>
       <td class="num" style="color:var(--muted)">${(()=>{const L=Object.values((rf&&rf.logs)||{});const c=L.filter(x=>x.mode==="공통과제").length, z=L.filter(x=>x.mode&&x.mode!=="공통과제").length;return L.length?(c+"/"+z):"–";})()}</td>
+      <td class="num" style="color:var(--bad)">${(()=>{const n=Object.values((rf&&rf.logs)||{}).filter(x=>x.late).length;return n?n+"건":"–";})()}</td>
       <td class="num">${fe!=null?fe:"–"}</td>
       <td class="num" style="color:${fin?"var(--good)":"var(--bad)"}">${fin?"작성 ✔":"미작성"}</td>
       <td class="num" style="color:var(--muted)">${last?String(last).slice(0,10):"–"}</td>`;
@@ -3689,13 +3722,13 @@ $("rfExport").addEventListener("click",()=>{
         f.q1||"", f.q2||"", f.q3||"", f.q4||"", f.q5||""];
     }))
   }));
-  const logHead=["반","번호","이름","작성일","구분","과제명","심박 전","심박 후","정확도(%)","종합점수","① 운동 강도 돌아보기","② 잘한 점/배운 점","③ 배운 개념 연결","④ 부족했던 점","⑤ 다음 실천 계획","자기평가1 성실참여","자기평가2 바른자세","자기평가3 목표강도","자기평가4 구체적계획","작성 문항수"];
+  const logHead=["반","번호","이름","작성일","운동일","당일작성","구분","과제명","심박 전","심박 후","정확도(%)","종합점수","① 운동 강도 돌아보기","② 잘한 점/배운 점","③ 배운 개념 연결","④ 부족했던 점","⑤ 다음 실천 계획","자기평가1 성실참여","자기평가2 바른자세","자기평가3 목표강도","자기평가4 구체적계획","작성 문항수"];
   const logRows=[logHead];
   cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
     const rf=reflectOf(s.name,c);
     Object.values((rf&&rf.logs)||{}).sort((a,b)=>String(a.date).localeCompare(String(b.date)))
       .forEach(l=>logRows.push([c, s.no==null?"":Number(s.no), s.name, String(l.date||"").slice(0,10),
-        l.mode||"", l.taskTitle||"", l.hrPre||"", l.hr||"", l.acc||"", l.score||"",
+        dayOf(l.workDate)||"", l.late?"아니오(미제출)":"예", l.mode||"", l.taskTitle||"", l.hrPre||"", l.hr||"", l.acc||"", l.score||"",
         l.q1||"", l.q2||"", l.q3||"", l.q4||"", l.q5||"",
         SELF_LABEL[l.s1]||"", SELF_LABEL[l.s2]||"", SELF_LABEL[l.s3]||"", SELF_LABEL[l.s4]||"",
         logWrote(l)]));
@@ -3771,14 +3804,14 @@ function buildGradeBook(){
   })));
 
   // ── 마지막 시트: 수시 성찰 원문 (한 건에 한 줄 — 횟수가 늘어도 그대로 쌓인다) ──
-  const logHead=["반","번호","이름","작성일","구분","과제명","심박 전","심박 후","정확도(%)","종합점수","① 운동 강도 돌아보기","② 잘한 점/배운 점","③ 배운 개념 연결","④ 부족했던 점","⑤ 다음 실천 계획","자기평가1 성실참여","자기평가2 바른자세","자기평가3 목표강도","자기평가4 구체적계획","작성 문항수"];
+  const logHead=["반","번호","이름","작성일","운동일","당일작성","구분","과제명","심박 전","심박 후","정확도(%)","종합점수","① 운동 강도 돌아보기","② 잘한 점/배운 점","③ 배운 개념 연결","④ 부족했던 점","⑤ 다음 실천 계획","자기평가1 성실참여","자기평가2 바른자세","자기평가3 목표강도","자기평가4 구체적계획","작성 문항수"];
   const logRows=[logHead];
   cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
     const rf=reflectOf(s.name,c);
     Object.values((rf&&rf.logs)||{})
       .sort((a,b)=>String(a.date).localeCompare(String(b.date)))
       .forEach(l=>logRows.push([c, num(s.no), s.name, String(l.date||"").slice(0,10),
-        l.mode||"", l.taskTitle||"", num(l.hrPre)||"", num(l.hr)||"", num(l.acc)||"", num(l.score)||"",
+        dayOf(l.workDate)||"", l.late?"아니오(미제출)":"예", l.mode||"", l.taskTitle||"", num(l.hrPre)||"", num(l.hr)||"", num(l.acc)||"", num(l.score)||"",
         l.q1||"", l.q2||"", l.q3||"", l.q4||"", l.q5||"",
         SELF_LABEL[l.s1]||"", SELF_LABEL[l.s2]||"", SELF_LABEL[l.s3]||"", SELF_LABEL[l.s4]||"",
         logWrote(l)]));
@@ -3864,7 +3897,6 @@ function deleteStudentRecords(name,cls){
 }
 function renderMine(){
   const name=($("stuName").value||"").trim(), cls=($("stuClass").value||"").trim();
-  const tb=$("mineRows"); if(!tb)return;
   const rs=records.filter(r=>r.name===name&&String(r.cls)===cls);
   $("mineCount").textContent=rs.length;
   $("mineBest").textContent=rs.length?Math.max(...rs.map(r=>+r.score||0)):"–";
@@ -3887,35 +3919,61 @@ function renderMine(){
     $("mineBattle").textContent=n?(w+"승"+(d?" "+d+"무":"")+" "+l+"패"):"–";
   }
   renderMineTrend(rs,name,cls);
-  renderFinalReflect(); renderRfLogs(); renderMineTodo(); renderMinePlans(); renderMineDuels();
-  // 기록이 없어도 계획서·성찰 칸은 보여야 하므로 early return보다 먼저
-  if(!rs.length){tb.innerHTML='<tr><td colspan="8" class="empty">아직 기록이 없습니다.</td></tr>';return;}
-  tb.innerHTML="";
-  rs.slice().reverse().forEach(r=>{
-    const tr=document.createElement("tr");
-    const tcell=r.task==="자율"?'<span style="color:var(--good)">🌱 자율</span>':r.task?`<span style="color:var(--primary)">📋 ${r.task}</span>`:"–";
-    tr.innerHTML=`<td>${r.date}</td><td>${tcell}</td><td>${r.seq}</td><td class="num">${r.acc}%</td>
-      <td class="num"><span style="color:#E24FD8">${r.jP||0}</span>·<span style="color:var(--gold)">${r.jG||0}</span>·<span style="color:var(--rest)">${r.jGd||0}</span>·<span style="color:#7A85E8">${r.jO||0}</span>·<span style="color:var(--bad)">${r.jB||0}</span></td>
-      <td class="num">${r.hrPre||"–"}→${r.hr||"–"}</td>
-      <td class="num" style="color:var(--primary)">${r.score}</td><td class="num">+${r.pts}</td>`;
-    tb.appendChild(tr);
-  });
+  renderFinalReflect(); renderRfLogs(); renderMineTodo(); renderMinePlans(); renderMineDuels(); renderMineSessions();
 }
-/* ---------- 내 기록: 계획서 · 결투 결과 · 해야 할 일 ---------- */
+/* ---------- 내 기록: 구역 접기 ---------- */
+document.querySelectorAll("#pgMine .mine-sec").forEach((h,i)=>{
+  const body=h.nextElementSibling;
+  if(i===0){ h.classList.add("open"); body.classList.add("open"); }   // 계획서만 펼쳐 둔다
+  h.addEventListener("click",()=>{ h.classList.toggle("open"); body.classList.toggle("open"); });
+});
+/* ---------- 내 기록: 학습 현황 ---------- */
 function renderMineTodo(){
   const box=$("mineTodo"); if(!box)return;
   const me=myKey();
   if(!me.name){ box.innerHTML='<div class="hint">운동 설계 탭에서 학번을 입력하면 내 것만 모아 보여드립니다.</div>'; return; }
+  const g=practiceScore(me.name,me.cls);
   const submitted=myPlans.filter(p=>p.submitted).length;
   const logs=myLogs().length;
   const fin=!!(myFinalLocal&&[1,2,3,4,5].some(i=>String(myFinalLocal["q"+i]||"").trim()));
+  const selfN=records.filter(r=>r.name===me.name&&String(r.cls)===me.cls&&!r.taskId).length;
   const chip=(ok,t)=>`<span style="color:${ok?"var(--good)":"var(--muted)"}">${ok?"✔":"○"} ${t}</span>`;
   box.innerHTML=`<div style="font-weight:700;margin-bottom:6px">${me.cls}반 ${me.name}님의 학습 현황</div>`
     +`<div class="mine-todo">`
-    +chip(submitted>0,`계획서 제출 ${submitted?`(${submitted}개)`:""}`)
-    +chip(logs>0,`성찰 일지 ${logs}회`)
-    +chip(fin,"단원 마무리 성찰")
+    +chip(g.assigned>0&&g.done>=g.assigned, `공통과제 ${g.done}/${g.assigned||0}차시`)
+    +chip(selfN>0, `자율운동 ${selfN}회`)
+    +chip(submitted>0, `계획서 제출 ${submitted?`(${submitted}개)`:""}`)
+    +chip(logs>0, `성찰 일지 ${logs}회`)
+    +chip(fin, "단원 마무리 성찰")
     +`</div>`;
+}
+/* ---------- 내 기록: 운동 목록 (누르면 그날 상세) ---------- */
+function judgeLine(r){
+  const p=+r.jP||0,g=+r.jG||0,gd=+r.jGd||0,o=+r.jO||0,b=+r.jB||0;
+  return `<span style="color:#E24FD8">${p}</span> · <span style="color:var(--gold)">${g}</span>`
+    +` · <span style="color:var(--rest)">${gd}</span> · <span style="color:#7A85E8">${o}</span>`
+    +` · <span style="color:var(--bad)">${b}</span>`;
+}
+function renderMineSessions(){
+  const box=$("mineSessions"); if(!box)return;
+  const me=myKey(); box.innerHTML="";
+  const rs=records.filter(r=>r.name===me.name&&String(r.cls)===me.cls)
+    .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  if(!rs.length){ box.innerHTML='<div class="hint">아직 운동 기록이 없습니다.</div>'; return; }
+  rs.forEach(r=>{
+    const wrap=document.createElement("div"); wrap.className="task-card"; wrap.style.marginBottom="6px";
+    const h=document.createElement("button"); h.className="tc-head"; h.type="button";
+    h.innerHTML=`<span class="tt">${r.task&&r.task.indexOf("vs")>=0?"⚔️":r.taskId?"📋":"🌱"} ${String(r.date).slice(5)}
+        <span class="tc-meta">${r.seq||""} · 종합 <b>${r.score}</b>점 · 정확도 ${r.acc}%</span></span>
+      <span class="arw">▾</span>`;
+    const body=document.createElement("div"); body.className="tc-body";
+    body.innerHTML=`<b>${r.task||"자율"}</b> · ${r.rounds}라운드<br>
+      반복 ${r.reps||"–"} · 유효 수행 ${r.time||"–"}초 · 강도 ${r.int||"–"}<br>
+      심박 ${r.hrPre||"–"} → ${r.hr||"–"}　·　획득 ${r.pts||0}P<br>
+      판정(퍼·그·굿·오·미) ${judgeLine(r)}`;
+    h.addEventListener("click",()=>{ h.classList.toggle("open"); body.classList.toggle("open"); });
+    wrap.append(h,body); box.appendChild(wrap);
+  });
 }
 function renderMinePlans(){
   const box=$("minePlans"); if(!box)return;
