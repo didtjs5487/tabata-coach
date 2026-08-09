@@ -189,12 +189,18 @@
     padding:7px 13px; cursor:pointer; color:var(--ink); font-size:13.5px; font-weight:600; font-family:inherit;}
   .pc-opts button.on{border-color:var(--primary); background:rgba(124,108,255,.22); color:#fff;}
   /* 학생별 종합 현황 — 폰에서도 한 줄에 들어가게 점으로만 표시 */
-  .sb-legend{display:flex; gap:10px; flex-wrap:wrap; align-items:center; font-size:12px;
-    color:var(--muted); margin:10px 0 6px;}
+  .sb-legend{display:flex; gap:8px; flex-wrap:wrap; align-items:center; font-size:12px;
+    color:var(--muted); margin:10px 0 8px;}
   .sb-legend span{display:inline-flex; align-items:center; gap:4px;}
-  .sb-legend .sb-cols{margin-left:auto;}
-  .dot{width:11px; height:11px; border-radius:50%; display:inline-block; background:var(--line);}
-  .dot.ok{background:var(--good);} .dot.half{background:var(--gold);} .dot.no{background:var(--line);}
+  /* 글자 칩 — 어느 항목인지 바로 읽히고, 채워짐/비어짐으로도 구분되어 색이 흐려도 보인다 */
+  .mk{width:24px; height:24px; border-radius:7px; display:inline-flex; align-items:center;
+    justify-content:center; font-size:12px; font-weight:800; letter-spacing:-.5px;
+    border:1.5px solid var(--line); color:var(--muted); background:transparent; flex-shrink:0;}
+  .mk.ok{background:var(--good); border-color:var(--good); color:#06281f;}
+  .mk.half{background:var(--gold); border-color:var(--gold); color:#2a1e00;}
+  .mk.no{opacity:.45;}
+  .sb-score{font-family:"Barlow Condensed"; font-weight:700; font-size:15px; min-width:30px;
+    text-align:right; flex-shrink:0;}
   .stu-row{display:flex; align-items:center; gap:8px; width:100%; text-align:left; cursor:pointer;
     background:var(--panel); border:1px solid var(--line); border-radius:10px;
     padding:8px 10px; margin-bottom:5px; color:var(--ink); font-family:inherit;}
@@ -203,11 +209,29 @@
     min-width:22px; text-align:right; font-size:14px;}
   .stu-row .nm{flex:1; font-weight:700; font-size:14px; white-space:nowrap;
     overflow:hidden; text-overflow:ellipsis; min-width:0;}
-  .stu-row .dots{display:flex; gap:5px; flex-shrink:0;}
+  .stu-row .dots{display:flex; gap:4px; flex-shrink:0;}
   .stu-detail{background:var(--panel3); border:1px solid var(--primary2); border-radius:12px;
     padding:12px; margin:6px 0 10px;}
-  .stu-detail h4{margin:12px 0 4px; font-size:14px; color:var(--gold);}
-  .stu-detail h4:first-child{margin-top:0;}
+  .stu-detail h4{margin:16px 0 5px; font-size:14px; color:var(--gold);
+    border-bottom:1px solid var(--line); padding-bottom:4px;}
+  /* 맨 위 요약 — 무엇을 했고 안 했는지 먼저 */
+  .sd-sum{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:8px 10px;}
+  .sd-line{display:flex; align-items:center; gap:7px; padding:4px 0; font-size:13.5px;}
+  .sd-line+.sd-line{border-top:1px solid var(--line);}
+  .sd-ic{width:18px; text-align:center;}
+  .sd-lb{width:74px; font-weight:700; flex-shrink:0;}
+  .sd-badge{font-weight:700;}
+  .sd-ox{display:flex; gap:10px; flex-wrap:wrap; font-size:13px; font-weight:700; margin-bottom:4px;}
+  .sd-q{background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--primary2);
+    border-radius:8px; padding:8px 10px; margin-top:6px; font-size:13.5px; line-height:1.55;
+    white-space:pre-wrap;}
+  .sd-q.sd-miss{border-left-color:var(--bad); color:var(--bad); opacity:.85;}
+  .sd-q b{color:var(--ink);}
+  .sd-q.sd-miss b{color:var(--bad);}
+  .sd-in{display:inline-block; padding-left:12px;}
+  .sd-in.sd-miss{color:var(--bad);}
+  .sd-none{background:var(--panel); border:1px dashed var(--bad); border-radius:8px;
+    padding:9px 11px; margin-top:6px; color:var(--bad); font-size:13.5px; font-weight:700;}
   .pv-stats{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:7px;}
   .pv-stat{background:var(--panel); border:1px solid var(--line); border-radius:10px;
     padding:8px 10px; cursor:pointer; text-align:left; font-family:inherit; color:var(--ink);}
@@ -852,8 +876,15 @@
     <div class="hint" id="pvMissing" style="margin:6px 0 10px"></div>
 
     <div class="sb-legend">
-      <span><i class="dot ok"></i>완료</span><span><i class="dot half"></i>일부</span><span><i class="dot no"></i>없음</span>
-      <span class="sb-cols">📋 공통과제 · 🏃 운동 · 📝 계획서 · ✍️ 성찰 · 🏁 마무리</span>
+      <span><i class="mk ok">과</i>공통과제</span><span><i class="mk ok">운</i>운동</span>
+      <span><i class="mk ok">계</i>계획서</span><span><i class="mk ok">성</i>성찰</span>
+      <span><i class="mk ok">마</i>마무리</span>
+      <span style="margin-left:auto">채움=완료 · <span style="color:var(--gold)">노랑</span>=일부 · 흐림=없음</span>
+    </div>
+    <div class="row" style="margin:0 0 8px">
+      <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)">
+        <input type="checkbox" id="sbOnlyTodo"> 아직 안 낸 학생만 보기</label>
+      <span class="hint" id="sbCount" style="margin-left:auto"></span>
     </div>
     <div id="stuBoard"></div>
     <div id="stuDetail" style="margin-top:10px"></div>
@@ -3397,7 +3428,7 @@ $("pvReload").addEventListener("click",()=>{
    한 학생당 한 줄. 5가지 상태를 점으로만 보여 폰에서도 짧게 유지하고,
    이름을 누르면 성적·계획서·성찰을 한꺼번에 펼친다.                     */
 let sbOpen="";
-function sbDot(state){ return `<i class="dot ${state}"></i>`; }
+function sbMk(state,ch){ return `<i class="mk ${state}">${ch}</i>`; }
 function stuStatus(name,cls){
   const g=practiceScore(name,cls);
   const ps=plansOf(name,cls), best=bestPlan(ps);
@@ -3421,66 +3452,100 @@ function renderStuBoard(){
     $("stuDetail").innerHTML=""; return;
   }
   const list=rosters[cls]||[];
-  if(!cls||!list.length){ box.innerHTML='<div class="hint">반을 고르면 학생별 현황이 표시됩니다.</div>'; return; }
+  if(!cls||!list.length){ box.innerHTML='<div class="hint">반을 고르면 학생별 현황이 표시됩니다.</div>'; $("sbCount").textContent=""; return; }
+  const onlyTodo=$("sbOnlyTodo").checked;
+  let shown=0;
   list.forEach(s=>{
     const st=stuStatus(s.name,cls);
+    const dn=[st.task,st.work,st.plan,st.log,st.fin].filter(x=>x==="ok").length;
+    if(onlyTodo&&dn===5)return;
+    shown++;
     const b=document.createElement("button"); b.className="stu-row"+(sbOpen===s.name?" on":"");
     b.innerHTML=`<span class="no">${s.no||""}</span><span class="nm">${s.name}</span>`
-      +`<span class="dots">${sbDot(st.task)}${sbDot(st.work)}${sbDot(st.plan)}${sbDot(st.log)}${sbDot(st.fin)}</span>`;
+      +`<span class="dots">${sbMk(st.task,"과")}${sbMk(st.work,"운")}${sbMk(st.plan,"계")}${sbMk(st.log,"성")}${sbMk(st.fin,"마")}</span>`
+      +`<span class="sb-score" style="color:${dn===5?"var(--good)":dn>=3?"var(--gold)":"var(--muted)"}">${dn}/5</span>`;
     b.addEventListener("click",()=>{ sbOpen=(sbOpen===s.name?"":s.name); renderStuBoard(); showStuDetail(cls,sbOpen); });
     box.appendChild(b);
     if(sbOpen===s.name){ const holder=document.createElement("div"); holder.id="sbDetailHere"; box.appendChild(holder); }
   });
+  $("sbCount").textContent=onlyTodo?`${shown}명 / 전체 ${list.length}명`:`전체 ${list.length}명`;
+  if(onlyTodo&&!shown)box.innerHTML='<div class="hint" style="color:var(--good)">🎉 모두 다 냈습니다.</div>';
   if(sbOpen)showStuDetail(cls,sbOpen);
 }
+$("sbOnlyTodo").addEventListener("change",()=>{ sbOpen=""; renderStuBoard(); });
 function showStuDetail(cls,name){
   const at=$("sbDetailHere")||$("stuDetail");
   $("stuDetail").innerHTML="";
   if(!name){ if($("sbDetailHere"))$("sbDetailHere").innerHTML=""; return; }
   const esc=t=>String(t||"").replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]));
   const st=stuStatus(name,cls), g=st.g, stat=statsFor(name,cls);
-  let h=`<div class="stu-detail"><h4>🏃 운동 실천 (㉯)</h4>`
-    +`실천점수 <b>${g.score}</b>점 · 만족 ${g.met}/5 &nbsp; `
-    +`<span style="color:var(--muted)">${["과제","심박","정확도","자율","향상"].map((t,i)=>`${g.items[i]?"○":"×"}${t}`).join(" ")}</span>`
-    +`<br>공통과제 ${g.done}/${g.assigned||0}차시 · 세션 ${g.n}회 · 심박달성 ${g.dil}회`
-    +` · 평균 정확도 ${g.n?g.acc+"%":"–"}${stat?` · 최고 ${stat.best}점`:""}`
-    +(g.first!=null?` · 초기 ${g.first} → 최근 ${g.last}`:"");
+  // 한 줄 요약 — 무엇을 했고 무엇을 안 했는지 먼저 보인다
+  const badge=(state,txt)=>{
+    const m={ok:["✅","var(--good)"],half:["⚠️","var(--gold)"],no:["❌","var(--bad)"]}[state];
+    return `<span class="sd-badge" style="color:${m[1]}">${m[0]} ${txt}</span>`;
+  };
+  const line=(state,icon,label,txt)=>
+    `<div class="sd-line"><span class="sd-ic">${icon}</span><span class="sd-lb">${label}</span>${badge(state,txt)}</div>`;
+  const logs=Object.values((st.rf&&st.rf.logs)||{}).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const lateN=logs.filter(l=>l.late).length;
+
+  let h=`<div class="stu-detail"><div class="sd-sum">`
+    +line(st.task,"📋","공통과제", g.assigned?`${g.done}/${g.assigned}차시 이수`:"배정된 과제 없음")
+    +line(st.work,"🏃","운동", g.n?`${g.n}회 수행 (자율 ${st.selfN}회)`:"기록 없음")
+    +line(st.plan,"📝","계획서", st.best?`제출 · 서술 ${planWrote(st.best)}/5칸`:"미제출")
+    +line(st.log,"✍️","성찰 일지", logs.length?`${logs.length}회${lateN?` · 당일 아님 ${lateN}건`:""}`:"작성 없음")
+    +line(st.fin,"🏁","마무리 성찰", hasFinal(st.rf)?"작성함":"미작성")
+    +`</div>`;
+
+  h+=`<h4>🏃 운동 실천 (㉯) — 실천점수 ${g.score}점 · 만족 ${g.met}/5</h4>`
+    +`<div class="sd-ox">`+["과제 제출","심박 달성","동작 정확도","자율 실천","향상·유지"]
+      .map((t,i)=>`<span style="color:${g.items[i]?"var(--good)":"var(--bad)"}">${g.items[i]?"○":"×"} ${t}</span>`).join("")+`</div>`
+    +`<div class="hint">세션 ${g.n}회 · 심박달성 ${g.dil}회 · 평균 정확도 ${g.n?g.acc+"%":"–"}`
+    +`${stat?` · 최고 ${stat.best}점`:""}${g.first!=null?` · 초기 ${g.first} → 최근 ${g.last}`:""}</div>`;
 
   h+=`<h4>📝 운동 계획서 (㉮)</h4>`;
-  if(!st.best)h+=`<span style="color:var(--bad)">제출하지 않았습니다.</span>`;
+  if(!st.best)h+=`<div class="sd-none">아직 제출하지 않았습니다.</div>`;
   else{
     const p=st.best, sq=String(p.seq||"").split(",").filter(Boolean);
-    const q=(t,v)=>v&&String(v).trim()?`<div style="margin-top:5px"><b style="color:var(--gold)">${t}</b><br>${esc(v)}</div>`
-      :`<div style="margin-top:5px"><b style="color:var(--gold)">${t}</b><br><span style="color:var(--bad)">미작성</span></div>`;
-    h+=`<b>${esc(p.name)}</b> <span style="color:var(--muted)">${esc(p.made)} 제출</span>`
-      +`<br>${sq.map(k=>EXNAME[k]||k).join("→")} · ${p.work}/${p.rest}초 × ${p.rounds}`
-      +`<br>목표 <b>${GOAL_LABEL[p.goal]||"–"}</b> · 체감 체력 <b>${LEVEL_LABEL[p.level]||"–"}</b>`
-      +` · 주 ${p.freq||"–"}회${p.when?" · "+esc(p.when):""}`
-      +((p.habit&&Object.keys(p.habit).length)?`<br><span style="color:var(--muted)">생활 — `
-        +HABIT_QS.map(x=>`${x.t}: ${HABIT_LABEL[p.habit[x.k]]||"–"}`).join(" · ")+`</span>`:"")
-      +q("⓪ 체력이 떨어진 원인",p.habitWhy)+q("① 왜 이 목표?",p.goalWhy)
-      +q("② 전체 구성·시간 이유",p.reason)+q("③ 조심할 부위 — "+(esc(p.careText)||"미기재"),p.careWhy)
-      +q("④ 확인 방법",p.check)
-      +((p.exNotes&&p.exNotes.length)?`<div style="margin-top:6px"><b style="color:var(--gold)">운동별 계획</b>`
-        +p.exNotes.map((n,i)=>`<div style="margin-top:3px">${i+1}. <b>${EXNAME[n.ex]||n.ex||""}</b>`
-        +`${n.why?`<br><span style="padding-left:14px">💬 ${esc(n.why)}</span>`:`<br><span style="padding-left:14px;color:var(--bad)">이유 미작성</span>`}`
-        +`${n.care?`<br><span style="padding-left:14px">⚠️ ${esc(n.care)}</span>`:""}</div>`).join("")+`</div>`:"");
+    const q=(t,v)=>String(v||"").trim()
+      ? `<div class="sd-q"><b>${t}</b><br>${esc(v)}</div>`
+      : `<div class="sd-q sd-miss"><b>${t}</b><br>미작성</div>`;
+    h+=`<div class="hint"><b>${esc(p.name)}</b> · ${esc(p.made)} 제출 · ${sq.map(k=>EXNAME[k]||k).join("→")}`
+      +`<br>목표 <b>${GOAL_LABEL[p.goal]||"–"}</b> · 체감 체력 <b>${LEVEL_LABEL[p.level]||"–"}</b> · 주 ${p.freq||"–"}회`
+      +((p.habit&&Object.keys(p.habit).length)?`<br>생활 — `+HABIT_QS.map(x=>`${x.t} ${HABIT_LABEL[p.habit[x.k]]||"–"}`).join(" · "):"")
+      +`</div>`
+      +q("⓪ 체력이 떨어진 원인",p.habitWhy)+q("① 왜 이 목표를 골랐나",p.goalWhy)
+      +q("② 전체 구성·시간을 정한 이유",p.reason)
+      +q("③ 조심할 부위 — "+(esc(p.careText)||"미기재"),p.careWhy)+q("④ 확인 방법",p.check);
+    if(p.exNotes&&p.exNotes.length){
+      h+=`<div class="sd-q"><b>운동별 계획</b>`+p.exNotes.map((n,i)=>
+        `<div style="margin-top:4px">${i+1}. <b>${EXNAME[n.ex]||n.ex||""}</b>`
+        +(String(n.why||"").trim()?`<br><span class="sd-in">💬 ${esc(n.why)}</span>`:`<br><span class="sd-in sd-miss">💬 고른 이유 미작성</span>`)
+        +(String(n.care||"").trim()?`<br><span class="sd-in">⚠️ ${esc(n.care)}</span>`:`<br><span class="sd-in sd-miss">⚠️ 주의할 점 미작성</span>`)
+        +`</div>`).join("")+`</div>`;
+    }
   }
 
-  h+=`<h4>✍️ 자기성찰 (㉰)</h4>`;
-  const logs=Object.values((st.rf&&st.rf.logs)||{}).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
-  h+=`수시 성찰 <b>${logs.length}회</b>`+(logs.filter(l=>l.late).length?` · <span style="color:var(--bad)">미제출 ${logs.filter(l=>l.late).length}건</span>`:"")
-    +` · 자기평가 평균 ${avgSelf(st.rf)!=null?avgSelf(st.rf):"–"}`;
-  h+=logs.length?logs.map(l=>`<div class="rf-text"><b class="num" style="color:var(--muted)">${esc(l.date)}</b>`
-      +`${l.mode?` · ${esc(l.mode)}`:""}${l.late?` · <b style="color:var(--bad)">미제출</b>`:""}`
-      +RF_QS.map((q,qi)=>String(l["q"+(qi+1)]||"").trim()?`<br><b>${qi+1}. ${q}</b><br>${esc(l["q"+(qi+1)])}`:"").join("")
-      +`</div>`).join("")
-    :'<div class="hint">아직 없습니다.</div>';
-  const fin=(st.rf&&st.rf.final)||{};
+  h+=`<h4>✍️ 자기성찰 (㉰) — ${logs.length}회 · 자기평가 평균 ${avgSelf(st.rf)!=null?avgSelf(st.rf):"–"}</h4>`;
+  h+=logs.length?logs.map(l=>{
+      const wrote=[1,2,3,4,5].filter(i=>String(l["q"+i]||"").trim()).length;
+      return `<div class="sd-q"><b>${esc(l.date)}</b>`
+      +`${l.mode?` · ${esc(l.mode)}`:""}`
+      +` · <span style="color:${wrote===5?"var(--good)":wrote?"var(--gold)":"var(--bad)"}">${wrote}/5문항</span>`
+      +`${l.late?` · <span style="color:var(--bad)">당일 아님</span>`:""}`
+      +RF_QS.map((q,qi)=>String(l["q"+(qi+1)]||"").trim()
+        ?`<br><span class="sd-in"><b>${qi+1}.</b> ${esc(l["q"+(qi+1)])}</span>`:"").join("")
+      +`</div>`;}).join("")
+    :`<div class="sd-none">아직 쓴 성찰이 없습니다.</div>`;
+
   h+=`<h4>🏁 단원 마무리 성찰</h4>`;
+  const fin=(st.rf&&st.rf.final)||{};
   const FQ=["체력 변화","나아진 점","어려웠던 운동","계획 실천","앞으로의 계획"];
-  h+=hasFinal(st.rf)?FQ.map((t,i)=>`<div class="rf-text"><b>${i+1}. ${t}</b><br>${esc(fin["q"+(i+1)])||'<span style="color:var(--muted)">(미작성)</span>'}</div>`).join("")
-    :'<div class="hint">아직 작성하지 않았습니다.</div>';
+  h+=hasFinal(st.rf)
+    ?FQ.map((t,i)=>String(fin["q"+(i+1)]||"").trim()
+      ?`<div class="sd-q"><b>${i+1}. ${t}</b><br>${esc(fin["q"+(i+1)])}</div>`
+      :`<div class="sd-q sd-miss"><b>${i+1}. ${t}</b><br>미작성</div>`).join("")
+    :`<div class="sd-none">아직 작성하지 않았습니다.</div>`;
   at.innerHTML=h+`</div>`;
 }
 function renderPlanAdmin(){
