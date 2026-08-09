@@ -875,7 +875,9 @@
     <div class="row" style="align-items:flex-end;margin-top:14px">
       <div class="field"><label>반 선택</label><select id="pvClass"><option value="">반을 등록하세요</option></select></div>
       <button class="btn btn-teal btn-sm" id="pvExport">⬇ 계획서 엑셀 내려받기</button>
+      <button class="btn btn-stop btn-sm" id="pvReload">🔄 다시 불러오기</button>
     </div>
+    <div class="hint" id="pvServerInfo" style="margin:6px 0 0"></div>
     <div class="kpis" id="pvKpis">
       <div class="kpi"><div class="v num c1" id="pvDone">0</div><div class="k">제출</div></div>
       <div class="kpi"><div class="v num" style="color:var(--bad)" id="pvUndone">0</div><div class="k">미제출</div></div>
@@ -3361,6 +3363,30 @@ function renderPlanStats(){
     box.appendChild(b);
   });
 }
+/* 서버에서 다시 읽어오고, 실제로 무엇이 들어 있는지 그대로 보여 준다.
+   "제출했는데 안 보인다"고 할 때 반을 잘못 골랐는지 자료가 없는지 바로 가려낸다. */
+function renderServerInfo(){
+  const el=$("pvServerInfo"); if(!el)return;
+  if(!isTeacher()){ el.textContent=""; return; }   // 로그인 전에는 읽을 수 없으니 아무 말도 하지 않는다
+  const cls=Object.keys(plans);
+  if(!cls.length){ el.innerHTML='<span style="color:var(--muted)">서버에 제출된 계획서가 <b>하나도</b> 없습니다.</span>'; return; }
+  const parts=cls.sort().map(c=>{
+    const n=Object.keys(plans[c]||{}).length;
+    return `${c}반 ${n}명`;
+  });
+  const cur=$("pvClass").value;
+  const here=(plans[cur]&&Object.keys(plans[cur]).length)||0;
+  el.innerHTML=`서버에 제출된 계획서: <b style="color:var(--good)">${parts.join(" · ")}</b>`
+    +(here?"":`　<span style="color:var(--bad)">— 지금 보고 있는 ${cur}반에는 제출자가 없습니다. 위 반 막대에서 다른 반을 눌러 보세요.</span>`);
+}
+$("pvReload").addEventListener("click",()=>{
+  if(!fdb){alert("서버 연결이 필요합니다.");return;}
+  if(!isTeacher()){alert("🔐 교사 로그인을 먼저 해주세요.");return;}
+  $("pvServerInfo").textContent="다시 불러오는 중…";
+  attachProtected(fmod.onValue,fmod.ref);
+  setTimeout(()=>{ renderPlanAdmin(); renderReflectAdmin(); renderServerInfo();
+    toast("서버에서 다시 불러왔습니다","good","🔄"); },900);
+});
 function renderPlanAdmin(){
   const cls=$("pvClass").value, tb=$("pvRows"); tb.innerHTML=""; $("pvDetail").innerHTML="";
   if(fdb&&!isTeacher()){   // 잠긴 자료라 로그인 전에는 아예 읽히지 않는다
@@ -3395,6 +3421,7 @@ function renderPlanAdmin(){
     tb.appendChild(tr);
   });
   if(pvOpen)showPlanDetail(cls,pvOpen);
+  renderServerInfo();
 }
 function showPlanDetail(cls,name){
   const box=$("pvDetail");
