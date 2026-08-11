@@ -300,6 +300,21 @@
     box-shadow:0 6px 20px rgba(0,0,0,.35); animation:sidePulse 1.1s ease-in-out infinite;}
   .side-tip span{display:block; font-size:clamp(11px,1.7vw,14px); font-weight:600; opacity:.8; margin-top:2px;}
   @keyframes sidePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+  /* 세션 결과 등급 카드 (리듬 게임식 S·A·B) */
+  .grade-card{display:flex; align-items:center; gap:16px; margin:12px 0 14px; padding:16px 18px;
+    border-radius:18px; background:var(--panel2); border:1px solid var(--line);
+    box-shadow:0 8px 30px rgba(0,0,0,.28); --gc:var(--primary);}
+  .grade-card .g-letter{font-family:"Barlow Condensed"; font-weight:700; line-height:.85;
+    font-size:clamp(64px,17vw,108px); color:var(--gc); text-shadow:0 0 34px color-mix(in srgb,var(--gc) 55%,transparent);
+    min-width:1.6em; text-align:center; animation:gradePop .5s cubic-bezier(.2,1.5,.4,1) both;}
+  .grade-card .g-side{flex:1; min-width:0;}
+  .grade-card .g-msg{font-weight:800; font-size:clamp(16px,3.4vw,21px); color:var(--gc);}
+  .grade-card .g-sub{color:var(--muted); font-size:13px; margin-top:2px;}
+  .grade-card .g-bar{height:9px; border-radius:999px; background:var(--panel3); overflow:hidden; margin-top:9px;}
+  .grade-card .g-bar>div{height:100%; border-radius:999px; background:var(--gc); width:0;
+    transition:width .8s cubic-bezier(.2,.8,.3,1);}
+  .grade-card .g-next{color:var(--muted); font-size:12px; margin-top:5px;}
+  @keyframes gradePop{0%{transform:scale(.4) rotate(-8deg); opacity:0}100%{transform:none; opacity:1}}
   .bottom{display:flex; justify-content:space-between; align-items:flex-end;}
   .metric .n{font-family:"Barlow Condensed"; font-weight:700; font-size:clamp(40px,10vw,80px); line-height:.85;}
   .metric .l{color:var(--muted); font-size:12px; letter-spacing:2px; text-transform:uppercase;}
@@ -554,6 +569,18 @@
         </div>
         <input type="hidden" id="difficulty" value="1">
       </div>
+      <!-- 판정 난이도는 화면에 뜨는 PERFECT·GREAT 글자만 바꾼다. 점수는 그대로라서
+           학생이 골라도 성적에 유리하거나 불리해지지 않는다. 공통 과제는 선생님 값으로 고정. -->
+      <div class="field" style="margin-top:12px">
+        <label>🍜 채점 난이도 — 얼마나 맵게 볼까?</label>
+        <div class="pc-opts" id="spicePick">
+          <button type="button" data-s="easy">🥛 순한맛</button>
+          <button type="button" data-s="normal">🌶️ 보통맛</button>
+          <button type="button" data-s="hard">🔥 매운맛</button>
+          <button type="button" data-s="hell">💀 지옥맛</button>
+        </div>
+        <div class="hint" id="spiceHint" style="margin-top:6px"></div>
+      </div>
       <div class="cfg-fixed" id="cfgFixed" style="margin-top:10px"></div>
     </div>
 
@@ -682,6 +709,16 @@
     <!-- result -->
     <div id="result" style="display:none">
       <h3 style="margin-top:18px">이번 세션 결과</h3>
+      <!-- 리듬 게임처럼 한눈에 보이는 등급. 숫자보다 먼저 눈에 들어오게 맨 위에 크게 둔다. -->
+      <div class="grade-card" id="gradeCard">
+        <div class="g-letter num" id="gradeLetter">–</div>
+        <div class="g-side">
+          <div class="g-msg" id="gradeMsg"></div>
+          <div class="g-sub" id="gradeSub"></div>
+          <div class="g-bar"><div id="gradeFill"></div></div>
+          <div class="g-next" id="gradeNext"></div>
+        </div>
+      </div>
       <div class="kpis">
         <div class="kpi"><div class="v num c1" id="rScore">0</div><div class="k">종합점수 /100</div></div>
         <div class="kpi"><div class="v num c2" id="rAcc">0%</div><div class="k">평균 정확도</div></div>
@@ -942,11 +979,12 @@
       </div>
       <div class="row" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
         <div class="field" style="flex:1;min-width:220px">
-          <label>동작 판정 난이도 (PERFECT·GREAT가 뜨는 기준)</label>
+          <label>공통 과제 판정 난이도 (PERFECT·GREAT가 뜨는 기준)</label>
           <select id="rbJudge">
-            <option value="easy">쉬움 — 성공 경험 위주 (첫 차시 권장)</option>
-            <option value="normal">보통 — 기본값</option>
-            <option value="hard">어려움 — 자세를 엄격하게</option>
+            <option value="easy">🥛 순한맛 — 성공 경험 위주 (첫 차시 권장)</option>
+            <option value="normal">🌶️ 보통맛 — 기본값</option>
+            <option value="hard">🔥 매운맛 — 제대로 깊게 해야 인정</option>
+            <option value="hell">💀 지옥맛 — 평행으로는 어림없다</option>
           </select>
         </div>
       </div>
@@ -2753,6 +2791,35 @@ function computeScores(){
   return {avgAcc,totalReps,totalHold,workTime,intensity:intensityCapped,done,volPct,score,pts,diff,jP,jG,jGd,jO,jB};
 }
 
+/* ---------- 세션 등급 (리듬 게임식) ----------
+   종합점수 하나로 매긴다. 맛(판정 난이도)과 무관하게 같은 잣대라
+   순한맛으로 S를 받았다고 유리해지지 않는다 — 대신 어떤 맛으로 땄는지를 함께 보여 준다. */
+const GRADES=[
+  {min:95, g:"S+", c:"#E24FD8", m:"완벽에 가까워요!"},
+  {min:88, g:"S",  c:"#FF3DA5", m:"최고 등급! 대단합니다"},
+  {min:80, g:"A",  c:"#FF9F1C", m:"아주 잘했어요"},
+  {min:70, g:"B",  c:"#FFD23F", m:"좋아요, 조금만 더!"},
+  {min:60, g:"C",  c:"#35D0BA", m:"완주했어요"},
+  {min:0,  g:"D",  c:"#7A85E8", m:"끝까지 해낸 게 시작입니다"}
+];
+function gradeOf(score){ return GRADES.find(x=>score>=x.min)||GRADES[GRADES.length-1]; }
+function renderGrade(s){
+  const card=$("gradeCard"); if(!card)return;
+  const g=gradeOf(s.score);
+  card.style.setProperty("--gc",g.c);
+  $("gradeLetter").textContent=g.g;
+  $("gradeMsg").textContent=`${g.g}등급 · ${g.m}`;
+  const sp=SPICE[activeLevel()]||SPICE.normal;
+  $("gradeSub").textContent=`종합 ${s.score}점 · ${currentTask?"공통 과제":"자율 실천"} ${sp.emoji} ${sp.name}`;
+  // 다음 등급까지 몇 점 남았는지 — '조금만 더 하면 된다'가 보여야 다시 하고 싶어진다
+  const up=[...GRADES].reverse().find(x=>x.min>s.score);
+  $("gradeNext").textContent=up?`${up.g}등급까지 ${up.min-s.score}점 남았어요`:"더 올라갈 등급이 없습니다 🏆";
+  const lo=g.min, hi=up?up.min:100;
+  const pct=hi>lo?Math.round((s.score-lo)/(hi-lo)*100):100;
+  setTimeout(()=>{ $("gradeFill").style.width=Math.max(6,Math.min(pct,100))+"%"; },60);
+  if(g.g==="S"||g.g==="S+")spawnConfetti();
+}
+
 /* ---------- records ---------- */
 const records=[];
 /* 학생이 이름을 붙여 만든 자율 실천 과제 목록 — 운동하기 탭에서 골라 반복 수행한다 */
@@ -2836,7 +2903,9 @@ function addRecord(s){
     int:s.intensity, jP:s.jP, jG:s.jG, jGd:s.jGd, jO:s.jO, jB:s.jB, hrPre:pendingPreHr||"", hr:"", zone:"",
     task:currentBattle?("⚔️ vs "+currentBattle.vs):(currentTask?currentTask.title:"자율"),
     taskId:currentTask?currentTask.id:"",
-    score:s.score, pts:s.pts
+    score:s.score, pts:s.pts,
+    spice:activeLevel(),          // 어떤 맛으로 판정했는지 (판정 개수 비교의 기준)
+    grade:gradeOf(s.score).g      // 세션 등급 (S+ ~ D)
   };
   records.push(rec);
   lastRec=rec;          // 결과 화면의 '오늘의 성찰'을 이 세션에 묶는다
@@ -2851,8 +2920,8 @@ function addRecord(s){
 }
 $("csvBtn").addEventListener("click",()=>{
   if(!records.length){alert("저장할 기록이 없습니다.");return;}
-  const head="일시,이름,학반,운동구성,라운드,평균정확도(%),총반복수,수행시간(초),강도점수,퍼펙트,그레이트,굿,오케이,미스,운동전심박(BPM),운동후심박(BPM),심박강도판정,성실수행여부,종합점수,획득포인트,구분(과제명/자율),운동후심박측정지연(초)";
-  const rows=records.map(r=>[r.date,r.name,r.cls,r.seq,r.rounds,r.acc,`"${r.reps}"`,r.time,r.int,r.jP||0,r.jG||0,r.jGd||0,r.jO||0,r.jB||0,r.hrPre||"",r.hr,r.zone,(r.hr?(isDiligent(r)?"성실수행":"미달"):""),r.score,r.pts,`"${r.task||""}"`,r.hrGap||""].join(","));
+  const head="일시,이름,학반,운동구성,라운드,평균정확도(%),총반복수,수행시간(초),강도점수,퍼펙트,그레이트,굿,오케이,미스,운동전심박(BPM),운동후심박(BPM),심박강도판정,성실수행여부,종합점수,획득포인트,구분(과제명/자율),운동후심박측정지연(초),등급,채점난이도";
+  const rows=records.map(r=>[r.date,r.name,r.cls,r.seq,r.rounds,r.acc,`"${r.reps}"`,r.time,r.int,r.jP||0,r.jG||0,r.jGd||0,r.jO||0,r.jB||0,r.hrPre||"",r.hr,r.zone,(r.hr?(isDiligent(r)?"성실수행":"미달"):""),r.score,r.pts,`"${r.task||""}"`,r.hrGap||"",r.grade||"",(SPICE[r.spice]?SPICE[r.spice].name:"")].join(","));
   const blob=new Blob(["\uFEFF"+head+"\n"+rows.join("\n")],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
   a.download=`타바타기록_${($("stuClass").value||"전체")}_${new Date().toISOString().slice(0,10)}.csv`;
@@ -3358,6 +3427,30 @@ function syncRepeatChips(){
   [...box.querySelectorAll("button")].forEach(b=>b.classList.toggle("on",+b.dataset.x===n));
 }
 function clampRounds(){ setRepeat(repeatX()); }   // 동작 수가 바뀌면 라운드 수도 따라 바뀐다
+
+/* 채점 난이도(맛) 고르기 — 자율 실천·결투에만 적용된다 */
+function setSpice(k){
+  if(!SPICE[k])k="normal";
+  mySpice=k;
+  const box=$("spicePick");
+  if(box)[...box.querySelectorAll("button")].forEach(b=>b.classList.toggle("on",b.dataset.s===k));
+  const el=$("spiceHint");
+  if(el){
+    const d=EX.squat, full=d.perfect-(d.down-d.perfect), T=JUDGE_TIERS[k];
+    const need=Math.round(full+(100-T.p)*(d.down-full)/45);
+    const par=repAccuracy(90,d);
+    const parTier=par>=T.p?"PERFECT":par>=T.g?"GREAT":par>=T.gd?"GOOD":par>=T.o?"OK":"MISS";
+    el.innerHTML=`${SPICE[k].desc} — 스쿼트로 <b>PERFECT</b>를 받으려면 무릎 <b>${need}°</b>까지, `
+      +`허벅지가 바닥과 평행(90°)이면 <b style="color:var(--good)">${parTier}</b>`
+      +`<br><span style="color:var(--muted)">맛은 화면에 뜨는 글자만 바꿉니다 — <b>점수는 어떤 맛이든 똑같아요.</b> `
+      +`선생님이 낸 공통 과제는 선생님이 정한 맛으로 진행합니다.</span>`;
+  }
+  saveAll();
+}
+if($("spicePick"))$("spicePick").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b)return;
+  setSpice(b.dataset.s);
+});
 function renderCfgFixed(){
   const box=$("cfgFixed"); if(!box)return;
   // 초기화 중에도 불리므로 위쪽 상수를 참조하지 않고 숫자를 직접 쓴다
@@ -4385,7 +4478,8 @@ function renderMineSessions(){
         <span class="tc-meta">${r.seq||""} · 종합 <b>${r.score}</b>점 · 정확도 ${r.acc}%</span></span>
       <span class="arw">▾</span>`;
     const body=document.createElement("div"); body.className="tc-body";
-    body.innerHTML=`<b>${r.task||"자율"}</b> · 모두 ${r.rounds}번<br>
+    const sp=SPICE[r.spice]||null;
+    body.innerHTML=`<b>${r.task||"자율"}</b> · 모두 ${r.rounds}번${r.grade?` · <b style="color:var(--gold)">${r.grade}등급</b>`:""}${sp?` · ${sp.emoji} ${sp.name}`:""}<br>
       반복 ${r.reps||"–"} · 유효 수행 ${r.time||"–"}초 · 강도 ${r.int||"–"}<br>
       심박 ${r.hrPre||"–"} → ${r.hr||"–"}　·　획득 ${r.pts||0}P<br>
       판정(퍼·그·굿·오·미) ${judgeLine(r)}`;
@@ -4551,6 +4645,7 @@ function finish(){
   const prevStats=statsFor($("stuName").value||"이름없음",$("stuClass").value||"-");
   const prevBest=prevStats?prevStats.best:0;
   if(!currentTask&&!currentBattle){ s.bonus=Math.round(s.pts*0.2); s.pts+=s.bonus; }
+  renderGrade(s);            // 등급을 맨 위에 크게 (숫자보다 먼저 눈에 들어오게)
   $("rScore").textContent=s.score;
   $("rAcc").textContent=s.avgAcc+"%";
   $("rReps").textContent=s.totalReps+(s.totalHold?` +${s.totalHold}s`:"");
@@ -4744,13 +4839,28 @@ const RUBRIC_DEFAULT={
    너무 후하면 아무렇게나 해도 PERFECT라 재미가 없고, 너무 박하면 열심히 해도 MISS라 금방 포기한다.
    첫 차시는 쉬움으로 성공 경험을 주고, 익숙해지면 보통·어려움으로 올리는 쪽을 권한다. */
 /* 눈금은 '교과서대로 한 동작'(스쿼트 기준 허벅지가 바닥과 평행 = 무릎 90°)이
-   어느 판정을 받는지로 맞췄다. 쉬움 GREAT · 보통 GOOD · 어려움 OK. */
+   어느 판정을 받는지로 맞췄다.
+   순한맛 GREAT · 보통맛 GOOD · 매운맛 OK · 지옥맛 MISS(평행으로는 모자라다). */
 const JUDGE_TIERS={
   easy:  {p:85, g:70, gd:62, o:56},
   normal:{p:93, g:82, gd:70, o:60},
-  hard:  {p:97, g:88, gd:78, o:70}
+  hard:  {p:97, g:88, gd:78, o:70},
+  hell:  {p:99, g:93, gd:85, o:76}
 };
-function judgeTiers(){ return JUDGE_TIERS[rubric.judge]||JUDGE_TIERS.normal; }
+const SPICE={
+  easy:  {emoji:"🥛", name:"순한맛", desc:"성공 경험 위주 — 처음이라면 여기부터"},
+  normal:{emoji:"🌶️", name:"보통맛", desc:"교과서대로 하면 GOOD"},
+  hard:  {emoji:"🔥", name:"매운맛", desc:"제대로 깊게 해야 인정"},
+  hell:  {emoji:"💀", name:"지옥맛", desc:"평행으로는 어림없다"}
+};
+const SPICE_ORDER=["easy","normal","hard","hell"];
+function spiceLabel(k){ const s=SPICE[k]||SPICE.normal; return s.emoji+" "+s.name; }
+/* 지금 어떤 눈금으로 판정할지.
+   공통 과제는 반마다 조건이 같아야 하므로 선생님이 정한 값으로 고정하고,
+   자율 실천과 결투는 학생이 고른 맛을 쓴다(점수에는 영향이 없어 골라도 공정하다). */
+let mySpice="normal";
+function activeLevel(){ return currentTask?(rubric.judge||"normal"):(mySpice||"normal"); }
+function judgeTiers(){ return JUDGE_TIERS[activeLevel()]||JUDGE_TIERS.normal; }
 let rubric={...RUBRIC_DEFAULT};
 const HR_DILIGENT_RISE=40;
 // 기록(rec) 하나가 성실 수행인지 한 곳에서 판정한다 — 통계·CSV·현황판이 모두 이 함수만 쓰도록 통일.
@@ -5148,7 +5258,7 @@ function saveAll(){
   if(!storageOK)return;
   try{
     const recs=records.map(({_row,...r})=>r);
-    localStorage.setItem(STORE_KEY,JSON.stringify({rosters,records:recs,totalPts,fbCfg:$("fbCfg").value,adminPw,assignments,seenBattles,myPlans,rubric,myLogs:myLogsLocal,myFinal:myFinalLocal}));
+    localStorage.setItem(STORE_KEY,JSON.stringify({rosters,records:recs,totalPts,fbCfg:$("fbCfg").value,adminPw,assignments,seenBattles,myPlans,rubric,mySpice,myLogs:myLogsLocal,myFinal:myFinalLocal}));
   }catch(e){}
 }
 // 기기 저장 여부 + Firebase 연결 여부를 한 줄로 합쳐 보여준다(이전엔 3곳에 흩어져 있어 헷갈렸음)
@@ -5180,11 +5290,13 @@ function loadAll(){
       if(Array.isArray(d.seenBattles))seenBattles=d.seenBattles;
       if(Array.isArray(d.myPlans))myPlans=d.myPlans;
       if(d.rubric)rubric={...RUBRIC_DEFAULT,...d.rubric};
+      if(d.mySpice)mySpice=d.mySpice;
       if(d.myLogs)myLogsLocal=d.myLogs;
       if(d.myFinal)myFinalLocal=d.myFinal;
     }
   }catch(e){}
   renderRubric();
+  setSpice(mySpice);
 }
 /* ---------- 채점 기준 설정 ---------- */
 // 채점 기준은 두 교사가 같은 값을 써야 하므로 서버에 함께 둔다.
@@ -5211,7 +5323,9 @@ function judgeHint(){
     +`<b style="color:var(--gold)">GREAT</b> ${f(T.g)}° · <b style="color:var(--rest)">GOOD</b> ${f(T.gd)}° · `
     +`<b style="color:#7A85E8">OK</b> ${f(T.o)}° · 그보다 얕으면 MISS`
     +`<br>교과서대로 <b>허벅지가 바닥과 평행(90°)</b>하게 앉으면 → <b style="color:var(--good)">${parTier}</b>`
-    +`<br><span style="color:var(--muted)">요령을 막는 조건(몸통 방향·이동량·좌우 대칭·최소 시간)은 난이도와 상관없이 늘 같습니다.</span>`;
+    +`<br><span style="color:var(--muted)">이 값은 <b>공통 과제</b>에만 적용됩니다. 자율 실천·결투는 학생이 직접 고릅니다.<br>`
+    +`판정 글자만 달라질 뿐 <b>종합 점수·정확도(%)는 어떤 맛이든 똑같습니다</b> — 깊이로만 매기기 때문입니다.<br>`
+    +`요령을 막는 조건(몸통 방향·이동량·좌우 대칭·최소 시간)도 맛과 상관없이 늘 같습니다.</span>`;
 }
 function renderRubric(){
   if(!$("rbHr"))return;
@@ -5254,6 +5368,7 @@ function normalizeRec(r){
     seq:r.seq||"",rounds:+r.rounds||0,acc:+r.acc||0,reps:String(r.reps||""),time:+r.time||0,int:+r.int||0,
     jP:+r.jP||0,jG:+r.jG||0,jGd:+r.jGd||0,jO:+r.jO||0,jB:+r.jB||0,hrPre:r.hrPre||"",hr:r.hr||"",zone:r.zone||"",
     hrGap:+r.hrGap||0,   // 운동 후 심박을 몇 초 만에 쟀는지 (늦게 잰 값은 낮게 나온다)
+    spice:r.spice||"", grade:r.grade||"",
     score:+r.score||0,pts:+r.pts||0,task:r.task||"",taskId:r.taskId||"",synced:true};
 }
 /* 배포용 기본 Firebase 설정 — 학생들은 아무 설정 없이 접속 즉시 서버에 연결됩니다. */
