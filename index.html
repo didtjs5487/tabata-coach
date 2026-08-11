@@ -1888,7 +1888,7 @@ function checkBattleAutoStart(){
   $("battleCdVs").textContent=`⚔️ vs ${currentBattle.vs}`;
   { const need=[];
     if(!parqPassed)need.push("건강체크");
-    if(pendingPreHr==null)need.push("운동 전 심박수");
+    if(!preHrOK())need.push("운동 전 심박수");
     $("battleCdMsg").textContent=need.length
       ? "⚠️ "+need.join(" · ")+"를 아직 안 했어요 — 지금 마치지 않으면 함께 출발하지 못합니다." : ""; }
   $("battleCdOverlay").style.display="flex";
@@ -1904,7 +1904,7 @@ function checkBattleAutoStart(){
     cancelBattleCd();
     if(running)return;
     if(!parqPassed){toast("건강체크를 마치고 [시작]을 눌러주세요","task","🩺");return;}
-    if(pendingPreHr==null){   // 심박을 안 쟀으면 자동 출발시키지 않는다
+    if(!preHrOK()){   // 심박을 안 쟀거나 잰 지 오래됐으면 자동 출발시키지 않는다
       toast("운동 전 심박수를 재고 [시작]을 눌러주세요","task","❤️");
       try{$("preStart").scrollIntoView({behavior:"smooth",block:"center"});}catch(e){}
       return;
@@ -2670,17 +2670,25 @@ function countPlanDone(){
   const p=myPlans.find(x=>x.id===currentPlanId);
   if(p){ p.n=(p.n||0)+1; p.last=todayStr(); saveAll(); }
 }
+/* 심박 칸은 세 곳(처음 그릴 때 · 심박 저장 직후 · 서버에서 바뀌었을 때)에서 그려진다.
+   같은 함수를 쓰지 않으면 서버 갱신이 ✅·⏱ 표시를 지워버리므로 한 곳에 모아 둔다. */
+function hrCellHTML(rec){
+  const dOk=isDiligent(rec);
+  const gap=+rec.hrGap||0;
+  return `${rec.hrPre||"–"}→${rec.hr||"–"}${dOk?" ✅":""}`
+    +(gap>120?`<span title="운동이 끝난 지 ${Math.floor(gap/60)}분 ${gap%60}초 뒤에 잰 값 — 실제보다 낮게 나옵니다" style="color:var(--gold)"> ⏱</span>`:"");
+}
+function hrCellColor(rec){ return rec.hr?(isDiligent(rec)?"var(--good)":"var(--bad)"):"var(--muted)"; }
 function renderRecRow(rec){
   const tb=$("recRows");
   if(tb.querySelector(".empty"))tb.innerHTML="";
   const tr=document.createElement("tr");
-  const dOk=isDiligent(rec);
   const taskCell=rec.task==="자율"?'<span style="color:var(--good)">🌱 자율</span>':rec.task?`<span style="color:var(--primary)">📋 ${rec.task}</span>`:"–";
   tr.innerHTML=`<td>${rec.date}</td><td>${rec.name}</td><td>${rec.cls}</td><td class="num">${taskCell}</td><td>${rec.seq}</td>
     <td class="num">${rec.rounds}</td><td class="num">${rec.acc}%</td><td class="num">${rec.reps}</td>
     <td class="num">${rec.time}초</td><td class="num">${rec.int}</td>
     <td class="num"><span style="color:#E24FD8">${rec.jP||0}</span>/<span style="color:var(--gold)">${rec.jG||0}</span>/<span style="color:var(--rest)">${rec.jGd||0}</span>/<span style="color:#7A85E8">${rec.jO||0}</span>/<span style="color:var(--bad)">${rec.jB||0}</span></td>
-    <td class="num hr-cell" style="color:${rec.hr?(dOk?"var(--good)":"var(--bad)"):"var(--muted)"}">${rec.hrPre||"–"}→${rec.hr||"–"}${dOk?" ✅":""}</td>
+    <td class="num hr-cell" style="color:${hrCellColor(rec)}">${hrCellHTML(rec)}</td>
     <td class="num" style="color:var(--work)">${rec.score}</td>
     <td class="num" style="color:var(--purple)">+${rec.pts}</td>`;
   tb.appendChild(tr);
@@ -2706,14 +2714,14 @@ function addRecord(s){
   saveAll();
   pushRecord(rec);
   submitBattleResult(rec);
-  pendingPreHr=null; $("preBadge").textContent=""; $("preManual").value="";
+  clearPreHr();   // 다음 운동은 심박을 다시 재야 한다 (세션마다 새 값)
   if(!currentTask)countPlanDone(); // 고른 자율 과제의 실천 횟수를 올린다(결투도 그 과제로 한 것이므로 포함)
   clearTask(); renderTasks();
 }
 $("csvBtn").addEventListener("click",()=>{
   if(!records.length){alert("저장할 기록이 없습니다.");return;}
-  const head="일시,이름,학반,운동구성,라운드,평균정확도(%),총반복수,수행시간(초),강도점수,퍼펙트,그레이트,굿,오케이,미스,운동전심박(BPM),운동후심박(BPM),심박강도판정,성실수행여부,종합점수,획득포인트,구분(과제명/자율)";
-  const rows=records.map(r=>[r.date,r.name,r.cls,r.seq,r.rounds,r.acc,`"${r.reps}"`,r.time,r.int,r.jP||0,r.jG||0,r.jGd||0,r.jO||0,r.jB||0,r.hrPre||"",r.hr,r.zone,(r.hr?(isDiligent(r)?"성실수행":"미달"):""),r.score,r.pts,`"${r.task||""}"`].join(","));
+  const head="일시,이름,학반,운동구성,라운드,평균정확도(%),총반복수,수행시간(초),강도점수,퍼펙트,그레이트,굿,오케이,미스,운동전심박(BPM),운동후심박(BPM),심박강도판정,성실수행여부,종합점수,획득포인트,구분(과제명/자율),운동후심박측정지연(초)";
+  const rows=records.map(r=>[r.date,r.name,r.cls,r.seq,r.rounds,r.acc,`"${r.reps}"`,r.time,r.int,r.jP||0,r.jG||0,r.jGd||0,r.jO||0,r.jB||0,r.hrPre||"",r.hr,r.zone,(r.hr?(isDiligent(r)?"성실수행":"미달"):""),r.score,r.pts,`"${r.task||""}"`,r.hrGap||""].join(","));
   const blob=new Blob(["\uFEFF"+head+"\n"+rows.join("\n")],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
   a.download=`타바타기록_${($("stuClass").value||"전체")}_${new Date().toISOString().slice(0,10)}.csv`;
@@ -3699,6 +3707,7 @@ const reflections={};                 // Firebase /reflections 미러 (교사가
 let myLogsLocal={};                   // 내가 쓴 수시 성찰 (이 기기에 보관 — 남의 것을 볼 수 없게 하려고)
 let myFinalLocal=null;                // 내 마무리 성찰
 let lastRec=null;                     // 방금 끝낸 세션 (수시 성찰을 이 기록에 붙인다)
+let sessionEndAt=0;                   // 그 세션이 끝난 시각 — 운동 후 심박을 언제 쟀는지 재는 기준
 const RF_QS=["운동 강도 돌아보기","잘한 점 / 배운 점","배운 개념 연결하기","부족했던 점","다음 실천 계획"];
 const RF_SELF=["성실하게 끝까지 참여했다","바른 자세로 운동했다","목표한 강도로 운동했다","다음 계획을 구체적으로 세웠다"];
 const SELF_LABEL={3:"잘함",2:"보통",1:"노력 필요"};
@@ -4347,7 +4356,7 @@ $("recImport").addEventListener("change",e=>{
       const c=parseCsvLine(lines[i]); if(c.length<16)continue;
       const rec=has5
         ?{date:c[0],name:c[1],cls:c[2],seq:c[3],rounds:+c[4]||0,acc:+c[5]||0,reps:c[6],time:+c[7]||0,
-          int:+c[8]||0,jP:+c[9]||0,jG:+c[10]||0,jGd:+c[11]||0,jO:+c[12]||0,jB:+c[13]||0,hrPre:c[14],hr:c[15],zone:c[16],diligent:c[17],score:+c[18]||0,pts:+c[19]||0,task:c[20]||"",taskId:""}
+          int:+c[8]||0,jP:+c[9]||0,jG:+c[10]||0,jGd:+c[11]||0,jO:+c[12]||0,jB:+c[13]||0,hrPre:c[14],hr:c[15],zone:c[16],diligent:c[17],score:+c[18]||0,pts:+c[19]||0,task:c[20]||"",hrGap:+c[21]||0,taskId:""}
         :hasDil
         ?{date:c[0],name:c[1],cls:c[2],seq:c[3],rounds:+c[4]||0,acc:+c[5]||0,reps:c[6],time:+c[7]||0,
           int:+c[8]||0,jG:+c[9]||0,jGd:+c[10]||0,jB:+c[11]||0,hrPre:c[12],hr:c[13],zone:c[14],diligent:c[15],score:+c[16]||0,pts:+c[17]||0,task:c[18]||"",taskId:""}
@@ -4377,8 +4386,7 @@ function needPostHr(){
   toast("운동 후 심박수를 재주세요 — 성실 수행 인정 기준입니다","task","❤️");
   let n=0;
   hrNeedTimer=setInterval(()=>{
-    const rec=records[records.length-1];
-    if(!rec||rec.hr){clearPostHrNeed();return;}
+    if(!lastRec||lastRec.hr){clearPostHrNeed();return;}
     if(++n>3){clearInterval(hrNeedTimer);hrNeedTimer=null;return;}
     toast("아직 운동 후 심박수를 안 쟀어요","task","❤️"); beep(660,.12);
   },30000);
@@ -4389,6 +4397,7 @@ function clearPostHrNeed(){
 }
 function finish(){
   stopAll();
+  sessionEndAt=Date.now();
   updatePresence(4);
   const s=computeScores();
   s.bonus=0;
@@ -4445,10 +4454,14 @@ async function start(opts){
   if(!auto&&!currentTask&&!currentBattle&&Object.keys(assignments).length){
     if(!confirm("🌱 자율 실천 모드로 시작합니다 (완료 시 가산점 +20%).\n\n📋 선생님 과제로 수행하려면 [취소]를 누르고 운동 설계에서 과제 카드를 선택하세요.\n\n자율 실천으로 시작할까요?"))return;
   }
-  // 운동 전 심박은 반드시 재야 한다 — 성실 수행 판정의 기준이기 때문이다
-  if(pendingPreHr==null){
+  // 운동 전 심박은 반드시 재야 한다 — 성실 수행 판정의 기준이기 때문이다.
+  // 잰 지 15분이 지난 값도 '안 잰 것'으로 본다(그 사이 몸 상태가 달라져 기준이 되지 못한다).
+  const preWasStale=(pendingPreHr!=null&&!preHrOK());
+  if(!preHrOK()){
     toast("먼저 STEP 1에서 운동 전 심박수를 재주세요","task","❤️");
-    if(!auto)alert("운동 전 심박수를 먼저 측정해 주세요. STEP 1에서 카메라 측정·맥박 세기·직접 입력 중 하나로 재면 시작할 수 있습니다.");
+    if(!auto)alert(preWasStale
+      ?"운동 전 심박수를 잰 지 15분이 지났습니다.\n지금 몸 상태와 달라 기준이 되지 못하므로 STEP 1에서 다시 재주세요."
+      :"운동 전 심박수를 먼저 측정해 주세요. STEP 1에서 카메라 측정·맥박 세기·직접 입력 중 하나로 재면 시작할 수 있습니다.");
     try{$("preStart").scrollIntoView({behavior:"smooth",block:"center"});}catch(e){}
     $("startBtn").disabled=false;
     return;
@@ -4598,7 +4611,6 @@ function showHr(bpm){
   const {pct,zone}=hrZoneOf(bpm,STUDENT_AGE); // 중·고 체육수업 기준 나이로 고정(입력칸 제거)
   // 미리보기도 최종 저장과 같은 기준으로 판정: 운동 전 심박은 방금 세션의 기록(hrPre)을 우선 쓰고,
   // 없으면 아직 정리 전인 pendingPreHr를 쓴다(둘 다 없으면 절대값만 적용).
-  const lastRec=records[records.length-1];
   const preForPreview=(lastRec&&lastRec.hrPre)?lastRec.hrPre:pendingPreHr;
   const diligent=isDiligent({hr:bpm,hrPre:preForPreview});
   $("hrBpm").textContent=bpm; $("hrPct").textContent=pct+"%";
@@ -4610,24 +4622,38 @@ function showHr(bpm){
 $("hrSave").addEventListener("click",()=>{
   const bpm=+$("hrManual").value||parseInt($("hrBpm").textContent)||0;
   if(!bpm){alert("먼저 카메라로 측정하거나 BPM을 직접 입력하세요.");return;}
-  if(!records.length){alert("연결할 세션 기록이 없습니다. 운동을 먼저 완료하세요.");return;}
+  // 심박→운동→심박 순서를 지키기 위해, 운동 후 심박은 '방금 마친 세션'에만 붙인다.
+  // 예전 기록(어제 것)에 오늘 심박이 덮어써지던 문제를 막는다.
+  if(running){alert("운동이 진행 중입니다. 운동을 마친 뒤에 심박수를 재주세요.");return;}
+  if(!lastRec){
+    alert("아직 이번에 마친 운동이 없습니다.\n\n① STEP 1 운동 전 심박수 → ② STEP 2 운동 → ③ STEP 3 운동 후 심박수\n순서로 진행해 주세요.");
+    try{$("preStart").scrollIntoView({behavior:"smooth",block:"center"});}catch(e){}
+    return;
+  }
+  if(lastRec.hr){
+    if(!confirm(`이 운동의 심박수는 이미 ${lastRec.hr} BPM으로 저장되어 있습니다.\n${bpm} BPM으로 바꿀까요?`))return;
+  }
   const {pct,zone}=showHr(bpm);
-  const rec=records[records.length-1];
+  const rec=lastRec;
   rec.hr=bpm;
+  // 운동이 끝난 지 얼마 만에 쟀는지 남긴다 — 심박은 빠르게 회복되므로 늦게 잰 값은 낮게 나온다
+  const gap=sessionEndAt?Math.round((Date.now()-sessionEndAt)/1000):0;
+  rec.hrGap=gap;
   // 성실 수행은 이 기록의 운동 전(hrPre)·후(hr) 값으로 판정한다(showHr의 라이브 미리보기와 달리 확정 저장용).
   const diligent=isDiligent(rec);
   rec.zone=`${zone}(${pct}%)`; rec.diligent=diligent?"성실수행":"미달";
-  const cell=rec._row.querySelector(".hr-cell");
-  cell.textContent=`${rec.hrPre||"–"}→${bpm}${diligent?" ✅":""}`;
-  cell.style.color=diligent?"var(--good)":"var(--bad)";
+  const cell=rec._row&&rec._row.querySelector(".hr-cell");
+  if(cell){ cell.innerHTML=hrCellHTML(rec); cell.style.color=hrCellColor(rec); }
   // 배틀 기록이면 성실수행 여부를 배틀에도 기록 — 운동 안 하고 이긴 경우 포인트를 막는다
   if(rec.battleId&&fdb&&fmod)
     fmod.update(fmod.ref(fdb,`battles/${rec.battleId}/results/${rec.battleRole}`),{dil:diligent}).catch(()=>{});
   renderStats(); saveAll(); pushRecord(rec); updatePresence(5); handleBattleEvents();
   const rise=(+rec.hrPre)?bpm-(+rec.hrPre):null;
-  $("hrMsg").innerHTML=diligent
+  // 2분이 넘으면 심박이 이미 내려간 뒤라 값이 실제 강도보다 낮다 — 학생에게도 교사에게도 알린다
+  const lateTxt=gap>120?`<br>⏱ <b style="color:var(--gold)">운동이 끝난 지 ${Math.floor(gap/60)}분 ${gap%60}초 뒤</b>에 잰 값입니다. 심박이 이미 내려가 실제 강도보다 낮게 나옵니다 — 다음엔 운동 직후 바로 재주세요.`:"";
+  $("hrMsg").innerHTML=(diligent
     ?`✅ <b style="color:var(--good)">성실 수행으로 인정</b>됩니다 (심박 ${bpm}${rise!=null?`, 운동 전 대비 +${rise}`:""}). 기록·CSV에 저장되었습니다.`
-    :`성실 수행 기준에 미달했습니다 (심박 ${bpm}${rise!=null?`, 운동 전 대비 +${rise}`:""}). 심박 120 이상 또는 운동 전보다 40 이상 올라야 인정됩니다. 다음엔 조금 더 강도를 올려보세요. (기록은 저장됨)`;
+    :`성실 수행 기준에 미달했습니다 (심박 ${bpm}${rise!=null?`, 운동 전 대비 +${rise}`:""}). 심박 120 이상 또는 운동 전보다 40 이상 올라야 인정됩니다. 다음엔 조금 더 강도를 올려보세요. (기록은 저장됨)`)+lateTxt;
   $("hrLive").style.display="block";
   clearPostHrNeed();          // 다 쟀으니 안내를 내린다
   // 성찰이 화면 아래에 있어 그냥 지나치기 쉬웠다 — 심박을 재면 바로 성찰을 띄운다
@@ -4920,10 +4946,24 @@ $("hrStart").addEventListener("click",()=>{
 });
 
 /* ---------- 운동 전 심박수 ---------- */
-let pendingPreHr=null;
+let pendingPreHr=null, preHrAt=0;
+const PRE_HR_TTL=15*60*1000;   // 잰 지 15분이 지나면 '안정 시 심박'으로 볼 수 없어 다시 재게 한다
+/* 운동 전 심박이 아직 유효한지 확인한다. 오래됐으면 지워서 '안 잰 것'과 같게 만든다. */
+function preHrOK(){
+  if(pendingPreHr==null)return false;
+  if(preHrAt&&Date.now()-preHrAt>PRE_HR_TTL){ clearPreHr(); return false; }
+  return true;
+}
+function clearPreHr(){
+  pendingPreHr=null; preHrAt=0;
+  $("preBadge").textContent=""; $("preManual").value="";
+}
 function setPreHr(bpm){
-  pendingPreHr=bpm;
+  pendingPreHr=bpm; preHrAt=Date.now();
   $("preBadge").innerHTML=`✔ 운동 전 <b style="color:var(--rest)">${bpm} BPM</b> 저장됨 — 아래 <b>STEP 2</b>에서 시작하세요`;
+  // 직전 운동이 끝난 지 얼마 안 됐으면 심박이 아직 높아 '안정 시' 값이 아니다
+  if(sessionEndAt&&Date.now()-sessionEndAt<3*60*1000)
+    $("preBadge").innerHTML+=`<br><span style="color:var(--gold)">⏱ 방금 운동을 마쳐 심박이 아직 높습니다 — 2~3분 쉬고 다시 재면 더 정확합니다.</span>`;
   updatePresence(2);
 }
 $("preStart").addEventListener("click",()=>{
@@ -5033,6 +5073,7 @@ function normalizeRec(r){
   return {id:r.id||"",date:String(r.date||""),name:r.name,cls:String(r.cls||""),
     seq:r.seq||"",rounds:+r.rounds||0,acc:+r.acc||0,reps:String(r.reps||""),time:+r.time||0,int:+r.int||0,
     jP:+r.jP||0,jG:+r.jG||0,jGd:+r.jGd||0,jO:+r.jO||0,jB:+r.jB||0,hrPre:r.hrPre||"",hr:r.hr||"",zone:r.zone||"",
+    hrGap:+r.hrGap||0,   // 운동 후 심박을 몇 초 만에 쟀는지 (늦게 잰 값은 낮게 나온다)
     score:+r.score||0,pts:+r.pts||0,task:r.task||"",taskId:r.taskId||"",synced:true};
 }
 /* 배포용 기본 Firebase 설정 — 학생들은 아무 설정 없이 접속 즉시 서버에 연결됩니다. */
@@ -5232,7 +5273,7 @@ function attachFbListeners(){
     const row=loc._row;
     Object.assign(loc,normalizeRec(r)); loc._row=row;
     if(row){const cell=row.querySelector(".hr-cell");
-      if(cell){cell.textContent=`${loc.hrPre||"–"}→${loc.hr||"–"}`; if(loc.hr)cell.style.color="var(--work)";}}
+      if(cell){cell.innerHTML=hrCellHTML(loc); cell.style.color=hrCellColor(loc);}}
     renderStats(); saveAll();
   });
   let taskSyncedOnce=false;
