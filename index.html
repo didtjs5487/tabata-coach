@@ -283,7 +283,9 @@
   .p-rest{color:var(--rest); box-shadow:inset 0 0 0 2px var(--rest);}
   .p-ex{color:var(--ink);}
   /* 남은 시간은 좌측 상단에 둔다. 가운데에 크게 띄우면 정작 봐야 할 자세를 가린다. */
-  .timer{position:absolute; top:56px; left:14px; text-align:left; align-self:auto;
+  /* 휴식 중에는 다음 동작 안내(.next-preview)가 화면 전체를 덮어 시간·라운드가 가려졌다.
+     그 위로 올려서 운동 중이든 휴식 중이든 같은 자리에서 계속 보이게 한다. */
+  .timer{position:absolute; top:56px; left:14px; text-align:left; align-self:auto; z-index:7;
     background:rgba(0,0,0,.5); border-radius:16px; padding:2px 18px 6px; backdrop-filter:blur(3px);}
   .timer .big{font-family:"Barlow Condensed"; font-weight:700; font-size:min(20vw,118px); line-height:.92;}
   .timer .rnd{font-family:"Barlow Condensed"; font-weight:700; letter-spacing:1px;
@@ -506,7 +508,7 @@
           <button class="pick-chip" data-preset="cardio">유산소 위주</button>
         </div>
       </div>
-      <div class="hint" style="margin-bottom:8px">직접 골라 순서대로 추가할 수도 있습니다. 라운드 수만큼 이 목록을 처음부터 반복합니다.</div>
+      <div class="hint" style="margin-bottom:8px">직접 골라 순서대로 추가할 수도 있습니다. 아래에서 고른 배수(×1·×2·×3)만큼 이 목록을 처음부터 되풀이합니다.</div>
       <div class="row" style="margin-bottom:0">
         <div class="field"><label>운동 추가</label>
           <select id="addEx">
@@ -539,7 +541,17 @@
       <div class="row" style="margin-top:10px;margin-bottom:0;align-items:flex-end">
         <div class="field"><label>운동(초)</label><input type="number" id="workSec" value="20" min="10" max="60"></div>
         <div class="field"><label>휴식(초)</label><input type="number" id="restSec" value="10" min="5" max="60"></div>
-        <div class="field"><label>라운드</label><input type="number" id="rounds" value="8" min="2" max="16"></div>
+        <!-- '라운드'라는 말을 어려워하는 학생이 많아, 고른 동작을 몇 번씩 되풀이할지로 고르게 한다.
+             실제 라운드 수(=동작 수 × 배수)는 숨은 #rounds에 그대로 담아 기존 계산이 그대로 돌아가게 둔다. -->
+        <div class="field" style="flex:1;min-width:220px">
+          <label>고른 동작을 몇 번씩?</label>
+          <div class="pc-opts" id="repeatPick">
+            <button type="button" data-x="1">×1</button>
+            <button type="button" data-x="2">×2</button>
+            <button type="button" data-x="3">×3</button>
+          </div>
+          <input type="hidden" id="rounds" value="8">
+        </div>
         <input type="hidden" id="difficulty" value="1">
       </div>
       <div class="cfg-fixed" id="cfgFixed" style="margin-top:10px"></div>
@@ -610,7 +622,7 @@
         </div>
         <div class="timer" id="timerBox">
           <div class="big num" id="timerBig">0</div>
-          <div class="rnd" id="roundBig">라운드 <b>1</b>/8</div>
+          <div class="rnd" id="roundBig"><b>1</b>번째 / 8번</div>
         </div>
         <div class="fb" id="fb">자세를 잡아주세요</div>
         <div class="side-tip" id="sideTip" style="display:none">📐 <b>몸을 옆으로 돌려 주세요</b><span>카메라가 옆모습을 봐야 동작을 셀 수 있어요</span></div>
@@ -688,8 +700,8 @@
       <div class="gain"><div class="av" id="gainAv">🔥</div>
         <div><div class="pts num" id="gainPts">+0 P</div><div class="hint" id="gainMsg"></div></div>
       </div>
-      <h3 style="margin-top:18px">라운드별 상세</h3>
-      <table><thead><tr><th>라운드</th><th>운동</th><th>반복/유지</th><th>정확도</th><th>판정 (퍼·그·굿·오·미)</th></tr></thead>
+      <h3 style="margin-top:18px">동작별 상세</h3>
+      <table><thead><tr><th>번째</th><th>운동</th><th>반복/유지</th><th>정확도</th><th>판정 (퍼·그·굿·오·미)</th></tr></thead>
         <tbody id="roundRows"></tbody></table>
 
       <div class="step-box" id="reflectBox" style="margin-top:18px">
@@ -928,7 +940,18 @@
         <label style="display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);align-self:flex-end;padding-bottom:10px">
           <input type="checkbox" id="rbRise"> ② 운동 전 대비 +40도 인정</label>
       </div>
-      <div class="row" style="margin-top:8px">
+      <div class="row" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+        <div class="field" style="flex:1;min-width:220px">
+          <label>동작 판정 난이도 (PERFECT·GREAT가 뜨는 기준)</label>
+          <select id="rbJudge">
+            <option value="easy">쉬움 — 성공 경험 위주 (첫 차시 권장)</option>
+            <option value="normal">보통 — 기본값</option>
+            <option value="hard">어려움 — 자세를 엄격하게</option>
+          </select>
+        </div>
+      </div>
+      <div class="hint" id="rbJudgeHint" style="margin-top:6px"></div>
+      <div class="row" style="margin-top:10px">
         <button class="btn btn-teal btn-sm" id="rbSave">기준 저장</button>
         <button class="btn btn-stop btn-sm" id="rbReset">계획서 기본값으로</button>
         <span class="hint" id="rbMsg"></span>
@@ -1154,8 +1177,8 @@
         </div></div>
 
       <div class="pc-q"><label>③-2 전체 구성과 시간은 왜 이렇게 정했나요?</label>
-        <div class="hint" style="margin-bottom:4px">동작 순서, <b>운동·휴식 시간, 라운드 수</b>를 그렇게 잡은 까닭을.</div>
-        <textarea id="pcReason" rows="3" placeholder="예: 힘든 동작과 덜 힘든 동작을 번갈아 놓았다. 오래 이어가는 게 중요해서 라운드를 10으로 늘렸고, 대신 힘드니까 휴식을 15초로 잡았다."></textarea></div>
+        <div class="hint" style="margin-bottom:4px">동작 순서, <b>운동·휴식 시간, 되풀이 횟수</b>를 그렇게 잡은 까닭을.</div>
+        <textarea id="pcReason" rows="3" placeholder="예: 힘든 동작과 덜 힘든 동작을 번갈아 놓았다. 오래 이어가는 게 중요해서 ×3으로 늘렸고, 대신 힘드니까 휴식을 15초로 잡았다."></textarea></div>
 
       <div class="pc-q"><label>④ 아프거나 조심해야 할 부위가 있나요?</label>
         <input type="text" id="pcCareText" placeholder="예: 왼쪽 무릎 / 없으면 '없음'" style="width:100%">
@@ -1441,7 +1464,7 @@ function restoreTaskCfg(){
   const a=assignments[currentTask.id]; if(!a){clearTask();return;}
   seq=[...a.seq]; renderSeq();
   $("workSec").value=a.work; $("restSec").value=a.rest;
-  $("rounds").value=a.rounds; $("difficulty").value=String(a.diff);
+  $("rounds").value=a.rounds; $("difficulty").value=String(a.diff); syncRepeatChips();
 }
 function confirmTaskBreak(){
   if(currentBattle){
@@ -1462,7 +1485,7 @@ function applyAssignment(id){
   const a=assignments[id]; if(!a)return;
   seq=[...a.seq]; renderSeq();
   $("workSec").value=a.work; $("restSec").value=a.rest;
-  $("rounds").value=a.rounds; $("difficulty").value=String(a.diff);
+  $("rounds").value=a.rounds; $("difficulty").value=String(a.diff); syncRepeatChips();
   currentBattle=null; currentPlanId=null; // 공통과제는 자율 과제 실천 횟수에 넣지 않는다
   currentTask={id,title:a.title}; updateModeBadge();
   goPage("pgWork"); showWorkSteps();
@@ -1551,7 +1574,7 @@ function renderTasks(){
       if(title2)b.title=title2; b.addEventListener("click",fn); btns.appendChild(b); return b; }};
   };
   const cfgLine=(sq,w,r,n)=>`${sq.map(k=>EXNAME[k]||k).join(" → ")}<br>
-    <span style="color:var(--muted)">${w}초 운동 · ${r}초 휴식 × ${n}라운드 · 총 ${Math.round((+w+ +r)*n/60*10)/10}분</span>`;
+    <span style="color:var(--muted)">${w}초 운동 · ${r}초 휴식 · 모두 ${n}번 · 총 ${Math.round((+w+ +r)*n/60*10)/10}분</span>`;
 
   group("📋 공통과제 — 선생님이 낸 과제");
   if(mine.length){
@@ -1820,7 +1843,7 @@ function sameP(a,b){return a&&b&&a.name===b.name&&String(a.cls)===String(b.cls);
 function applyCfg(cfg){
   seq=[...cfg.seq]; renderSeq();
   $("workSec").value=cfg.work; $("restSec").value=cfg.rest;
-  $("rounds").value=cfg.rounds; $("difficulty").value=String(cfg.diff);
+  $("rounds").value=cfg.rounds; $("difficulty").value=String(cfg.diff); syncRepeatChips();
 }
 function refreshBattleUI(){
   updateBCfgHint();
@@ -2273,9 +2296,10 @@ function updateJCount(){
   const el=$("jCount"); el.style.display="block";
   el.innerHTML=`<span class="jp">P ${roundJ.p}</span>·<span class="jg">G ${roundJ.g}</span>·<span class="jgd">GD ${roundJ.gd}</span>·<span class="jo">OK ${roundJ.o}</span>·<span class="jb">M ${roundJ.b}</span>`;
 }
-/* 5단계 판정: PERFECT ≥95 / GREAT ≥88 / GOOD ≥78 / OK ≥68 / MISS <68 */
+/* 5단계 판정. 눈금은 선생님이 학습센터에서 쉬움·보통·어려움으로 바꿀 수 있다(JUDGE_TIERS). */
 function judge(acc){
-  const tier=acc>=95?"perfect":acc>=88?"great":acc>=78?"good":acc>=68?"ok":"miss";
+  const T=judgeTiers();
+  const tier=acc>=T.p?"perfect":acc>=T.g?"great":acc>=T.gd?"good":acc>=T.o?"ok":"miss";
   if(tier==="perfect"){roundJ.p++; beep(1568,.09,.2); setTimeout(()=>beep(2093,.08,.15),70);}
   else if(tier==="great"){roundJ.g++; beep(1318,.09,.18);}
   else if(tier==="good"){roundJ.gd++; beep(988,.09,.15);}
@@ -2287,12 +2311,17 @@ function judge(acc){
   void el.offsetWidth; el.classList.add("show");
   updateJCount();
 }
-function repAccuracy(min,def){ // depth-based 0~100 (5단계에 맞춰 기준 상향)
+/* 깊이 점수(55~100).
+   예전 곡선은 기준각보다 조금만 깊어도 곧바로 100이 되어, 대충 앉아도 PERFECT가 떴다.
+   또 눈금이 좁아 난이도를 바꿔도 요구 각도가 몇 도밖에 안 달라졌다.
+   이제 [기준각-span, 접힘각] 구간 전체에 100~55를 고르게 펴서
+   깊이 차이가 점수에 드러나고 난이도 조절도 의미를 갖게 한다. */
+function repAccuracy(min,def){
   const span=def.down-def.perfect;
-  if(min<=def.perfect-span*0.25) return 100;                     // 기준각보다 확실히 깊게 → PERFECT급
-  if(min<=def.perfect) return Math.round(93+7*(def.perfect-min)/(span*0.25)); // 93~100
-  if(min>=def.down) return 55;
-  return Math.round(93-38*(min-def.perfect)/span);               // 93 → 55
+  const full=def.perfect-span;      // 이보다 깊으면 만점
+  if(min<=full)return 100;
+  if(min>=def.down)return 55;
+  return Math.round(100-45*(min-full)/(def.down-full));
 }
 function procRep(lm,def){
   const {ang,vis}=bestSide(lm,def.joints);
@@ -2641,9 +2670,10 @@ function setUI(){
   $("timerBox").className="timer "+(phase==="work"?"work":"rest");
   $("phasePill").className="pill "+(phase==="work"?"p-work":"p-rest");
   $("phasePill").textContent=phase==="work"?"운동":phase==="rest"?"휴식":"준비";
-  // 라운드는 남은 시간 바로 아래에 크게 띄운다 (위쪽 작은 칩은 잘 안 보여 없앴다)
+  // 진행 상황은 남은 시간 바로 아래에 크게 띄운다 (위쪽 작은 칩은 잘 안 보여 없앴다).
+  // '라운드'라는 말을 어려워하는 학생이 있어 '몇 번째 / 모두 몇 번'으로 쓴다.
   const rn=Math.min(roundIdx+1,totalRounds);
-  $("roundBig").innerHTML=`라운드 <b>${rn}</b>/${totalRounds}`;
+  $("roundBig").innerHTML=`<b>${rn}</b>번째 / ${totalRounds}번`;
   $("exPill").textContent=EXNAME[curEx];
   $("repL").textContent=EX[curEx].type==="hold"?"유지(초)":"횟수";
   $("timerBig").textContent=Math.max(timeLeft,0);   // 첫 휴식에서 0으로 보이던 문제
@@ -2762,7 +2792,7 @@ function removePlanRemote(id){
 }
 function applyPlan(p){
   seq=[...p.seq];
-  $("workSec").value=p.work; $("restSec").value=p.rest; $("rounds").value=p.rounds;
+  $("workSec").value=p.work; $("restSec").value=p.rest; $("rounds").value=p.rounds; syncRepeatChips();
   renderSeq();
 }
 // 수행을 마치면 그 과제의 실천 횟수를 올린다
@@ -3307,14 +3337,27 @@ let pcGoal="", pcLevel="";
 // 고정된 4분 구성을 보여 준다. 공통과제·배틀이 다른 설정을 적용하면 그 값을 그대로 비춘다.
 // 라운드는 '고른 동작을 몇 바퀴 도는가'이므로 동작 수와 따로 놀면 안 된다.
 // 최소 한 바퀴(=동작 수), 최대 세 바퀴로 묶는다.
-function clampRounds(){
-  const el=$("rounds"); if(!el||!seq.length)return;
-  const lo=seq.length, hi=seq.length*3;
-  el.min=lo; el.max=hi;
-  const v=+el.value||lo;
-  if(v<lo)el.value=lo; else if(v>hi)el.value=hi;
-  else if(v%seq.length!==0)el.value=Math.round(v/seq.length)*seq.length||lo;  // 바퀴 단위로 맞춘다
+/* 라운드 수는 '고른 동작 수 × 배수(1~3)'로만 정해진다.
+   학생은 ×1·×2·×3만 고르고, 실제 라운드 수는 여기서 계산해 숨은 #rounds에 넣는다. */
+function repeatX(){
+  const el=$("rounds");
+  if(!el||!seq.length)return 1;
+  return Math.min(3,Math.max(1,Math.round((+el.value||seq.length)/seq.length)));
 }
+function setRepeat(x){
+  const el=$("rounds"); if(!el)return;
+  el.value=(seq.length||1)*Math.min(3,Math.max(1,x|0));
+  syncRepeatChips();
+}
+/* 값은 그대로 두고 ×1·×2·×3 버튼의 선택 표시만 맞춘다.
+   (선생님 과제나 저장된 계획서는 동작 수의 배수가 아닌 라운드 수를 담고 있을 수 있어
+    값을 함부로 바꾸면 과제 조건이 달라진다) */
+function syncRepeatChips(){
+  const box=$("repeatPick"); if(!box)return;
+  const n=repeatX();
+  [...box.querySelectorAll("button")].forEach(b=>b.classList.toggle("on",+b.dataset.x===n));
+}
+function clampRounds(){ setRepeat(repeatX()); }   // 동작 수가 바뀌면 라운드 수도 따라 바뀐다
 function renderCfgFixed(){
   const box=$("cfgFixed"); if(!box)return;
   // 초기화 중에도 불리므로 위쪽 상수를 참조하지 않고 숫자를 직접 쓴다
@@ -3324,8 +3367,9 @@ function renderCfgFixed(){
   const lack=[];
   if(seq.length<4)lack.push(`동작 ${4-seq.length}개 더`);
   if((w+r)*n<240)lack.push("시간 부족");
-  box.innerHTML=`⏱️ <b>운동 ${seq.length}동작 · ${n}라운드 · 총 ${min}분</b>`
-    +`<span>${w}초 운동 / ${r}초 휴식</span>`
+  const x=seq.length?Math.round(n/seq.length):1;
+  box.innerHTML=`⏱️ <b>${seq.length}동작 ×${x} = 모두 ${n}번 · 총 ${min}분</b>`
+    +`<span>${w}초 운동 / ${r}초 휴식 — 고른 동작을 순서대로 ${x}바퀴 돕니다</span>`
     +(lack.length
       ? `<span style="color:var(--gold)">최소 <b>4동작 · 4분</b>은 채워 주세요 — ${lack.join(", ")}</span>`
       : `<span style="color:var(--good)">최소 기준(4동작 · 4분)을 채웠습니다 ✔</span>`);
@@ -3340,8 +3384,10 @@ function bindPcChips(id){
 }
 bindPcChips("pcGoal"); bindPcChips("pcLevel");
 ["workSec","restSec"].forEach(id=>$(id).addEventListener("input",renderCfgFixed));
-$("rounds").addEventListener("change",()=>{ clampRounds(); renderCfgFixed(); });
-$("rounds").addEventListener("input",renderCfgFixed);
+if($("repeatPick"))$("repeatPick").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b)return;
+  setRepeat(+b.dataset.x); renderCfgFixed();
+});
 
 /* ---------- 📝 계획서 쓰기·제출 ----------
    운동을 만드는 일과 계획서를 쓰는 일을 떼어 놓는다.
@@ -4339,7 +4385,7 @@ function renderMineSessions(){
         <span class="tc-meta">${r.seq||""} · 종합 <b>${r.score}</b>점 · 정확도 ${r.acc}%</span></span>
       <span class="arw">▾</span>`;
     const body=document.createElement("div"); body.className="tc-body";
-    body.innerHTML=`<b>${r.task||"자율"}</b> · ${r.rounds}라운드<br>
+    body.innerHTML=`<b>${r.task||"자율"}</b> · 모두 ${r.rounds}번<br>
       반복 ${r.reps||"–"} · 유효 수행 ${r.time||"–"}초 · 강도 ${r.int||"–"}<br>
       심박 ${r.hrPre||"–"} → ${r.hr||"–"}　·　획득 ${r.pts||0}P<br>
       판정(퍼·그·굿·오·미) ${judgeLine(r)}`;
@@ -4689,8 +4735,22 @@ const RUBRIC_DEFAULT={
   acc:80,        // 항목3 평균 정확도(%) 합격선
   selfN:5,       // 항목4 질적 조건을 갖춘 자율 실천 횟수
   gain:20,       // 항목5 남은 향상 여지 대비 채운 비율(%)
-  keep:85        // 항목5 처음부터 이 점수 이상이면 '유지'도 향상으로 인정
+  keep:85,       // 항목5 처음부터 이 점수 이상이면 '유지'도 향상으로 인정
+  judge:"normal" // 동작 판정 난이도 — 아래 JUDGE_TIERS 참고
 };
+/* 판정 난이도.
+   '동작을 했는가'(몸통 방향·이동량·좌우 대칭·최소 시간)는 요령을 막는 장치라 난이도와 무관하게 늘 같고,
+   여기서 바꾸는 것은 '얼마나 잘했는가'의 눈금뿐이다.
+   너무 후하면 아무렇게나 해도 PERFECT라 재미가 없고, 너무 박하면 열심히 해도 MISS라 금방 포기한다.
+   첫 차시는 쉬움으로 성공 경험을 주고, 익숙해지면 보통·어려움으로 올리는 쪽을 권한다. */
+/* 눈금은 '교과서대로 한 동작'(스쿼트 기준 허벅지가 바닥과 평행 = 무릎 90°)이
+   어느 판정을 받는지로 맞췄다. 쉬움 GREAT · 보통 GOOD · 어려움 OK. */
+const JUDGE_TIERS={
+  easy:  {p:85, g:70, gd:62, o:56},
+  normal:{p:93, g:82, gd:70, o:60},
+  hard:  {p:97, g:88, gd:78, o:70}
+};
+function judgeTiers(){ return JUDGE_TIERS[rubric.judge]||JUDGE_TIERS.normal; }
 let rubric={...RUBRIC_DEFAULT};
 const HR_DILIGENT_RISE=40;
 // 기록(rec) 하나가 성실 수행인지 한 곳에서 판정한다 — 통계·CSV·현황판이 모두 이 함수만 쓰도록 통일.
@@ -5137,18 +5197,37 @@ function pushRubric(){
     .then(()=>{ if(msg)msg.innerHTML='<b style="color:var(--good)">저장했습니다 — 다른 기기에도 같이 적용됩니다.</b>'; })
     .catch(e=>{ if(msg)msg.innerHTML='<span class="err">이 기기에만 저장됨 — Firebase 규칙에 <b>rubric</b>을 추가하면 기기끼리 맞춰집니다.</span>'; });
 }
+/* 고른 난이도가 실제로 어떤 뜻인지 스쿼트 무릎 각도로 환산해 보여준다.
+   숫자만 보면 감이 안 오지만 "몇 도까지 앉아야 PERFECT"인지는 바로 와닿는다. */
+function judgeHint(){
+  const el=$("rbJudgeHint"); if(!el)return;
+  const T=JUDGE_TIERS[$("rbJudge").value]||JUDGE_TIERS.normal;
+  const d=EX.squat, full=d.perfect-(d.down-d.perfect);
+  // repAccuracy를 거꾸로 풀어 그 판정을 받으려면 몇 도까지 앉아야 하는지 구한다
+  const f=a=>Math.round(full+(100-a)*(d.down-full)/45);
+  const par=repAccuracy(90,d);
+  const parTier=par>=T.p?"PERFECT":par>=T.g?"GREAT":par>=T.gd?"GOOD":par>=T.o?"OK":"MISS";
+  el.innerHTML=`스쿼트 기준 — <b style="color:#E24FD8">PERFECT</b> 무릎 ${f(T.p)}° 이하 · `
+    +`<b style="color:var(--gold)">GREAT</b> ${f(T.g)}° · <b style="color:var(--rest)">GOOD</b> ${f(T.gd)}° · `
+    +`<b style="color:#7A85E8">OK</b> ${f(T.o)}° · 그보다 얕으면 MISS`
+    +`<br>교과서대로 <b>허벅지가 바닥과 평행(90°)</b>하게 앉으면 → <b style="color:var(--good)">${parTier}</b>`
+    +`<br><span style="color:var(--muted)">요령을 막는 조건(몸통 방향·이동량·좌우 대칭·최소 시간)은 난이도와 상관없이 늘 같습니다.</span>`;
+}
 function renderRubric(){
   if(!$("rbHr"))return;
   $("rbHr").value=rubric.hr; $("rbHrRate").value=rubric.hrRate;
   $("rbDone").value=rubric.doneRate; $("rbAcc").value=rubric.acc;
   $("rbSelf").value=rubric.selfN; $("rbGain").value=rubric.gain;
   $("rbKeep").value=rubric.keep; $("rbRise").checked=!!rubric.useRise;
+  if($("rbJudge")){ $("rbJudge").value=rubric.judge||"normal"; judgeHint(); }
 }
+if($("rbJudge"))$("rbJudge").addEventListener("change",judgeHint);
 if($("rbSave"))$("rbSave").addEventListener("click",()=>{
   rubric={hr:+$("rbHr").value||130, hrRate:+$("rbHrRate").value||0,
     doneRate:+$("rbDone").value||0, acc:+$("rbAcc").value||0,
     selfN:+$("rbSelf").value||0, gain:+$("rbGain").value||0,
-    keep:+$("rbKeep").value||85, useRise:$("rbRise").checked, rise:40};
+    keep:+$("rbKeep").value||85, useRise:$("rbRise").checked, rise:40,
+    judge:$("rbJudge")?$("rbJudge").value:"normal"};
   saveAll(); renderStats(); pushRubric();
 });
 if($("rbReset"))$("rbReset").addEventListener("click",()=>{
