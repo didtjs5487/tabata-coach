@@ -283,9 +283,12 @@
   .p-rest{color:var(--rest); box-shadow:inset 0 0 0 2px var(--rest);}
   .p-ex{color:var(--ink);}
   /* 남은 시간은 좌측 상단에 둔다. 가운데에 크게 띄우면 정작 봐야 할 자세를 가린다. */
-  .timer{position:absolute; top:52px; left:14px; text-align:left; align-self:auto;
-    background:rgba(0,0,0,.42); border-radius:14px; padding:2px 14px 4px; backdrop-filter:blur(3px);}
-  .timer .big{font-family:"Barlow Condensed"; font-weight:700; font-size:min(13vw,76px); line-height:1;}
+  .timer{position:absolute; top:56px; left:14px; text-align:left; align-self:auto;
+    background:rgba(0,0,0,.5); border-radius:16px; padding:2px 18px 6px; backdrop-filter:blur(3px);}
+  .timer .big{font-family:"Barlow Condensed"; font-weight:700; font-size:min(20vw,118px); line-height:.92;}
+  .timer .rnd{font-family:"Barlow Condensed"; font-weight:700; letter-spacing:1px;
+    font-size:clamp(15px,3.4vw,24px); line-height:1; color:var(--ink); opacity:.9; margin-top:-2px;}
+  .timer .rnd b{color:var(--gold); font-size:1.25em;}
   .timer.work .big{color:var(--work); text-shadow:0 0 40px rgba(255,176,32,.35);}
   .timer.rest .big{color:var(--rest); text-shadow:0 0 40px rgba(53,208,186,.35);}
   .fb{align-self:center; font-weight:600; font-size:clamp(15px,2.6vw,22px); padding:7px 16px; border-radius:12px; background:rgba(0,0,0,.55);}
@@ -604,9 +607,11 @@
         <div class="top">
           <div class="pill" id="phasePill">준비</div>
           <div class="pill p-ex" id="exPill">-</div>
-          <div class="pill p-ex" id="roundPill">1/8</div>
         </div>
-        <div class="timer" id="timerBox"><div class="big num" id="timerBig">0</div></div>
+        <div class="timer" id="timerBox">
+          <div class="big num" id="timerBig">0</div>
+          <div class="rnd" id="roundBig">라운드 <b>1</b>/8</div>
+        </div>
         <div class="fb" id="fb">자세를 잡아주세요</div>
         <div class="side-tip" id="sideTip" style="display:none">📐 <b>몸을 옆으로 돌려 주세요</b><span>카메라가 옆모습을 봐야 동작을 셀 수 있어요</span></div>
         <div class="bottom">
@@ -1299,31 +1304,44 @@ const EXNAME={squat:"스쿼트",pushup:"푸쉬업",pushupknee:"푸쉬업(무릎�
 // 엎드리거나 눕는 동작(푸쉬업·플랭크·크런치·레그레이즈·버피의 엎드림)은 몸이 겹치거나
 // 바닥에 가까워 포즈 모델의 인식 신뢰도가 원래 낮게 나온다. 기본 0.4 기준을 그대로 쓰면
 // 실제로 동작을 잘 해도 "인식 안 됨" 취급되어 카운트가 누락되므로 이 동작들만 기준을 낮춘다.
+// pose: 이 동작이 성립하는 몸통 방향("stand"=서 있음 / "flat"=엎드리거나 누움).
+//   각도만 보면 앉아서 무릎만 폈다 굽혀도 스쿼트로 세어졌기 때문에 몸통 방향을 함께 본다.
+// travelPt·travelMin: 한 번 하는 동안 그 지점이 최소 얼마나 움직여야 하는지(화면 높이 비율).
+//   관절 하나만 까딱여서 점수를 얻는 것을 막는다.
+// sym: 좌우가 함께 움직여야 하는 동작(한쪽 팔다리만 흔드는 것을 막는다).
 const EX={
   squat:{type:"rep",joints:[[24,26,28],[23,25,27]],down:100,up:160,perfect:85,
+    pose:"stand",travelPt:"hip",travelMin:0.05,sym:true,form:"squat",
     good:"좋은 깊이!",shallow:"조금 더 깊게 앉기"},
   pushup:{type:"rep",joints:[[12,14,16],[11,13,15]],down:95,up:155,perfect:80,minVis:0.22,
+    pose:"flat",travelPt:"shoulder",travelMin:0.03,sym:true,form:"line",
     good:"가슴까지 OK!",shallow:"팔꿈치 더 굽히기"},
   // 무릎대고 하는 푸쉬업: 팔 각도를 재는 방식은 일반 푸쉬업과 같지만, 몸 전체 윤곽이
   // 곧은 플랭크가 아니라 골반이 접힌 모양이라 포즈 모델이 훨씬 불안정하게 잡는다.
   // 같은 기준을 쓰면 실제로 잘 하고 있어도 계속 "인식 안 됨"으로 버려지므로 기준을 더 낮춘다.
   pushupknee:{type:"rep",joints:[[12,14,16],[11,13,15]],down:95,up:155,perfect:80,minVis:0.15,
+    pose:"flat",travelPt:"shoulder",travelMin:0.025,sym:true,
     good:"가슴까지 OK!",shallow:"팔꿈치 더 굽히기"},
   lunge:{type:"rep",joints:[[24,26,28],[23,25,27]],down:110,up:165,perfect:95,
+    pose:"stand",travelPt:"hip",travelMin:0.04,
     good:"안정적인 런지!",shallow:"무릎을 더 낮추기"},
-  jack:{type:"jack",good:"리듬 좋아요!",shallow:"팔을 머리 위까지!"},
-  plank:{type:"hold",joints:[[12,24,28],[11,23,27]],lo:150,hi:200,minVis:0.22,
+  jack:{type:"jack",pose:"stand",good:"리듬 좋아요!",shallow:"팔을 머리 위까지!"},
+  plank:{type:"hold",joints:[[12,24,28],[11,23,27]],lo:150,hi:200,minVis:0.22,pose:"flat",
     good:"곧게 유지 중!",bad:"엉덩이 높이 맞추기"},
   crunch:{type:"rep",joints:[[12,24,26],[11,23,25]],down:118,up:150,perfect:105,minVis:0.28,
+    pose:"flat",travelPt:"shoulder",travelMin:0.03,
     good:"복부 수축 좋아요!",shallow:"상체를 더 말아올리기"},
   legraise:{type:"rep",joints:[[12,24,26],[11,23,25]],down:100,up:150,perfect:90,minVis:0.28,
+    pose:"flat",travelPt:"ankle",travelMin:0.05,
     good:"다리 잘 올렸어요!",shallow:"다리를 더 높이"},
   sidelunge:{type:"rep",joints:[[24,26,28],[23,25,27]],down:120,up:168,perfect:105,
+    pose:"stand",travelPt:"hip",travelMin:0.04,
     good:"좋은 사이드런지!",shallow:"옆으로 더 낮게"},
   jumpsquat:{type:"rep",joints:[[24,26,28],[23,25,27]],down:105,up:165,perfect:90,
+    pose:"stand",travelPt:"hip",travelMin:0.05,sym:true,form:"squat",
     good:"파워풀한 점프!",shallow:"더 깊게 앉았다 점프"},
-  highknee:{type:"knee",good:"무릎 높이 최고!",shallow:"무릎을 허리까지!"},
-  mtclimber:{type:"knee",good:"빠른 템포 좋아요!",shallow:"무릎을 가슴쪽으로 더"},
+  highknee:{type:"knee",pose:"stand",good:"무릎 높이 최고!",shallow:"무릎을 허리까지!"},
+  mtclimber:{type:"knee",pose:"flat",good:"빠른 템포 좋아요!",shallow:"무릎을 가슴쪽으로 더"},
   burpee:{type:"burpee",good:"완벽한 버피!",shallow:"점프까지 완전히!",minVis:0.28},
 };
 
@@ -2180,6 +2198,64 @@ function bestSide(lm,joints){
   } return {ang:best,vis:bv};
 }
 
+/* ---------- 자세가 성립하는지 확인 ----------
+   각도 하나만 보면 앉아서 무릎만 폈다 굽혀도 스쿼트로, 서 있기만 해도 완벽한 플랭크로
+   세어졌다. 그래서 카운트하기 전에 네 가지를 함께 본다.
+     ① 몸통 방향  — 서서 하는 동작인데 엎드려 있으면 인정하지 않는다
+     ② 이동량      — 관절만 까딱이지 않고 몸이 실제로 움직였는가
+     ③ 좌우 대칭   — 한쪽 팔다리만 흔들지 않았는가(양쪽이 다 보일 때만 확인)
+     ④ 걸린 시간   — 한 번 하는 데 최소한의 시간이 걸렸는가
+   판정을 못 할 만큼 몸이 안 보일 때는 막지 않고 넘어간다(잘 하고 있는데 0회가 되는 쪽이 더 나쁘다). */
+const MIN_REP_MS=450;          // 이보다 빠른 '반복'은 관절 튀김이나 요령으로 본다
+const SYM_TOL=45;              // 좌우 각도가 이만큼 넘게 벌어지면 한쪽만 움직인 것으로 본다
+function midPt(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }
+function torsoDir(lm){
+  const s=midPt(lm[11],lm[12]), h=midPt(lm[23],lm[24]);
+  const dx=Math.abs(s.x-h.x), dy=Math.abs(s.y-h.y);
+  return {
+    upright: dy>dx*1.2 && s.y<h.y,   // 몸통이 세로이고 어깨가 골반보다 위 → 서 있음
+    flat:    dx>dy*0.8,              // 몸통이 가로 → 엎드렸거나 누움
+    vis: Math.min(lm[11].visibility,lm[12].visibility,lm[23].visibility,lm[24].visibility)
+  };
+}
+const POSE_MSG={stand:"일어서서 몸 전체가 보이게 해주세요", flat:"엎드리거나 누운 자세가 보이게 해주세요"};
+function poseOK(def,lm){
+  if(!def.pose)return true;
+  const t=torsoDir(lm);
+  if(t.vis<0.25)return true;          // 몸통이 안 보이면 판단 보류
+  return def.pose==="stand"?t.upright:t.flat;
+}
+/* 이동량을 잴 기준점의 세로 위치 */
+function travelY(lm,def){
+  if(def.travelPt==="hip")return midPt(lm[23],lm[24]).y;
+  if(def.travelPt==="shoulder")return midPt(lm[11],lm[12]).y;
+  if(def.travelPt==="ankle")return midPt(lm[27],lm[28]).y;
+  return null;
+}
+/* 좌우가 함께 움직였는지 — 양쪽이 모두 잘 보일 때만 따진다 */
+function symOK(lm,def){
+  if(!def.sym||!def.joints||def.joints.length<2)return true;
+  const vals=def.joints.map(([a,b,c])=>({
+    v:Math.min(lm[a].visibility,lm[b].visibility,lm[c].visibility), a:angle(lm[a],lm[b],lm[c])}));
+  if(vals.some(x=>x.v<0.5))return true;
+  return Math.abs(vals[0].a-vals[1].a)<=SYM_TOL;
+}
+/* 각도 깊이 말고 '자세의 모양'으로 깎는 점수 (0~25) */
+function formPenalty(lm,def){
+  if(def.form==="squat"){          // 상체가 너무 앞으로 접히면 감점
+    const s=midPt(lm[11],lm[12]), h=midPt(lm[23],lm[24]);
+    const tilt=Math.atan2(Math.abs(s.x-h.x),Math.abs(s.y-h.y))*180/Math.PI;
+    return tilt>50?18:tilt>35?9:0;
+  }
+  if(def.form==="line"){           // 푸쉬업에서 허리가 꺼지거나 엉덩이가 솟으면 감점
+    const {ang,vis}=bestSide(lm,[[12,24,28],[11,23,27]]);
+    if(ang==null||vis<0.3)return 0;
+    const dev=Math.abs(180-ang);
+    return dev>35?20:dev>22?10:0;
+  }
+  return 0;
+}
+
 /* ---------- rep/hold engines ---------- */
 let repState,minAng,jackState,jackQ=0;
 let roundReps=0,roundAccSum=0,roundAccN=0,holdMs=0,holdJudgeMs=0,badMs=0,lastT=0;
@@ -2188,7 +2264,11 @@ let roundJ={p:0,g:0,gd:0,o:0,b:0};
 // 방금 카운트한 반복 이후 최소 시간(REP_DEBOUNCE_MS) 안에는 다음 카운트를 인정하지 않는다.
 const REP_DEBOUNCE_MS=250;
 let lastRepT=0;
-function resetRound(){repState="up";minAng=180;jackState="closed";jackQ=0;burpeePhase="stand";roundReps=0;roundAccSum=0;roundAccN=0;holdMs=0;holdJudgeMs=0;badMs=0;roundJ={p:0,g:0,gd:0,o:0,b:0};lastT=performance.now();lastRepT=0;updateJCount();}
+let repDownT=0, yLo=0, yHi=0;   // 한 번 하는 동안의 시작 시각과 기준점 이동 범위
+/* 운동 중에는 "옆으로 돌아 주세요"라고 하지 않는다 — 이미 엎드린 뒤라 돌 수가 없고,
+   옆으로 서라는 안내는 휴식 시간에 미리 하기 때문이다. */
+function sightMsg(){ $("fb").textContent="카메라에 몸이 다 보이게 해주세요"; }
+function resetRound(){repState="up";minAng=180;jackState="closed";jackQ=0;burpeePhase="stand";roundReps=0;roundAccSum=0;roundAccN=0;holdMs=0;holdJudgeMs=0;badMs=0;roundJ={p:0,g:0,gd:0,o:0,b:0};lastT=performance.now();lastRepT=0;repDownT=0;yLo=yHi=0;updateJCount();}
 function updateJCount(){
   const el=$("jCount"); el.style.display="block";
   el.innerHTML=`<span class="jp">P ${roundJ.p}</span>·<span class="jg">G ${roundJ.g}</span>·<span class="jgd">GD ${roundJ.gd}</span>·<span class="jo">OK ${roundJ.o}</span>·<span class="jb">M ${roundJ.b}</span>`;
@@ -2216,16 +2296,30 @@ function repAccuracy(min,def){ // depth-based 0~100 (5단계에 맞춰 기준 �
 }
 function procRep(lm,def){
   const {ang,vis}=bestSide(lm,def.joints);
-  if(vis<(def.minVis??0.4)||ang==null){$("fb").textContent="전신이 보이게 서주세요";return;}
-  if(repState==="up"&&ang<def.down){repState="down";minAng=ang;}
+  if(vis<(def.minVis??0.4)||ang==null){sightMsg();return;}
+  if(!poseOK(def,lm)){ $("fb").textContent=POSE_MSG[def.pose]; repState="up"; minAng=180; return; }
+  const y=travelY(lm,def);
+  if(repState==="up"&&ang<def.down){
+    repState="down"; minAng=ang; repDownT=performance.now();
+    if(y!=null){yLo=yHi=y;}
+  }
   else if(repState==="down"){
     minAng=Math.min(minAng,ang);
+    if(y!=null){ yLo=Math.min(yLo,y); yHi=Math.max(yHi,y); }
     if(ang>def.up){
       repState="up";
       const now=performance.now();
-      if(now-lastRepT<REP_DEBOUNCE_MS){minAng=180;return;}
+      const reset=()=>{minAng=180;};
+      if(now-lastRepT<REP_DEBOUNCE_MS){reset();return;}
+      // ④ 너무 빨리 끝난 반복은 관절이 튄 것으로 본다
+      if(now-repDownT<MIN_REP_MS){ $("fb").textContent="너무 빨라요 — 끝까지 내려갔다 올라오기"; reset(); return; }
+      // ② 몸이 실제로 움직였는가
+      if(def.travelMin&&y!=null&&(yHi-yLo)<def.travelMin){
+        $("fb").textContent="관절만 움직이지 말고 몸 전체로 동작하기"; reset(); return; }
+      // ③ 좌우가 함께 움직였는가
+      if(!symOK(lm,def)){ $("fb").textContent="양쪽을 함께 움직여 주세요"; reset(); return; }
       lastRepT=now; roundReps++;
-      const acc=repAccuracy(minAng,def);
+      const acc=Math.max(40,repAccuracy(minAng,def)-formPenalty(lm,def));
       roundAccSum+=acc; roundAccN++;
       $("repN").textContent=roundReps;
       $("accN").textContent=Math.round(roundAccSum/roundAccN)+"%";
@@ -2236,6 +2330,7 @@ function procRep(lm,def){
   }
 }
 function procJack(lm){
+  if(!poseOK(EX.jack,lm)){ $("fb").textContent=POSE_MSG.stand; jackState="closed"; jackQ=0; return; }
   const nose=lm[0],lw=lm[15],rw=lm[16],la=lm[27],ra=lm[28],ls=lm[11],rs=lm[12];
   const armsUp=lw.y<nose.y&&rw.y<nose.y;
   const armsHigh=lw.y<nose.y-0.06&&rw.y<nose.y-0.06;
@@ -2260,6 +2355,8 @@ function procJack(lm){
 }
 // 무릎 올리기 계열 (하이니·마운틴클라이머): 좌우 무릎이 번갈아 골반 높이까지 올라오는 횟수
 function procKnee(lm,def){
+  // 하이니는 서서, 마운틴클라이머는 엎드려서 하는 동작이라 몸통 방향이 맞아야 인정한다
+  if(!poseOK(def,lm)){ $("fb").textContent=POSE_MSG[def.pose]; jackState="closed"; jackQ=0; return; }
   const lh=lm[23],rh=lm[24],lk=lm[25],rk=lm[26];
   const hipY=(lh.y+rh.y)/2;
   const lUp=lk.y<hipY+0.02, rUp=rk.y<hipY+0.02; // 무릎이 골반 근처까지
@@ -2289,7 +2386,7 @@ function procBurpee(lm,def){
   const shY=(ls.y+rs.y)/2, hipY=(lh.y+rh.y)/2;
   // 오른쪽 다리만 보던 것을 다른 자세들처럼 양쪽 중 더 잘 보이는 다리로 판정(측면 각도에 따라 한쪽이 가려질 수 있음)
   const {ang:kneeAng,vis}=bestSide(lm,[[24,26,28],[23,25,27]]);
-  if(vis<(def.minVis??0.35)||kneeAng==null){$("fb").textContent="전신이 보이게 서주세요";return;}
+  if(vis<(def.minVis??0.35)||kneeAng==null){sightMsg();return;}
   const standing=kneeAng>150&&shY<hipY-0.15; // 곧게 서 있고 어깨가 골반보다 위
   const down=shY>hipY-0.05;                   // 어깨가 골반 높이까지 내려옴(엎드림/플랭크)
   if(burpeePhase==="stand"&&down){burpeePhase="down";}
@@ -2309,7 +2406,9 @@ function procBurpee(lm,def){
 function procHold(lm,def){
   const now=performance.now(),dt=now-lastT; lastT=now;
   const {ang,vis}=bestSide(lm,def.joints);
-  if(vis<(def.minVis??0.35)||ang==null){$("fb").textContent="옆모습이 보이게 해주세요";return;}
+  if(vis<(def.minVis??0.35)||ang==null){sightMsg();return;}
+  // 서 있어도 어깨–골반–발목이 일직선이라 '완벽한 플랭크'로 인정되던 문제를 막는다
+  if(!poseOK(def,lm)){ $("fb").textContent=POSE_MSG[def.pose]; badMs=0; holdJudgeMs=0; return; }
   if(ang>=def.lo&&ang<=def.hi){
     holdMs+=dt; holdJudgeMs+=dt; badMs=0;
     const dev=Math.min(Math.abs(ang-180),25);
@@ -2542,7 +2641,9 @@ function setUI(){
   $("timerBox").className="timer "+(phase==="work"?"work":"rest");
   $("phasePill").className="pill "+(phase==="work"?"p-work":"p-rest");
   $("phasePill").textContent=phase==="work"?"운동":phase==="rest"?"휴식":"준비";
-  $("roundPill").textContent=`${Math.min(roundIdx+1,totalRounds)}/${totalRounds}`;
+  // 라운드는 남은 시간 바로 아래에 크게 띄운다 (위쪽 작은 칩은 잘 안 보여 없앴다)
+  const rn=Math.min(roundIdx+1,totalRounds);
+  $("roundBig").innerHTML=`라운드 <b>${rn}</b>/${totalRounds}`;
   $("exPill").textContent=EXNAME[curEx];
   $("repL").textContent=EX[curEx].type==="hold"?"유지(초)":"횟수";
   $("timerBig").textContent=Math.max(timeLeft,0);   // 첫 휴식에서 0으로 보이던 문제
