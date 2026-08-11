@@ -637,6 +637,9 @@
     <!-- STEP 3 · 운동 후 심박수 (항상 표시 — 심박수→운동→심박수 순서) -->
     <div id="hrStep3">
       <div class="step-tag" style="margin-top:20px">STEP 3 · 운동 후 심박수</div>
+      <div id="hrNeed" style="display:none;margin:6px 0 0;padding:10px 12px;border-radius:12px;background:rgba(244,91,105,.14);border:1px solid rgba(244,91,105,.45);font-weight:800;color:#F45B69">
+        ❤️ 아직 운동 후 심박수를 안 쟀어요 — 지금 재야 성실 수행으로 인정되고, 바로 성찰 일지가 열립니다.
+      </div>
       <div class="step-box hr-card">
       <div class="hr-lead">💓 운동 직후 심박수</div>
       <div class="hr-actions">
@@ -1383,6 +1386,7 @@ function renderSeq(){
     el.appendChild(c);
   });
   if($("bCfgHint"))updateBCfgHint(); // 대결도 이 구성을 그대로 쓴다
+  clampRounds();                     // 동작 수가 바뀌면 라운드 범위도 따라간다
   if($("cfgFixed"))renderCfgFixed(); // 구성이 바뀌면 '몇 가지를 몇 번씩' 안내도 갱신
 }
 $("addBtn").addEventListener("click",()=>{
@@ -1882,7 +1886,11 @@ function checkBattleAutoStart(){
   if(battleCd)cancelBattleCd();
   enterBattle(id,b);
   $("battleCdVs").textContent=`⚔️ vs ${currentBattle.vs}`;
-  $("battleCdMsg").textContent=parqPassed?"":"⚠️ 건강체크를 아직 안 했어요 — 카운트다운이 끝나면 직접 [시작]을 눌러야 합니다.";
+  { const need=[];
+    if(!parqPassed)need.push("건강체크");
+    if(pendingPreHr==null)need.push("운동 전 심박수");
+    $("battleCdMsg").textContent=need.length
+      ? "⚠️ "+need.join(" · ")+"를 아직 안 했어요 — 지금 마치지 않으면 함께 출발하지 못합니다." : ""; }
   $("battleCdOverlay").style.display="flex";
   battleCd={id,timer:null,lastBeep:99};
   const tick=()=>{
@@ -1896,6 +1904,11 @@ function checkBattleAutoStart(){
     cancelBattleCd();
     if(running)return;
     if(!parqPassed){toast("건강체크를 마치고 [시작]을 눌러주세요","task","🩺");return;}
+    if(pendingPreHr==null){   // 심박을 안 쟀으면 자동 출발시키지 않는다
+      toast("운동 전 심박수를 재고 [시작]을 눌러주세요","task","❤️");
+      try{$("preStart").scrollIntoView({behavior:"smooth",block:"center"});}catch(e){}
+      return;
+    }
     start({auto:true});
   };
   battleCd.timer=setInterval(tick,200); tick();
@@ -2532,6 +2545,7 @@ function setUI(){
   $("roundPill").textContent=`${Math.min(roundIdx+1,totalRounds)}/${totalRounds}`;
   $("exPill").textContent=EXNAME[curEx];
   $("repL").textContent=EX[curEx].type==="hold"?"유지(초)":"횟수";
+  $("timerBig").textContent=Math.max(timeLeft,0);   // 첫 휴식에서 0으로 보이던 문제
 }
 function startWork(){
   curEx=seq[roundIdx%seq.length];
@@ -3182,6 +3196,16 @@ const LEVEL_LABEL={low:"약한 편",mid:"보통",high:"좋은 편"};
 let pcGoal="", pcLevel="";
 
 // 고정된 4분 구성을 보여 준다. 공통과제·배틀이 다른 설정을 적용하면 그 값을 그대로 비춘다.
+// 라운드는 '고른 동작을 몇 바퀴 도는가'이므로 동작 수와 따로 놀면 안 된다.
+// 최소 한 바퀴(=동작 수), 최대 세 바퀴로 묶는다.
+function clampRounds(){
+  const el=$("rounds"); if(!el||!seq.length)return;
+  const lo=seq.length, hi=seq.length*3;
+  el.min=lo; el.max=hi;
+  const v=+el.value||lo;
+  if(v<lo)el.value=lo; else if(v>hi)el.value=hi;
+  else if(v%seq.length!==0)el.value=Math.round(v/seq.length)*seq.length||lo;  // 바퀴 단위로 맞춘다
+}
 function renderCfgFixed(){
   const box=$("cfgFixed"); if(!box)return;
   // 초기화 중에도 불리므로 위쪽 상수를 참조하지 않고 숫자를 직접 쓴다
@@ -3206,7 +3230,9 @@ function bindPcChips(id){
   });
 }
 bindPcChips("pcGoal"); bindPcChips("pcLevel");
-["workSec","restSec","rounds"].forEach(id=>$(id).addEventListener("input",renderCfgFixed));
+["workSec","restSec"].forEach(id=>$(id).addEventListener("input",renderCfgFixed));
+$("rounds").addEventListener("change",()=>{ clampRounds(); renderCfgFixed(); });
+$("rounds").addEventListener("input",renderCfgFixed);
 
 /* ---------- 📝 계획서 쓰기·제출 ----------
    운동을 만드는 일과 계획서를 쓰는 일을 떼어 놓는다.
@@ -4342,6 +4368,25 @@ $("recImport").addEventListener("change",e=>{
 });
 
 /* ---------- finish & result ---------- */
+/* 운동 후 심박은 성실 수행 판정의 기준이라 그냥 지나치면 안 된다.
+   잴 때까지 빨간 안내를 띄우고 30초마다 세 번 더 알린다(수업을 멈추지 않도록 막지는 않는다). */
+let hrNeedTimer=null;
+function needPostHr(){
+  clearPostHrNeed();
+  const el=$("hrNeed"); if(el)el.style.display="block";
+  toast("운동 후 심박수를 재주세요 — 성실 수행 인정 기준입니다","task","❤️");
+  let n=0;
+  hrNeedTimer=setInterval(()=>{
+    const rec=records[records.length-1];
+    if(!rec||rec.hr){clearPostHrNeed();return;}
+    if(++n>3){clearInterval(hrNeedTimer);hrNeedTimer=null;return;}
+    toast("아직 운동 후 심박수를 안 쟀어요","task","❤️"); beep(660,.12);
+  },30000);
+}
+function clearPostHrNeed(){
+  if(hrNeedTimer){clearInterval(hrNeedTimer);hrNeedTimer=null;}
+  const el=$("hrNeed"); if(el)el.style.display="none";
+}
 function finish(){
   stopAll();
   updatePresence(4);
@@ -4380,6 +4425,7 @@ function finish(){
   });
   $("result").style.display="block";
   setTimeout(()=>{try{$("hrStep3").scrollIntoView({behavior:"smooth",block:"start"});}catch(e){}},200); // 운동 직후 STEP 3 심박 측정으로 안내
+  needPostHr();               // 잴 때까지 빨간 안내와 알림을 띄운다
   addRecord(s); beep(1200,.3);
   resetReflectForm(); // 세션마다 새로 쓰도록 비운다 (addRecord가 lastRec을 채운 뒤에 호출)
   if(prevBest>0&&s.score>prevBest) toast(`신기록! 종합점수 ${prevBest}점 → ${s.score}점`,"best","🏅");
@@ -4399,8 +4445,15 @@ async function start(opts){
   if(!auto&&!currentTask&&!currentBattle&&Object.keys(assignments).length){
     if(!confirm("🌱 자율 실천 모드로 시작합니다 (완료 시 가산점 +20%).\n\n📋 선생님 과제로 수행하려면 [취소]를 누르고 운동 설계에서 과제 카드를 선택하세요.\n\n자율 실천으로 시작할까요?"))return;
   }
-  if(!auto&&pendingPreHr==null&&!confirm("운동 전 심박수를 아직 측정하지 않았습니다.\n측정 없이 시작할까요?"))return;
-  $("startBtn").disabled=true; $("result").style.display="none";
+  // 운동 전 심박은 반드시 재야 한다 — 성실 수행 판정의 기준이기 때문이다
+  if(pendingPreHr==null){
+    toast("먼저 STEP 1에서 운동 전 심박수를 재주세요","task","❤️");
+    if(!auto)alert("운동 전 심박수를 먼저 측정해 주세요. STEP 1에서 카메라 측정·맥박 세기·직접 입력 중 하나로 재면 시작할 수 있습니다.");
+    try{$("preStart").scrollIntoView({behavior:"smooth",block:"center"});}catch(e){}
+    $("startBtn").disabled=false;
+    return;
+  }
+  $("startBtn").disabled=true; $("result").style.display="none"; clearPostHrNeed();
   roundIdx=0; log=[];
   workSec=+$("workSec").value||20; restSec=+$("restSec").value||10; totalRounds=+$("rounds").value||8;
   try{await setup();}catch(e){$("startBtn").disabled=false;return;}
@@ -4408,13 +4461,12 @@ async function start(opts){
   enterFullscreen();
   running=true; loop();
   updatePresence(3); startPresenceHeartbeat();
-  phase="ready"; curEx=seq[0]; setUI();
-  let c=3; $("timerBig").textContent=c; $("timerBox").className="timer rest";
-  $("fb").textContent=currentBattle?`⚔️ vs ${currentBattle.vs} 배틀 시작!`:currentTask?`📋 '${currentTask.title}' 과제 시작!`:"🌱 자율 실천 시작! (가산점 +20%)"; beep(700,.1);
-  startBgm("cd");
-  const cd=setInterval(()=>{c--;
-    if(c>0){$("timerBig").textContent=c;beep(700,.1);}
-    else{clearInterval(cd);startWork();tickId=setInterval(tick,1000);}},1000);
+  // 첫 동작도 준비할 시간을 준다 — 휴식으로 시작해 다음 동작을 안내한 뒤 운동에 들어간다
+  $("fb").textContent=currentBattle?`⚔️ vs ${currentBattle.vs} 배틀 시작!`:currentTask?`📋 '${currentTask.title}' 과제 시작!`:"🌱 자율 실천 시작! (가산점 +20%)";
+  beep(700,.1);
+  curEx=seq[0];                      // setUI가 곧바로 참조하므로 먼저 정해 둔다
+  startRest();                       // roundIdx=0 이므로 seq[0]을 안내한다
+  tickId=setInterval(tick,1000);
 }
 function stopAll(){
   hideSideTip();
@@ -4577,6 +4629,12 @@ $("hrSave").addEventListener("click",()=>{
     ?`✅ <b style="color:var(--good)">성실 수행으로 인정</b>됩니다 (심박 ${bpm}${rise!=null?`, 운동 전 대비 +${rise}`:""}). 기록·CSV에 저장되었습니다.`
     :`성실 수행 기준에 미달했습니다 (심박 ${bpm}${rise!=null?`, 운동 전 대비 +${rise}`:""}). 심박 120 이상 또는 운동 전보다 40 이상 올라야 인정됩니다. 다음엔 조금 더 강도를 올려보세요. (기록은 저장됨)`;
   $("hrLive").style.display="block";
+  clearPostHrNeed();          // 다 쟀으니 안내를 내린다
+  // 성찰이 화면 아래에 있어 그냥 지나치기 쉬웠다 — 심박을 재면 바로 성찰을 띄운다
+  setTimeout(()=>{
+    const k=(lastRec&&lastRec.id)||"";
+    if(k&&!myLogsLocal[k])openReflectDoc(null);
+  },900);
 });
 /* ---------- 맥박 세기 도우미 (카메라 측정이 안 될 때 대안) ----------
    15초 카운트다운 동안 맥박마다 화면을 탭 → 탭 수 ×4 = BPM. 암산·타이밍 실수를 없앤다. */
