@@ -816,6 +816,18 @@
         <button class="btn btn-go btn-sm" id="frSave">🏁 마무리 성찰 저장</button>
         <span class="hint" id="frMsg"></span>
       </div>
+
+      <!-- 마무리 성찰까지 끝내면 그동안 한 것을 한 부로 묶어 뽑을 수 있다 -->
+      <div id="pfMineBox" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">
+        <div style="font-weight:700;font-size:16px">📘 내 운동 포트폴리오</div>
+        <div class="hint" style="margin:2px 0 8px">이번 프로젝트에서 내가 한 것을 <b>한 권으로</b> 묶어 줍니다 —
+          운동 계획서부터 매 차시 운동 기록과 그날의 성찰, 마무리 성찰까지 순서대로.</div>
+        <div id="pfMineChk" class="rf-sum" style="margin-bottom:8px"></div>
+        <div class="row" style="margin:0">
+          <button class="btn btn-go btn-sm" id="pfMineBtn">📘 내 포트폴리오 만들기</button>
+          <span class="hint" id="pfMineMsg"></span>
+        </div>
+      </div>
     </div>
     </div>
   </section>
@@ -958,6 +970,20 @@
         <label class="btn btn-stop btn-sm" style="display:inline-flex;align-items:center;cursor:pointer">📂 다른 기기 기록 합치기<input type="file" id="recImport" accept=".csv" style="display:none"></label>
       </div>
       <div class="hint" style="margin-top:6px">평소에는 맨 위 <b>📥 평가용 통합 엑셀</b> 하나면 충분합니다.</div>
+    </details>
+
+    <details class="collapsible">
+      <summary>🖨 운동 포트폴리오 인쇄</summary>
+      <div class="hint" style="margin:10px 0 8px">학생 한 명을 <b>한 부</b>로 묶어 인쇄합니다 —
+        <b>운동 계획서 → 날짜순 운동 기록과 그날의 성찰 → 마무리 성찰</b> 순서로 쌓입니다.
+        새 창이 열리면 <b>Ctrl+P</b>로 인쇄하거나 <b>PDF로 저장</b>하세요.</div>
+      <div class="row" style="flex-wrap:wrap;align-items:flex-end">
+        <div class="field"><label>반</label><select id="pfClass"></select></div>
+        <div class="field" style="flex:1;min-width:150px"><label>학생 (한 명만 뽑을 때)</label><select id="pfStu"></select></div>
+        <button class="btn btn-teal btn-sm" id="pfOne">이 학생만</button>
+        <button class="btn btn-go btn-sm" id="pfClassBtn">반 전체</button>
+      </div>
+      <div class="hint" id="pfMsg" style="margin-top:6px"></div>
     </details>
 
     <details class="collapsible">
@@ -3023,6 +3049,7 @@ function parseBulkRoster(text){
   return {rosters:rosterResult, excluded:excludedResult};
 }
 function refreshClassUI(){
+  try{pfFillClasses();}catch(e){}
   const chips=$("classChips"); chips.innerHTML="";
   const vc=$("viewClass"), rc=$("rfViewClass"), pv=$("pvClass");
   const keepV=vc.value, keepR=rc.value, keepP=pv.value;
@@ -4313,6 +4340,282 @@ function buildGradeBook(){
   sheets.push({name:"운동별 계획",rows:exRows});
   return sheets;
 }
+
+/* ---------- 🖨 운동 포트폴리오 인쇄 ----------
+   학생 한 명을 한 부로 묶는다: 운동 계획서 → 날짜순 운동 기록과 그날의 성찰 → 마무리 성찰.
+   성찰은 세션 기록의 id를 키로 저장되므로 둘을 정확히 짝지을 수 있다.
+   새 창에 인쇄용 문서를 띄우고, 팝업이 막히면 파일로 내려받게 한다. */
+const PF_RQ = ["운동 강도 돌아보기", "잘한 점 / 배운 점", "배운 개념 연결하기", "부족했던 점", "다음 실천 계획"];
+const PF_FQ = ["이 단원에서 내 체력은 어떻게 달라졌나요?", "가장 크게 나아진 점과 그 이유는?",
+  "가장 어려웠던 운동과 그것을 이겨내려 한 방법은?", "세운 계획대로 실천했나요? 못 했다면 이유는?",
+  "수업이 끝난 뒤 스스로 이어갈 운동 계획은?"];
+const PF_SELF = ["끝까지 성실히 참여했다", "바른 자세로 하려고 노력했다", "목표한 강도로 운동했다", "다음 계획을 구체적으로 세웠다"];
+const pfEsc = s => String(s == null ? "" : s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+const pfText = s => (String(s || "").trim() ? pfEsc(s).replace(/\n/g, "<br>") : '<span class="pf-no">— 쓰지 않음 —</span>');
+
+function pfFillClasses() {
+  const sel = $("pfClass"); if (!sel) return;
+  const cs = classNames(), cur = sel.value;
+  sel.innerHTML = cs.map(c => `<option value="${c}">${c}</option>`).join("");
+  if (cs.includes(cur)) sel.value = cur;
+  else if ($("viewClass") && cs.includes($("viewClass").value)) sel.value = $("viewClass").value;
+  pfFillStus();
+}
+function pfFillStus() {
+  const sel = $("pfStu"); if (!sel) return;
+  const c = $("pfClass").value;
+  sel.innerHTML = (rosters[c] || []).map(s => `<option value="${s.name}">${s.no == null ? "" : s.no + ". "}${s.name}</option>`).join("");
+}
+
+/* 한 학생의 포트폴리오 본문 */
+function pfStudent(cls, stu) {
+  const name = stu.name;
+  return pfRender({ cls, no: stu.no, name,
+    plan: bestPlan(plansOf(name, cls)),
+    rf: reflectOf(name, cls) || {},
+    rs: records.filter(r => r.name === name && String(r.cls) === String(cls))
+      .sort((a, b) => String(a.date).localeCompare(String(b.date))) });
+}
+/* 학생이 자기 기기 자료로 뽑을 때 쓸 묶음.
+   계획서는 제출한 것 중 마지막 것을 쓰고, 없으면 마지막으로 만든 것을 쓴다. */
+function pfMineCtx() {
+  const me = myKey();
+  const sent = myPlans.filter(p => p.submitted);
+  const plan = sent.length ? sent[sent.length - 1] : (myPlans[myPlans.length - 1] || null);
+  return { cls: me.cls || "-", no: null, name: me.name || "이름없음", plan,
+    rf: { logs: myLogsLocal || {}, final: myFinalLocal || {} },
+    rs: records.filter(r => r.name === me.name && String(r.cls) === String(me.cls))
+      .sort((a, b) => String(a.date).localeCompare(String(b.date))) };
+}
+function pfRender(ctx) {
+  const cls = ctx.cls, name = ctx.name, stu = { no: ctx.no, name: ctx.name };
+  const p = ctx.plan, rf = ctx.rf || {}, rs = ctx.rs || [];
+  const logs = rf.logs || {};
+  const st = statsFor(name, cls);
+
+  // 머리말 — 한눈 요약
+  const dil = rs.filter(isDiligent).length;
+  const scores = rs.map(r => +r.score || 0);
+  const first = scores.length ? scores[0] : null, best = scores.length ? Math.max(...scores) : null;
+  const sum = `<div class="pf-sum">
+    ${[["운동 횟수", rs.length + "회"], ["성실 수행", dil + "회"],
+      ["평균 정확도", st ? st.avgAcc + "%" : "–"], ["최고 점수", best == null ? "–" : best + "점"],
+      ["첫 점수 → 최고", first == null ? "–" : `${first} → ${best}`],
+      ["성찰 작성", Object.keys(logs).length + "회"]]
+      .map(([k, v]) => `<div><b>${v}</b><span>${k}</span></div>`).join("")}</div>`;
+
+  // ① 운동 계획서
+  let plan;
+  if (!p) plan = `<div class="pf-none">운동 계획서를 제출하지 않았습니다.</div>`;
+  else {
+    const h = p.habit || {};
+    const seq = (Array.isArray(p.seq) ? p.seq : String(p.seq || "").split(",")).filter(Boolean);
+    const notes = p.exNotes || [];
+    const exRows = seq.length ? seq.map((k, i) => {
+      const n = notes[i] || {};
+      return `<tr><td class="c">${i + 1}</td><td>${pfEsc(EXNAME[k] || k)}</td>
+        <td>${pfText(n.why)}</td><td>${pfText(n.care)}</td></tr>`;
+    }).join("") : `<tr><td colspan="4" class="c pf-no">동작이 없습니다</td></tr>`;
+    plan = `
+    <table class="pf-kv"><tr><th>계획서 이름</th><td>${pfEsc(p.name || "–")}</td>
+      <th>제출</th><td>${pfEsc(p.made || "–")}</td></tr></table>
+    <div class="pf-q"><div class="pf-lab">⓪ 내 생활 돌아보기</div>
+      <table class="pf-kv"><tr>
+        <th>생활 자세</th><td>${HABIT_LABEL[h.posture] || "–"}</td>
+        <th>운동 습관</th><td>${HABIT_LABEL[h.move] || "–"}</td>
+        <th>식습관</th><td>${HABIT_LABEL[h.diet] || "–"}</td>
+        <th>수면</th><td>${HABIT_LABEL[h.sleep] || "–"}</td></tr></table>
+      <div class="pf-sub">내 체력이 떨어진 원인</div><div class="pf-a">${pfText(p.habitWhy)}</div></div>
+    <div class="pf-q"><div class="pf-lab">① 운동 목표 — <b>${GOAL_LABEL[p.goal] || "–"}</b></div>
+      <div class="pf-sub">왜 이 목표를 골랐나</div><div class="pf-a">${pfText(p.goalWhy)}</div>
+      <div class="pf-sub">이루고 싶은 목표 한 문장</div><div class="pf-a">${pfText(p.aim)}</div></div>
+    <div class="pf-q"><div class="pf-lab">② 내가 느끼는 체력 — <b>${LEVEL_LABEL[p.level] || "–"}</b></div></div>
+    <div class="pf-q"><div class="pf-lab">③ 운동별 계획</div>
+      <table class="pf-tb"><colgroup><col style="width:9mm"><col style="width:28mm"><col><col></colgroup>
+      <thead><tr><th class="c">순서</th><th>동작</th><th>고른 이유</th><th>주의할 점</th></tr></thead>
+      <tbody>${exRows}</tbody></table>
+      <div class="pf-sub">전체 구성과 시간을 그렇게 정한 까닭</div><div class="pf-a">${pfText(p.reason)}</div></div>
+    <div class="pf-q"><div class="pf-lab">④ 조심해야 할 부위 — <b>${pfEsc(p.careText || "없음")}</b></div>
+      <div class="pf-sub">어떻게 고려했나</div><div class="pf-a">${pfText(p.careWhy)}</div></div>
+    <div class="pf-q"><div class="pf-lab">⑤ 실천 계획 — 주 ${p.freq || "–"}회 · 목표 ${p.target || "–"}회</div>
+      <div class="pf-sub">언제, 어디서</div><div class="pf-a">${pfText(p.when)}</div></div>
+    <div class="pf-q"><div class="pf-lab">⑥ 계획대로 되는지 확인하는 방법</div>
+      <div class="pf-a">${pfText(p.check)}</div></div>`;
+  }
+
+  // ② 날짜순 운동 기록 + 그날의 성찰
+  const used = {};
+  let time = rs.map((r, i) => {
+    const l = logs[r.id]; if (l) used[r.id] = 1;
+    const g = r.grade || (gradeOf(+r.score || 0).g);
+    const sp = SPICE[r.spice];
+    const dOk = isDiligent(r);
+    const qs = l ? PF_RQ.map((t, k) => `<div class="pf-sub">${k + 1}. ${t}</div><div class="pf-a">${pfText(l["q" + (k + 1)])}</div>`).join("") : "";
+    const selfs = l ? `<table class="pf-tb pf-self"><tr>${PF_SELF.map((t, k) =>
+      `<th>${t}</th>`).join("")}</tr><tr>${PF_SELF.map((t, k) =>
+        `<td class="c">${SELF_LABEL[l["s" + (k + 1)]] || "–"}</td>`).join("")}</tr></table>` : "";
+    return `<div class="pf-sess">
+      <div class="pf-sh"><span class="pf-n">${i + 1}</span>
+        <b>${pfEsc(String(r.date || "").slice(0, 16))}</b>
+        <span class="pf-tag">${pfEsc(r.task || "자율")}</span>
+        ${sp ? `<span class="pf-tag">${sp.emoji} ${sp.name}</span>` : ""}
+        <span class="pf-gr">${g}</span></div>
+      <table class="pf-tb"><tr>
+        <th>심박 전→후</th><td class="c">${r.hrPre || "–"} → ${r.hr || "–"}${dOk ? " ✔" : ""}</td>
+        <th>평균 정확도</th><td class="c">${r.acc || 0}%</td>
+        <th>종합 점수</th><td class="c">${r.score || 0}점</td>
+        <th>성실 수행</th><td class="c">${dOk ? "인정" : "미달"}</td></tr></table>
+      ${l ? `<div class="pf-rf">${l.late ? '<div class="pf-late">운동한 날이 아닌 날에 작성 — 미제출로 표시됨</div>' : ""}${qs}${selfs}</div>`
+        : `<div class="pf-none pf-sm">이 운동에 대한 성찰을 쓰지 않았습니다.</div>`}
+    </div>`;
+  }).join("");
+  // 세션과 짝이 없는 성찰(기록이 지워진 경우 등)도 빠뜨리지 않는다
+  const orphan = Object.entries(logs).filter(([k]) => !used[k])
+    .sort((a, b) => String(a[1].date).localeCompare(String(b[1].date)));
+  if (orphan.length) time += orphan.map(([, l]) => `<div class="pf-sess">
+      <div class="pf-sh"><b>${pfEsc(String(l.date || "").slice(0, 16))}</b>
+        <span class="pf-tag">기록과 짝이 없는 성찰</span></div>
+      <div class="pf-rf">${PF_RQ.map((t, k) => `<div class="pf-sub">${k + 1}. ${t}</div><div class="pf-a">${pfText(l["q" + (k + 1)])}</div>`).join("")}</div></div>`).join("");
+  if (!time) time = `<div class="pf-none">운동 기록이 없습니다.</div>`;
+
+  // ③ 마무리 성찰
+  const f = rf.final || {};
+  const fin = hasFinal(rf)
+    ? PF_FQ.map((t, k) => `<div class="pf-sub">${k + 1}. ${t}</div><div class="pf-a">${pfText(f["q" + (k + 1)])}</div>`).join("")
+    : `<div class="pf-none">마무리 성찰을 쓰지 않았습니다.</div>`;
+
+  return `<section class="pf-stu">
+    <div class="pf-head">
+      <div><div class="pf-t">타바타 운동 포트폴리오</div>
+        <div class="pf-name">${pfEsc(cls)} &nbsp; ${stu.no == null ? "" : stu.no + "번"} &nbsp; <b>${pfEsc(name)}</b></div></div>
+      <div class="pf-when">출력일 ${todayStr()}</div>
+    </div>
+    ${sum}
+    <h2 class="pf-h2">Ⓐ 운동 계획서</h2>${plan}
+    <h2 class="pf-h2">Ⓑ·Ⓒ 실천 기록과 그날의 성찰 <span class="pf-hn">${rs.length}회</span></h2>${time}
+    <h2 class="pf-h2">Ⓒ 마무리 성찰</h2>${fin}
+  </section>`;
+}
+
+const PF_CSS = `
+@page{size:A4;margin:12mm 12mm 10mm}
+*{box-sizing:border-box}
+body{font-family:"Malgun Gothic","맑은 고딕",sans-serif;margin:0;color:#111;font-size:10pt;line-height:1.55;background:#fff}
+.pf-bar{position:sticky;top:0;background:#222;color:#fff;padding:8px 14px;display:flex;gap:10px;align-items:center;font-size:13px}
+.pf-bar button{font:inherit;font-weight:700;padding:6px 14px;border:0;border-radius:6px;background:#35D0BA;color:#06281f;cursor:pointer}
+.pf-stu{page-break-after:always;padding-bottom:4mm}
+.pf-stu:last-child{page-break-after:auto}
+.pf-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2pt solid #222;padding-bottom:2.5mm}
+.pf-t{font-size:10pt;color:#5B51E8;font-weight:700;letter-spacing:1pt}
+.pf-name{font-size:17pt;font-weight:700;margin-top:1mm}
+.pf-when{font-size:9pt;color:#777}
+.pf-sum{display:flex;gap:2mm;margin:3mm 0}
+.pf-sum div{flex:1;border:0.8pt solid #bbb;border-radius:2mm;padding:2mm 1mm;text-align:center}
+.pf-sum b{display:block;font-size:13pt}
+.pf-sum span{font-size:8pt;color:#666}
+.pf-h2{font-size:12pt;margin:5mm 0 2mm;padding:1.6mm 3mm;background:#222;color:#fff;border-radius:2mm;page-break-after:avoid}
+.pf-hn{float:right;font-weight:400;opacity:.85;font-size:10pt}
+.pf-q{margin:2.5mm 0;page-break-inside:avoid}
+.pf-lab{font-weight:700;font-size:10.5pt;border-left:2.6pt solid #5B51E8;padding-left:2mm;margin-bottom:1mm}
+.pf-sub{font-size:9pt;color:#5B51E8;font-weight:700;margin:1.5mm 0 0.6mm}
+.pf-a{border:0.8pt solid #bbb;border-radius:1.5mm;padding:1.8mm 2.2mm;min-height:8mm;background:#fcfcfd}
+.pf-no{color:#aaa}
+.pf-none{border:0.8pt dashed #bbb;border-radius:2mm;padding:3mm;text-align:center;color:#888}
+.pf-sm{padding:2mm;font-size:9pt}
+table.pf-kv,table.pf-tb{width:100%;border-collapse:collapse;font-size:9.5pt;margin:1mm 0}
+.pf-kv th,.pf-kv td,.pf-tb th,.pf-tb td{border:0.8pt solid #999;padding:1.4mm 2mm;vertical-align:top}
+.pf-kv th,.pf-tb th{background:#f0f0f0;text-align:left;white-space:nowrap}
+.c{text-align:center}
+.pf-sess{border:1pt solid #999;border-radius:2mm;padding:2.5mm;margin:2.5mm 0;page-break-inside:avoid}
+.pf-sh{display:flex;align-items:center;gap:2mm;flex-wrap:wrap;margin-bottom:1.5mm}
+.pf-n{background:#5B51E8;color:#fff;border-radius:50%;width:6mm;height:6mm;line-height:6mm;text-align:center;font-size:9pt;font-weight:700}
+.pf-tag{font-size:8.5pt;border:0.8pt solid #999;border-radius:3mm;padding:0.3mm 2mm}
+.pf-gr{margin-left:auto;font-size:14pt;font-weight:700;color:#5B51E8}
+.pf-rf{margin-top:1.5mm}
+.pf-self th{font-size:8pt;text-align:center}
+.pf-late{background:#FFF4F5;border:0.8pt solid #F45B69;border-radius:1.5mm;padding:1.2mm 2mm;font-size:8.5pt;color:#c0392b;margin-bottom:1.5mm}
+@media print{.pf-bar{display:none}}
+`;
+
+function pfOpen(cls, list) {
+  if (fdb && !isTeacher()) { alert("🔐 교사 로그인을 먼저 해주세요. 로그인 전에는 계획서·성찰이 비어 있습니다."); return; }
+  if (!list.length) { alert("학생이 없습니다."); return; }
+  const body = list.map(s => pfStudent(cls, s)).join("");
+  const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8">
+    <title>타바타 운동 포트폴리오 — ${pfEsc(cls)}</title><style>${PF_CSS}</style></head>
+    <body><div class="pf-bar"><button onclick="window.print()">🖨 인쇄 / PDF로 저장</button>
+      <span>${pfEsc(cls)} · ${list.length}명 — 학생마다 새 쪽에서 시작합니다. 이 줄은 인쇄되지 않습니다.</span></div>
+    ${body}</body></html>`;
+  const w = window.open("", "_blank");
+  if (w) { w.document.write(html); w.document.close(); }
+  else {  // 팝업이 막히면 파일로 내려받는다
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([html], { type: "text/html;charset=utf-8" }));
+    a.download = `타바타_포트폴리오_${cls}_${todayStr()}.html`; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+  const miss = list.filter(s => !bestPlan(plansOf(s.name, cls))).length;
+  $("pfMsg").innerHTML = `${list.length}명 준비됨.` + (miss ? ` <b style="color:var(--gold)">계획서 미제출 ${miss}명</b>은 그 자리에 '미제출'로 표시됩니다.` : "")
+    + (w ? "" : ' <b style="color:var(--gold)">팝업이 막혀 파일로 내려받았습니다 — 열어서 인쇄하세요.</b>');
+}
+
+/* 내 기록 탭 — 학생이 자기 포트폴리오를 뽑는다.
+   자기 기기 자료만 쓰므로 교사 로그인이 필요 없다. */
+function pfMineState() {
+  const me = myKey();
+  const sent = myPlans.filter(p => p.submitted).length;
+  const logs = Object.keys(myLogsLocal || {}).length;
+  const fin = !!(myFinalLocal && [1, 2, 3, 4, 5].some(i => String(myFinalLocal["q" + i] || "").trim()));
+  const runs = records.filter(r => r.name === me.name && String(r.cls) === String(me.cls)).length;
+  return { sent, logs, fin, runs, done: sent > 0 && runs > 0 && logs > 0 && fin };
+}
+function renderPfMine() {
+  const box = $("pfMineChk"); if (!box) return;
+  const st = pfMineState();
+  const item = (ok, label, extra) =>
+    `<div><b style="color:${ok ? "var(--good)" : "var(--muted)"}">${ok ? "✔" : "○"} ${extra}</b><span>${label}</span></div>`;
+  box.innerHTML = item(st.sent > 0, "운동 계획서", st.sent + "개")
+    + item(st.runs > 0, "운동 기록", st.runs + "회")
+    + item(st.logs > 0, "성찰 일지", st.logs + "회")
+    + item(st.fin, "마무리 성찰", st.fin ? "작성" : "미작성");
+  const msg = $("pfMineMsg");
+  if (msg) msg.innerHTML = st.done
+    ? '<b style="color:var(--good)">다 채웠어요! 이제 한 권으로 묶을 수 있습니다.</b>'
+    : "아직 안 끝난 것이 있어도 지금까지 한 것으로 뽑을 수 있어요.";
+}
+if ($("pfMineBtn")) $("pfMineBtn").addEventListener("click", () => {
+  const me = myKey();
+  if (!me.name) { alert("운동 설계 탭에서 학번을 먼저 입력하세요."); return; }
+  const ctx = pfMineCtx();
+  if (!ctx.plan && !ctx.rs.length) { alert("아직 묶을 기록이 없습니다. 운동을 한 번 해보세요."); return; }
+  const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8">
+    <title>${pfEsc(me.name)} — 타바타 운동 포트폴리오</title><style>${PF_CSS}</style></head>
+    <body><div class="pf-bar"><button onclick="window.print()">🖨 인쇄 / PDF로 저장</button>
+      <span>이 줄은 인쇄되지 않습니다.</span></div>${pfRender(ctx)}</body></html>`;
+  const w = window.open("", "_blank");
+  if (w) { w.document.write(html); w.document.close(); }
+  else {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([html], { type: "text/html;charset=utf-8" }));
+    a.download = `타바타_포트폴리오_${me.name}_${todayStr()}.html`; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast("팝업이 막혀 파일로 내려받았습니다 — 열어서 인쇄하세요", "task", "📘");
+  }
+});
+if ($("pfClass")) {
+  $("pfClass").addEventListener("change", pfFillStus);
+  $("pfOne").addEventListener("click", () => {
+    const c = $("pfClass").value, n = $("pfStu").value;
+    const s = (rosters[c] || []).find(x => x.name === n);
+    if (!s) { alert("학생을 고르세요."); return; }
+    pfOpen(c, [s]);
+  });
+  $("pfClassBtn").addEventListener("click", () => {
+    const c = $("pfClass").value;
+    pfOpen(c, (rosters[c] || []).slice());
+  });
+}
+
 $("allExport").addEventListener("click",()=>{
   if(!classNames().length){alert("먼저 명렬표를 등록하세요.");return;}
   if(fdb&&!isTeacher()){alert("🔐 교사 로그인을 먼저 해주세요. 로그인 전에는 계획서·성찰이 비어 있는 채로 받아집니다.");return;}
@@ -4380,6 +4683,7 @@ function deleteStudentRecords(name,cls){
   if(fdb)targets.forEach(r=>{ if(r.id)fmod.remove(fmod.ref(fdb,"records/"+r.id)).catch(()=>{}); });
 }
 function renderMine(){
+  try{renderPfMine();}catch(e){}
   const name=($("stuName").value||"").trim(), cls=($("stuClass").value||"").trim();
   const rs=records.filter(r=>r.name===name&&String(r.cls)===cls);
   $("mineCount").textContent=rs.length;
