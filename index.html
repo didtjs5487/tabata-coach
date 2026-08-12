@@ -4406,23 +4406,62 @@ function pfRender(ctx) {
   const period = days.length ? days[0] + " ~ " + days[days.length - 1] : "";
   const grew = (first != null && best != null) ? best - first : null;
 
-  /* ── 점수 성장 그래프 (인라인 SVG) ── */
+  /* ── 회차별 추이: 점수 막대 + 정확도 선 ── */
+  const accs = rs.map(function (r) { return +r.acc || 0; });
   let chart = "";
   if (scores.length >= 2) {
-    const W = 560, H = 118, pad = 16, n = scores.length;
-    const bw = Math.min(46, (W - pad * 2) / n - 8);
+    const W = 560, H = 132, pad = 20, n = scores.length;
+    const bw = Math.min(40, (W - pad * 2) / n - 10);
     const gap = n > 1 ? (W - pad * 2 - bw) / (n - 1) : 0;
+    const cx = function (i) { return pad + i * gap + bw / 2; };
+    const cy = function (v) { return H - 26 - Math.round(v / 100 * (H - 52)) - 8; };
     const bars = scores.map(function (v, i) {
-      const g = gradeOf(v), h = Math.max(6, Math.round(v / 100 * (H - 34)));
-      const x = pad + i * gap, y = H - 18 - h;
-      return '<rect x="' + x + '" y="' + y + '" width="' + bw + '" height="' + h + '" rx="4" fill="' + g.c + '"/>'
-        + '<text x="' + (x + bw / 2) + '" y="' + (y - 4) + '" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor">' + v + '</text>'
-        + '<text x="' + (x + bw / 2) + '" y="' + (H - 5) + '" text-anchor="middle" font-size="9" fill="currentColor" opacity=".55">' + (i + 1) + '회</text>';
+      const g = gradeOf(v), h = Math.max(6, Math.round(v / 100 * (H - 46)));
+      const x = pad + i * gap, y = H - 26 - h;
+      return '<rect x="' + x + '" y="' + y + '" width="' + bw + '" height="' + h + '" rx="4" fill="' + g.c + '" fill-opacity=".92"/>'
+        + '<text x="' + (x + bw / 2) + '" y="' + (y + 13) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">' + v + '</text>'
+        + '<text x="' + (x + bw / 2) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="9" fill="currentColor" opacity=".55">' + (i + 1) + '회</text>';
     }).join("");
-    chart = '<div class="pf-chart"><div class="pf-ct">회차별 종합 점수'
-      + (grew > 0 ? ' <b>첫 회보다 ' + grew + '점 올랐어요</b>' : '') + '</div>'
-      + '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '">' + bars + '</svg></div>';
+    const line = accs.some(function (a) { return a > 0; })
+      ? '<polyline fill="none" stroke="var(--ac2)" stroke-width="2" stroke-linejoin="round" points="'
+        + accs.map(function (a, i) { return cx(i) + "," + cy(a); }).join(" ") + '"/>'
+        + accs.map(function (a, i) {
+            return '<circle cx="' + cx(i) + '" cy="' + cy(a) + '" r="3.2" fill="var(--ac2)"/>'
+              + '<text x="' + cx(i) + '" y="' + (cy(a) - 7) + '" text-anchor="middle" font-size="8.5" fill="var(--ac2)">' + a + '%</text>';
+          }).join("")
+      : "";
+    chart = '<div class="pf-chart"><div class="pf-ct">회차별 <b class="s">종합 점수</b>와 <b class="a">자세 정확도</b>'
+      + (grew > 0 ? ' &nbsp;·&nbsp; 첫 회보다 <b>' + grew + '점</b> 올랐어요' : '') + '</div>'
+      + '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '">' + bars + line + '</svg></div>';
   }
+
+  /* ── 활동 구성 · 누적 판정 · 최고 기록 ── */
+  const nDuel = rs.filter(function (r) { return String(r.task || "").indexOf("vs") >= 0; }).length;
+  const nTask = rs.filter(function (r) {
+    return String(r.task || "").indexOf("vs") < 0 && (r.taskId || (r.task && r.task !== "자율"));
+  }).length;
+  const nFree = rs.length - nDuel - nTask;
+  const totReps = rs.reduce(function (a, r) { return a + (parseInt(r.reps, 10) || 0); }, 0);
+  const bestAcc = accs.length ? Math.max.apply(null, accs) : null;
+
+  const JT = [["퍼펙트", jP, "#E24FD8"], ["그레이트", jG, "#E8A80C"],
+    ["굿", rs.reduce(function (a, r) { return a + (+r.jGd || 0); }, 0), "#12B39B"],
+    ["오케이", rs.reduce(function (a, r) { return a + (+r.jO || 0); }, 0), "#7A85E8"],
+    ["미스", rs.reduce(function (a, r) { return a + (+r.jB || 0); }, 0), "#F45B69"]];
+  const jtot = JT.reduce(function (a, x) { return a + x[1]; }, 0);
+  const jSum = jtot ? '<div class="pf-jsum"><div class="pf-jt">단원 전체 동작 판정 <b>' + jtot + '</b>번</div>'
+    + '<div class="pf-jb">' + JT.map(function (x) { return x[1] ? '<span style="flex:' + x[1] + ';background:' + x[2] + '"></span>' : ''; }).join("") + '</div>'
+    + '<div class="pf-jl">' + JT.map(function (x) {
+        return '<span><i style="background:' + x[2] + '"></i>' + x[0] + ' <b>' + x[1] + '</b></span>'; }).join("")
+    + '</div></div>' : "";
+
+  const mix = rs.length ? '<div class="pf-mix">'
+    + [["공통 과제", nTask], ["자율 실천", nFree], ["결투", nDuel]]
+      .filter(function (a) { return a[1] > 0; })
+      .map(function (a) { return '<span><b>' + a[1] + '회</b> ' + a[0] + '</span>'; }).join("")
+    + (totReps ? '<span><b>' + totReps + '회</b> 총 반복</span>' : '')
+    + (bestAcc ? '<span><b>' + bestAcc + '%</b> 최고 정확도</span>' : '')
+    + '</div>' : "";
 
   /* 아크 리액터 — 최고 점수를 원형 게이지로 */
   const reactor = (function () {
@@ -4458,6 +4497,9 @@ function pfRender(ctx) {
     + '<div class="pf-cv-who"><span class="pf-cv-cls">' + pfEsc(cls) + '</span>'
     + '<span class="pf-cv-nm">' + pfEsc(name) + '</span></div>'
     + (period ? '<div class="pf-cv-pd">' + period + '</div>' : '')
+    + (p && (GOAL_LABEL[p.goal] || String(p.aim || "").trim())
+      ? '<div class="pf-goal"><span>내 운동 목표</span><b>' + (GOAL_LABEL[p.goal] || "–") + '</b>'
+        + (String(p.aim || "").trim() ? '<em>“' + pfEsc(p.aim) + '”</em>' : '') + '</div>' : '')
     + '<div class="pf-cv-mid">' + reactor
     + '<div class="pf-cv-stats">'
     + [["운동한 날", rs.length + "회"], ["움직인 시간", mins + "분"], ["평균 정확도", st ? st.avgAcc + "%" : "–"],
@@ -4465,8 +4507,7 @@ function pfRender(ctx) {
        ["첫 회 → 최고", (first == null ? "–" : first + " → " + best)]]
       .map(function (a) { return '<div class="brk"><b>' + a[1] + '</b><span>' + a[0] + '</span></div>'; }).join("")
     + '</div></div>'
-    + (jP + jG > 0 ? '<div class="pf-cv-j">완벽한 동작 <b>' + jP + '</b>번 · 훌륭한 동작 <b>' + jG + '</b>번</div>' : "")
-    + wire + chart
+    + mix + jSum + wire + chart
     + '<div class="pf-cv-ft">이 기록은 내가 직접 계획하고, 실천하고, 돌아본 것입니다.</div>'
     + '</section>';
 
@@ -4642,6 +4683,19 @@ body{font-family:"Malgun Gothic","맑은 고딕",sans-serif;margin:0;font-size:1
 .pf-cv-cls{font-size:12.5pt;color:var(--mut)}
 .pf-cv-nm{font-size:26pt;font-weight:700;text-shadow:var(--glow)}
 .pf-cv-pd{color:var(--mut);font-size:9.5pt;margin-top:1.5mm;letter-spacing:1pt}
+.pf-goal{margin:3.5mm 0 0;padding:2.6mm 3.5mm;border-radius:2.5mm;background:var(--panel);
+  border:0.8pt solid var(--line);display:flex;align-items:baseline;gap:2.5mm;flex-wrap:wrap}
+.pf-goal span{font-size:8.5pt;color:var(--mut)}
+.pf-goal b{font-size:12pt;color:var(--ac)}
+.pf-goal em{font-style:normal;font-size:10pt;color:var(--fg);opacity:.85}
+.pf-mix{display:flex;flex-wrap:wrap;gap:2mm;margin-top:3.5mm}
+.pf-mix span{flex:1 1 auto;border:0.8pt solid var(--line);border-radius:999px;padding:1.2mm 3.4mm;
+  font-size:9pt;color:var(--mut);text-align:center;background:var(--soft)}
+.pf-mix b{color:var(--fg);font-size:10.5pt}
+.pf-jsum{margin-top:3.5mm;border:0.8pt solid var(--line);border-radius:2.5mm;padding:2.6mm 3mm;background:var(--soft)}
+.pf-jt{font-size:9pt;color:var(--mut);margin-bottom:1.4mm}
+.pf-jt b{color:var(--fg);font-size:10.5pt}
+.pf-ct b.s{color:var(--fg)}.pf-ct b.a{color:var(--ac2)}
 .pf-cv-mid{display:flex;gap:5mm;align-items:center;margin:6mm 0 0}
 .pf-reactor{flex:none}
 .pf-cv-stats{flex:1;display:flex;flex-wrap:wrap;gap:2mm}
