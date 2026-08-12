@@ -481,7 +481,7 @@
   #mineSpark{width:100%; max-width:420px; height:64px; background:var(--panel3); border-radius:10px;}
 </style>
 </head>
-<body class="t-hud">
+<body>
 <header>
   <h1>타바타 AI 코치 <span style="color:var(--work)">PRO</span></h1>
   <span class="tag">자세 인식 · 정확도/반복수/시간/강도 측정</span>
@@ -4604,14 +4604,14 @@ const PF_CSS = `
 @page{size:A4;margin:12mm 11mm 10mm}
 *{box-sizing:border-box}
 :root{
-  --bg:#fff; --fg:#1a1d2b; --card:#fff; --line:#d8d8e4; --soft:#fcfcff;
-  --ac:#5B51E8; --ac2:#35D0BA; --mut:#777; --panel:#F4F3FF; --head:#1A1F3D;
+  --bg:#fff; --fg:#10182B; --card:#fff; --line:#CFE6EE; --soft:#F7FCFE;
+  --ac:#0A9FC4; --ac2:#12B39B; --mut:#6B7B87; --panel:#EAF7FC; --head:#0A9FC4; --headfg:#fff;
   --glow:none; --grid:none;
 }
 body.t-hud{
   --bg:#050810; --fg:#DDF4FF; --card:rgba(9,18,32,.78); --line:rgba(34,211,238,.38); --soft:rgba(34,211,238,.05);
   --ac:#22D3EE; --ac2:#7DF9FF; --mut:#7FA3B8; --panel:rgba(34,211,238,.09); --head:#22D3EE;
-  --glow:0 0 12px rgba(34,211,238,.55);
+  --headfg:#04121a; --glow:0 0 12px rgba(34,211,238,.55);
   --grid:repeating-linear-gradient(0deg,rgba(34,211,238,.07) 0 1px,transparent 1px 22px),
          repeating-linear-gradient(90deg,rgba(34,211,238,.07) 0 1px,transparent 1px 22px);
 }
@@ -4630,9 +4630,9 @@ body{font-family:"Malgun Gothic","맑은 고딕",sans-serif;margin:0;font-size:1
 
 /* 모서리 브래킷 — HUD에서만 */
 .brk{position:relative}
-body.t-hud .brk::before,body.t-hud .brk::after{content:"";position:absolute;width:5mm;height:5mm;pointer-events:none}
-body.t-hud .brk::before{top:-0.4mm;left:-0.4mm;border-top:1.2pt solid var(--ac);border-left:1.2pt solid var(--ac)}
-body.t-hud .brk::after{bottom:-0.4mm;right:-0.4mm;border-bottom:1.2pt solid var(--ac);border-right:1.2pt solid var(--ac)}
+.brk::before,.brk::after{content:"";position:absolute;width:5mm;height:5mm;pointer-events:none}
+.brk::before{top:-0.4mm;left:-0.4mm;border-top:1.2pt solid var(--ac);border-left:1.2pt solid var(--ac)}
+.brk::after{bottom:-0.4mm;right:-0.4mm;border-bottom:1.2pt solid var(--ac);border-right:1.2pt solid var(--ac)}
 
 /* ── 표지 ── */
 .pf-cover{min-height:250mm;display:flex;flex-direction:column;padding:5mm 2mm 0}
@@ -4663,7 +4663,7 @@ body.t-hud .brk::after{bottom:-0.4mm;right:-0.4mm;border-bottom:1.2pt solid var(
 .pf-h2{font-size:13.5pt;margin:0 0 3mm;padding-bottom:2mm;border-bottom:1.6pt solid var(--ac);page-break-after:avoid;color:var(--fg)}
 .pf-h2 span{display:inline-block;width:8mm;color:var(--ac);text-shadow:var(--glow)}
 .pf-h2 i{float:right;font-style:normal;font-size:9.5pt;font-weight:400;color:var(--mut);padding-top:2mm}
-.pf-pill{display:inline-block;background:var(--ac);color:#04121a;border-radius:999px;padding:1.1mm 4mm;font-weight:700;font-size:10.5pt;margin-bottom:2mm}
+.pf-pill{display:inline-block;background:var(--ac);color:var(--headfg);border-radius:999px;padding:1.1mm 4mm;font-weight:700;font-size:10.5pt;margin-bottom:2mm}
 .pf-pill span{font-weight:400;opacity:.75;font-size:8.5pt}
 .pf-q{margin:3mm 0;page-break-inside:avoid}
 .pf-lab{font-weight:700;font-size:10.5pt;margin-bottom:1.2mm}
@@ -4681,14 +4681,13 @@ body.t-hud .brk::after{bottom:-0.4mm;right:-0.4mm;border-bottom:1.2pt solid var(
 .pf-hab b{font-size:10pt}
 table.pf-tb{width:100%;border-collapse:collapse;font-size:9.2pt;margin:1mm 0}
 .pf-tb th,.pf-tb td{border:0.8pt solid var(--line);padding:1.6mm 2mm;vertical-align:top}
-.pf-tb thead th{background:var(--head);color:#04121a;font-size:8.8pt;text-align:left}
-body.t-paper .pf-tb thead th{color:#fff}
+.pf-tb thead th{background:var(--head);color:var(--headfg);font-size:8.8pt;text-align:left}
 .c{text-align:center}
 
 /* ── 세션 카드 ── */
 .pf-sess{border:0.9pt solid var(--line);border-radius:2.5mm;padding:3mm;margin:3mm 0;page-break-inside:avoid;background:var(--card)}
 .pf-sh{display:flex;align-items:center;gap:2mm;flex-wrap:wrap;padding-bottom:2mm;border-bottom:0.8pt solid var(--line)}
-.pf-n{background:var(--ac);color:#04121a;border-radius:50%;width:6.2mm;height:6.2mm;line-height:6.2mm;text-align:center;font-size:9pt;font-weight:700}
+.pf-n{background:var(--ac);color:var(--headfg);border-radius:50%;width:6.2mm;height:6.2mm;line-height:6.2mm;text-align:center;font-size:9pt;font-weight:700}
 .pf-dt{font-size:10pt}
 .pf-tag{font-size:8.2pt;color:var(--mut);border:0.8pt solid var(--line);border-radius:999px;padding:0.4mm 2.2mm}
 .pf-gr{margin-left:auto;font-size:18pt;font-weight:700;color:var(--g);line-height:1;text-shadow:var(--glow)}
@@ -4744,7 +4743,7 @@ function pfOpen(cls, list) {
   const body = list.map(s => pfStudent(cls, s)).join("");
   const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8">
     <title>타바타 운동 포트폴리오 — ${pfEsc(cls)}</title><style>${PF_CSS}</style></head>
-    <body class="t-hud"><div class="pf-bar"><button class="go" onclick="window.print()">🖨 인쇄 / PDF로 저장</button><button onclick="document.body.classList.toggle('t-hud');document.body.classList.toggle('t-paper');this.textContent=document.body.classList.contains('t-hud')?'📄 종이용(밝게)':'🌑 화면용(HUD)'">📄 종이용(밝게)</button>
+    <body><div class="pf-bar"><button class="go" onclick="window.print()">🖨 인쇄 / PDF로 저장</button><button onclick="var d=document.body.classList.toggle('t-hud');this.textContent=d?'📄 밝은 배경으로':'🌑 어두운 화면용으로'">🌑 어두운 화면용으로</button>
       <span>${pfEsc(cls)} · ${list.length}명 — 학생마다 새 쪽에서 시작합니다. 이 줄은 인쇄되지 않습니다.</span></div>
     ${body}</body></html>`;
   const w = window.open("", "_blank");
@@ -4791,7 +4790,7 @@ if ($("pfMineBtn")) $("pfMineBtn").addEventListener("click", () => {
   if (!ctx.plan && !ctx.rs.length) { alert("아직 묶을 기록이 없습니다. 운동을 한 번 해보세요."); return; }
   const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8">
     <title>${pfEsc(me.name)} — 타바타 운동 포트폴리오</title><style>${PF_CSS}</style></head>
-    <body class="t-hud"><div class="pf-bar"><button class="go" onclick="window.print()">🖨 인쇄 / PDF로 저장</button><button onclick="document.body.classList.toggle('t-hud');document.body.classList.toggle('t-paper');this.textContent=document.body.classList.contains('t-hud')?'📄 종이용(밝게)':'🌑 화면용(HUD)'">📄 종이용(밝게)</button>
+    <body><div class="pf-bar"><button class="go" onclick="window.print()">🖨 인쇄 / PDF로 저장</button><button onclick="var d=document.body.classList.toggle('t-hud');this.textContent=d?'📄 밝은 배경으로':'🌑 어두운 화면용으로'">🌑 어두운 화면용으로</button>
       <span>이 줄은 인쇄되지 않습니다.</span></div>${pfRender(ctx)}</body></html>`;
   const w = window.open("", "_blank");
   if (w) { w.document.write(html); w.document.close(); }
