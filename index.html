@@ -481,7 +481,7 @@
   #mineSpark{width:100%; max-width:420px; height:64px; background:var(--panel3); border-radius:10px;}
 </style>
 </head>
-<body>
+<body class="t-hud">
 <header>
   <h1>타바타 AI 코치 <span style="color:var(--work)">PRO</span></h1>
   <span class="tag">자세 인식 · 정확도/반복수/시간/강도 측정</span>
@@ -4416,31 +4416,57 @@ function pfRender(ctx) {
       const g = gradeOf(v), h = Math.max(6, Math.round(v / 100 * (H - 34)));
       const x = pad + i * gap, y = H - 18 - h;
       return '<rect x="' + x + '" y="' + y + '" width="' + bw + '" height="' + h + '" rx="4" fill="' + g.c + '"/>'
-        + '<text x="' + (x + bw / 2) + '" y="' + (y - 4) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#333">' + v + '</text>'
-        + '<text x="' + (x + bw / 2) + '" y="' + (H - 5) + '" text-anchor="middle" font-size="9" fill="#888">' + (i + 1) + '회</text>';
+        + '<text x="' + (x + bw / 2) + '" y="' + (y - 4) + '" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor">' + v + '</text>'
+        + '<text x="' + (x + bw / 2) + '" y="' + (H - 5) + '" text-anchor="middle" font-size="9" fill="currentColor" opacity=".55">' + (i + 1) + '회</text>';
     }).join("");
     chart = '<div class="pf-chart"><div class="pf-ct">회차별 종합 점수'
       + (grew > 0 ? ' <b>첫 회보다 ' + grew + '점 올랐어요</b>' : '') + '</div>'
       + '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '">' + bars + '</svg></div>';
   }
 
+  /* 아크 리액터 — 최고 점수를 원형 게이지로 */
+  const reactor = (function () {
+    if (best == null) return "";
+    const R = 44, C2 = 2 * Math.PI * R, on = C2 * Math.min(best, 100) / 100;
+    const gc = bestG.c;
+    return '<svg class="pf-reactor" width="112" height="112" viewBox="0 0 112 112">'
+      + '<circle cx="56" cy="56" r="' + R + '" fill="none" stroke="currentColor" stroke-opacity=".18" stroke-width="9"/>'
+      + '<circle cx="56" cy="56" r="' + R + '" fill="none" stroke="' + gc + '" stroke-width="9" stroke-linecap="round"'
+      + ' stroke-dasharray="' + on.toFixed(1) + ' ' + (C2 - on).toFixed(1) + '" transform="rotate(-90 56 56)"/>'
+      + '<circle cx="56" cy="56" r="31" fill="none" stroke="' + gc + '" stroke-opacity=".3" stroke-width="1"/>' + '<circle cx="56" cy="56" r="25" fill="none" stroke="currentColor" stroke-opacity=".16" stroke-width="1"/>'
+      + '<text x="56" y="54" text-anchor="middle" font-size="28" font-weight="700" fill="' + gc + '">' + bestG.g + '</text>'
+      + '<text x="56" y="72" text-anchor="middle" font-size="11" fill="currentColor" opacity=".7">' + best + '점</text>'
+      + '</svg>';
+  })();
+
+  /* 내가 고른 동작을 설계도처럼 나열 (앱의 스틱맨 SVG를 그대로 쓴다) */
+  const wire = (function () {
+    if (!p) return "";
+    const seq = (Array.isArray(p.seq) ? p.seq : String(p.seq || "").split(",")).filter(Boolean).slice(0, 6);
+    if (!seq.length) return "";
+    return '<div class="pf-wire">' + seq.map(function (k) {
+      var art = "";
+      try { art = exerciseArt(k); } catch (e) { art = ""; }
+      art = art.replace(/#F3F1FD/g, "transparent").replace(/#5B51E8/g, "currentColor").replace(/#FF9F1C/g, "currentColor");
+      return '<figure>' + art + '<figcaption>' + pfEsc(EXNAME[k] || k) + '</figcaption></figure>';
+    }).join("") + '</div>';
+  })();
+
   const cover = '<section class="pf-cover">'
-    + '<div class="pf-cv-top"><span class="pf-cv-kick">체력 증진 프로젝트</span>'
+    + '<div><span class="pf-cv-kick">TABATA PROJECT</span>'
     + '<h1 class="pf-cv-h1">타바타 운동<br>포트폴리오</h1></div>'
     + '<div class="pf-cv-who"><span class="pf-cv-cls">' + pfEsc(cls) + '</span>'
     + '<span class="pf-cv-nm">' + pfEsc(name) + '</span></div>'
     + (period ? '<div class="pf-cv-pd">' + period + '</div>' : '')
+    + '<div class="pf-cv-mid">' + reactor
     + '<div class="pf-cv-stats">'
-    + [["운동한 날", rs.length + "회"], ["움직인 시간", mins + "분"],
-       ["평균 정확도", st ? st.avgAcc + "%" : "–"], ["성실 수행", dil + "회"],
-       ["성찰 기록", Object.keys(logs).length + "회"]]
-      .map(function (a) { return '<div><b>' + a[1] + '</b><span>' + a[0] + '</span></div>'; }).join("")
-    + '</div>'
-    + (bestG ? '<div class="pf-cv-badge" style="--g:' + bestG.c + '">'
-      + '<div class="pf-cv-gl">' + bestG.g + '</div>'
-      + '<div class="pf-cv-gt"><b>최고 등급</b><span>' + best + '점 · ' + bestG.m + '</span></div></div>' : "")
+    + [["운동한 날", rs.length + "회"], ["움직인 시간", mins + "분"], ["평균 정확도", st ? st.avgAcc + "%" : "–"],
+       ["성실 수행", dil + "회"], ["성찰 기록", Object.keys(logs).length + "회"],
+       ["첫 회 → 최고", (first == null ? "–" : first + " → " + best)]]
+      .map(function (a) { return '<div class="brk"><b>' + a[1] + '</b><span>' + a[0] + '</span></div>'; }).join("")
+    + '</div></div>'
     + (jP + jG > 0 ? '<div class="pf-cv-j">완벽한 동작 <b>' + jP + '</b>번 · 훌륭한 동작 <b>' + jG + '</b>번</div>' : "")
-    + chart
+    + wire + chart
     + '<div class="pf-cv-ft">이 기록은 내가 직접 계획하고, 실천하고, 돌아본 것입니다.</div>'
     + '</section>';
 
@@ -4486,7 +4512,42 @@ function pfRender(ctx) {
     const g = gradeOf(+r.score || 0);
     const sp = SPICE[r.spice];
     const dOk = isDiligent(r);
-    const rise = (+r.hrPre && +r.hr) ? (+r.hr - +r.hrPre) : null;
+    const pre = +r.hrPre || 0, post = +r.hr || 0;
+    const rise = (pre && post) ? (post - pre) : null;
+
+    /* 심박 구간 게이지 — 최대심박(220-나이) 대비 어디까지 올랐는지 */
+    const HMAX = 220 - STUDENT_AGE;
+    const pos = function (v) { return Math.max(2, Math.min(98, Math.round(v / HMAX * 100))); };
+    const zone = post ? (post / HMAX >= 0.77 ? "고강도" : post / HMAX >= 0.64 ? "중강도" : "저강도") : "";
+    const hrbar = post ? '<div class="pf-hr">'
+      + '<div class="pf-hrt">'
+      + '<span class="z1"></span><span class="z2"></span><span class="z3"></span>'
+      + (pre ? '<i class="mk pre" style="left:' + pos(pre) + '%"><b>' + pre + '</b></i>' : '')
+      + '<i class="mk post" style="left:' + pos(post) + '%"><b>' + post + '</b></i>'
+      + '</div>'
+      + '<div class="pf-hrl"><span>저강도</span><span>중강도</span><span>고강도</span></div>'
+      + '<div class="pf-hrs">안정 시 <b>' + (pre || "–") + '</b> → 운동 직후 <b>' + post + '</b>'
+      + (rise != null ? ' <em>+' + rise + '</em>' : '')
+      + (zone ? ' · <b>' + zone + '</b>' : '')
+      + ' · ' + (dOk ? '<b class="ok">성실 수행 인정</b>' : '<b class="no">기준 미달</b>') + '</div>'
+      + '</div>' : '<div class="pf-hrs no-hr">운동 후 심박수를 재지 않았습니다</div>';
+
+    /* 판정 분포 막대 */
+    const J = [["퍼펙트", +r.jP || 0, "#E24FD8"], ["그레이트", +r.jG || 0, "#E8A80C"],
+               ["굿", +r.jGd || 0, "#35D0BA"], ["오케이", +r.jO || 0, "#7A85E8"], ["미스", +r.jB || 0, "#F45B69"]];
+    const jt = J.reduce(function (a, x) { return a + x[1]; }, 0);
+    const jbar = jt ? '<div class="pf-jw"><div class="pf-jb">'
+      + J.map(function (x) { return x[1] ? '<span style="flex:' + x[1] + ';background:' + x[2] + '"></span>' : ''; }).join("")
+      + '</div><div class="pf-jl">'
+      + J.map(function (x) { return '<span><i style="background:' + x[2] + '"></i>' + x[0] + ' <b>' + x[1] + '</b></span>'; }).join("")
+      + '</div></div>' : "";
+
+    /* 그날 한 동작 */
+    const chips = String(r.seq || "").split("·").filter(Boolean);
+    const seqRow = chips.length ? '<div class="pf-seq">'
+      + chips.map(function (t) { return '<span>' + pfEsc(t.trim()) + '</span>'; }).join("")
+      + (r.rounds ? '<em>모두 ' + r.rounds + '번</em>' : '') + '</div>' : "";
+
     const qs = l ? PF_RQ.map(function (t, k) {
       return '<div class="pf-sub">' + (k + 1) + '. ' + t + '</div><div class="pf-a">' + pfText(l["q" + (k + 1)]) + '</div>';
     }).join("") : "";
@@ -4494,18 +4555,22 @@ function pfRender(ctx) {
       const v = +l["s" + (k + 1)] || 0;
       return '<div class="pf-sf' + (v >= 3 ? ' on' : '') + '"><span>' + t + '</span><b>' + (SELF_LABEL[v] || "–") + '</b></div>';
     }).join("") + '</div>' : "";
-    return '<div class="pf-sess">'
+
+    return '<div class="pf-sess brk">'
       + '<div class="pf-sh"><span class="pf-n">' + (i + 1) + '</span>'
       + '<b class="pf-dt">' + pfEsc(String(r.date || "").slice(0, 16)) + '</b>'
       + '<span class="pf-tag">' + pfEsc(r.task || "자율") + '</span>'
       + (sp ? '<span class="pf-tag">' + sp.emoji + ' ' + sp.name + '</span>' : '')
       + '<span class="pf-gr" style="--g:' + g.c + '">' + g.g + '</span></div>'
+      + seqRow + hrbar
       + '<div class="pf-mets">'
-      + '<div class="' + (dOk ? 'ok' : '') + '"><b>' + (r.hrPre || "–") + ' → ' + (r.hr || "–") + '</b><span>심박수'
-      + (rise != null ? ' (+' + rise + ')' : '') + '</span></div>'
-      + '<div><b>' + (r.acc || 0) + '%</b><span>정확도</span></div>'
-      + '<div><b>' + (r.score || 0) + '점</b><span>종합 점수</span></div>'
-      + '<div class="' + (dOk ? 'ok' : 'no') + '"><b>' + (dOk ? '인정' : '미달') + '</b><span>성실 수행</span></div></div>'
+      + '<div class="big"><b>' + (r.score || 0) + '</b><span>종합 점수</span></div>'
+      + '<div><b>' + (r.acc || 0) + '%</b><span>자세 정확도</span></div>'
+      + '<div><b>' + pfEsc(String(r.reps || "0")) + '</b><span>총 반복</span></div>'
+      + '<div><b>' + (r.time || 0) + '초</b><span>유효 수행</span></div>'
+      + '<div><b>' + (r.int || 0) + '</b><span>강도 점수</span></div>'
+      + '<div class="pt"><b>+' + (r.pts || 0) + '</b><span>획득 P</span></div></div>'
+      + jbar
       + (l ? '<div class="pf-rf">' + (l.late ? '<div class="pf-late">운동한 날이 아닌 날에 작성 — 미제출로 표시됨</div>' : '') + qs + selfs + '</div>'
         : '<div class="pf-none pf-sm">이 운동에 대한 성찰을 쓰지 않았습니다.</div>')
       + '</div>';
@@ -4536,87 +4601,140 @@ function pfRender(ctx) {
 }
 
 const PF_CSS = `
-@page{size:A4;margin:14mm 13mm 11mm}
+@page{size:A4;margin:12mm 11mm 10mm}
 *{box-sizing:border-box}
-body{font-family:"Malgun Gothic","맑은 고딕",sans-serif;margin:0;color:#1a1d2b;font-size:10pt;line-height:1.6;background:#fff;
+:root{
+  --bg:#fff; --fg:#1a1d2b; --card:#fff; --line:#d8d8e4; --soft:#fcfcff;
+  --ac:#5B51E8; --ac2:#35D0BA; --mut:#777; --panel:#F4F3FF; --head:#1A1F3D;
+  --glow:none; --grid:none;
+}
+body.t-hud{
+  --bg:#050810; --fg:#DDF4FF; --card:rgba(9,18,32,.78); --line:rgba(34,211,238,.38); --soft:rgba(34,211,238,.05);
+  --ac:#22D3EE; --ac2:#7DF9FF; --mut:#7FA3B8; --panel:rgba(34,211,238,.09); --head:#22D3EE;
+  --glow:0 0 12px rgba(34,211,238,.55);
+  --grid:repeating-linear-gradient(0deg,rgba(34,211,238,.07) 0 1px,transparent 1px 22px),
+         repeating-linear-gradient(90deg,rgba(34,211,238,.07) 0 1px,transparent 1px 22px);
+}
+body{font-family:"Malgun Gothic","맑은 고딕",sans-serif;margin:0;font-size:10pt;line-height:1.6;
+  color:var(--fg);background:var(--bg);background-image:var(--grid);
   -webkit-print-color-adjust:exact;print-color-adjust:exact}
-.pf-bar{position:sticky;top:0;z-index:9;background:#1A1F3D;color:#fff;padding:9px 16px;display:flex;gap:12px;align-items:center;font-size:13px}
-.pf-bar button{font:inherit;font-weight:700;padding:7px 16px;border:0;border-radius:7px;background:#35D0BA;color:#06281f;cursor:pointer}
+.pf-bar{position:sticky;top:0;z-index:9;background:#0B1220;color:#DDF4FF;padding:9px 16px;
+  display:flex;gap:10px;align-items:center;font-size:13px;border-bottom:1px solid rgba(34,211,238,.3)}
+.pf-bar button{font:inherit;font-weight:700;padding:7px 15px;border:1px solid #22D3EE;border-radius:7px;
+  background:transparent;color:#22D3EE;cursor:pointer}
+.pf-bar button.go{background:#22D3EE;color:#04121a}
+.pf-bar span{color:#7FA3B8}
 .pf-stu{page-break-after:always}
 .pf-stu:last-child{page-break-after:auto}
-.pf-page{page-break-before:always}
+.pf-page{page-break-before:always;padding-top:1mm}
 
-/* 표지 */
-.pf-cover{min-height:252mm;display:flex;flex-direction:column;padding:6mm 2mm 0}
-.pf-cv-kick{font-size:10pt;font-weight:700;color:#5B51E8;letter-spacing:2pt}
-.pf-cv-h1{font-size:34pt;line-height:1.18;margin:2mm 0 0;letter-spacing:-1pt}
-.pf-cv-who{display:flex;align-items:baseline;gap:4mm;margin:9mm 0 0;padding-bottom:3mm;border-bottom:2.4pt solid #1A1F3D}
-.pf-cv-cls{font-size:13pt;color:#666}
-.pf-cv-nm{font-size:27pt;font-weight:700}
-.pf-cv-pd{color:#777;font-size:10pt;margin-top:2mm}
-.pf-cv-stats{display:flex;gap:2.5mm;margin:7mm 0 0}
-.pf-cv-stats div{flex:1;background:#F4F3FF;border-radius:3mm;padding:3.5mm 1mm;text-align:center}
-.pf-cv-stats b{display:block;font-size:15pt;color:#5B51E8}
-.pf-cv-stats span{font-size:8.5pt;color:#666}
-.pf-cv-badge{display:flex;align-items:center;gap:4mm;margin:5mm 0 0;padding:4mm 5mm;border-radius:3mm;
-  border:1.6pt solid var(--g);background:#fff}
-.pf-cv-gl{font-size:34pt;font-weight:700;color:var(--g);line-height:1}
-.pf-cv-gt b{display:block;font-size:11pt}
-.pf-cv-gt span{color:#666;font-size:9.5pt}
-.pf-cv-j{margin-top:3mm;font-size:10pt;color:#444}
-.pf-cv-j b{color:#E24FD8;font-size:12pt}
-.pf-chart{margin-top:6mm;border:0.8pt solid #ddd;border-radius:3mm;padding:3mm 2mm 1mm}
-.pf-ct{font-size:9.5pt;color:#666;padding-left:2mm;margin-bottom:1mm}
-.pf-ct b{color:#35D0BA}
-.pf-cv-ft{margin-top:auto;padding:4mm 0 2mm;border-top:0.8pt solid #ddd;color:#888;font-size:9.5pt;text-align:center}
+/* 모서리 브래킷 — HUD에서만 */
+.brk{position:relative}
+body.t-hud .brk::before,body.t-hud .brk::after{content:"";position:absolute;width:5mm;height:5mm;pointer-events:none}
+body.t-hud .brk::before{top:-0.4mm;left:-0.4mm;border-top:1.2pt solid var(--ac);border-left:1.2pt solid var(--ac)}
+body.t-hud .brk::after{bottom:-0.4mm;right:-0.4mm;border-bottom:1.2pt solid var(--ac);border-right:1.2pt solid var(--ac)}
 
-/* 본문 */
-.pf-h2{font-size:14pt;margin:0 0 3mm;padding-bottom:2mm;border-bottom:2pt solid #1A1F3D;page-break-after:avoid}
-.pf-h2 span{display:inline-block;width:8mm;color:#5B51E8}
-.pf-h2 i{float:right;font-style:normal;font-size:10pt;font-weight:400;color:#888;padding-top:2mm}
-.pf-pill{display:inline-block;background:#5B51E8;color:#fff;border-radius:999px;padding:1.2mm 4mm;font-weight:700;font-size:11pt;margin-bottom:2mm}
-.pf-pill span{font-weight:400;opacity:.8;font-size:9pt}
+/* ── 표지 ── */
+.pf-cover{min-height:250mm;display:flex;flex-direction:column;padding:5mm 2mm 0}
+.pf-cv-kick{font-size:9.5pt;font-weight:700;color:var(--ac);letter-spacing:3pt;text-shadow:var(--glow)}
+.pf-cv-h1{font-size:33pt;line-height:1.16;margin:2mm 0 0;letter-spacing:-1pt;text-shadow:var(--glow)}
+.pf-cv-who{display:flex;align-items:baseline;gap:4mm;margin:7mm 0 0;padding-bottom:2.5mm;border-bottom:2pt solid var(--ac)}
+.pf-cv-cls{font-size:12.5pt;color:var(--mut)}
+.pf-cv-nm{font-size:26pt;font-weight:700;text-shadow:var(--glow)}
+.pf-cv-pd{color:var(--mut);font-size:9.5pt;margin-top:1.5mm;letter-spacing:1pt}
+.pf-cv-mid{display:flex;gap:5mm;align-items:center;margin:6mm 0 0}
+.pf-reactor{flex:none}
+.pf-cv-stats{flex:1;display:flex;flex-wrap:wrap;gap:2mm}
+.pf-cv-stats div{flex:1 1 30%;background:var(--panel);border:0.8pt solid var(--line);border-radius:2.5mm;padding:2.6mm 1mm;text-align:center}
+.pf-cv-stats b{display:block;font-size:14pt;color:var(--ac);text-shadow:var(--glow)}
+.pf-cv-stats span{font-size:8pt;color:var(--mut)}
+.pf-cv-j{margin-top:3.5mm;font-size:9.5pt;color:var(--mut);text-align:center}
+.pf-cv-j b{color:var(--ac2);font-size:11.5pt}
+.pf-wire{display:flex;gap:2mm;margin-top:5mm}
+.pf-wire figure{flex:1;margin:0;color:var(--ac);border:0.8pt solid var(--line);border-radius:2.5mm;padding:1.5mm;text-align:center;background:var(--soft)}
+.pf-wire svg{width:100%;height:auto;display:block}
+.pf-wire figcaption{font-size:7.6pt;color:var(--mut);margin-top:0.8mm}
+.pf-chart{margin-top:5mm;border:0.8pt solid var(--line);border-radius:2.5mm;padding:3mm 2mm 1mm;background:var(--soft)}
+.pf-ct{font-size:9pt;color:var(--mut);padding-left:2mm;margin-bottom:1mm}
+.pf-ct b{color:var(--ac2)}
+.pf-cv-ft{margin-top:auto;padding:3.5mm 0 2mm;border-top:0.8pt solid var(--line);color:var(--mut);font-size:9pt;text-align:center;letter-spacing:0.5pt}
+
+/* ── 본문 ── */
+.pf-h2{font-size:13.5pt;margin:0 0 3mm;padding-bottom:2mm;border-bottom:1.6pt solid var(--ac);page-break-after:avoid;color:var(--fg)}
+.pf-h2 span{display:inline-block;width:8mm;color:var(--ac);text-shadow:var(--glow)}
+.pf-h2 i{float:right;font-style:normal;font-size:9.5pt;font-weight:400;color:var(--mut);padding-top:2mm}
+.pf-pill{display:inline-block;background:var(--ac);color:#04121a;border-radius:999px;padding:1.1mm 4mm;font-weight:700;font-size:10.5pt;margin-bottom:2mm}
+.pf-pill span{font-weight:400;opacity:.75;font-size:8.5pt}
 .pf-q{margin:3mm 0;page-break-inside:avoid}
-.pf-lab{font-weight:700;font-size:11pt;margin-bottom:1.2mm}
-.pf-hi{color:#5B51E8}
-.pf-sub{font-size:9pt;color:#7A72F0;font-weight:700;margin:1.8mm 0 0.7mm}
-.pf-a{border:0.8pt solid #d8d8e4;border-radius:2mm;padding:2.2mm 2.6mm;min-height:8mm;background:#fcfcff}
-.pf-aim{margin-top:1.5mm;padding:2.5mm 3mm;border-radius:2mm;background:#F4F3FF;color:#3b34a8;font-weight:700;font-size:11pt;text-align:center}
-.pf-no{color:#b6b6c2}
-.pf-none{border:0.8pt dashed #c8c8d4;border-radius:2mm;padding:4mm;text-align:center;color:#999}
+.pf-lab{font-weight:700;font-size:10.5pt;margin-bottom:1.2mm}
+.pf-hi{color:var(--ac)}
+.pf-sub{font-size:8.8pt;color:var(--ac);font-weight:700;margin:1.8mm 0 0.7mm;opacity:.95}
+.pf-a{border:0.8pt solid var(--line);border-radius:2mm;padding:2.2mm 2.6mm;min-height:8mm;background:var(--soft)}
+.pf-aim{margin-top:1.5mm;padding:2.5mm 3mm;border-radius:2mm;background:var(--panel);border:0.8pt solid var(--line);
+  color:var(--ac);font-weight:700;font-size:10.5pt;text-align:center}
+.pf-no{color:var(--mut);opacity:.6}
+.pf-none{border:0.8pt dashed var(--line);border-radius:2mm;padding:4mm;text-align:center;color:var(--mut)}
 .pf-sm{padding:2.5mm;font-size:9pt}
 .pf-hab{display:flex;gap:2mm;margin:1mm 0}
-.pf-hab div{flex:1;border:0.8pt solid #d8d8e4;border-radius:2mm;padding:1.6mm;text-align:center}
-.pf-hab span{display:block;font-size:8.5pt;color:#777}
-.pf-hab b{font-size:10.5pt}
-table.pf-tb{width:100%;border-collapse:collapse;font-size:9.5pt;margin:1mm 0}
-.pf-tb th,.pf-tb td{border:0.8pt solid #c8c8d4;padding:1.6mm 2mm;vertical-align:top}
-.pf-tb thead th{background:#1A1F3D;color:#fff;font-size:9pt;text-align:left}
+.pf-hab div{flex:1;border:0.8pt solid var(--line);border-radius:2mm;padding:1.6mm;text-align:center;background:var(--soft)}
+.pf-hab span{display:block;font-size:8.2pt;color:var(--mut)}
+.pf-hab b{font-size:10pt}
+table.pf-tb{width:100%;border-collapse:collapse;font-size:9.2pt;margin:1mm 0}
+.pf-tb th,.pf-tb td{border:0.8pt solid var(--line);padding:1.6mm 2mm;vertical-align:top}
+.pf-tb thead th{background:var(--head);color:#04121a;font-size:8.8pt;text-align:left}
+body.t-paper .pf-tb thead th{color:#fff}
 .c{text-align:center}
 
-/* 세션 카드 */
-.pf-sess{border:1pt solid #d2d2de;border-radius:3mm;padding:3mm;margin:3mm 0;page-break-inside:avoid}
-.pf-sh{display:flex;align-items:center;gap:2mm;flex-wrap:wrap;padding-bottom:2mm;border-bottom:0.8pt solid #e6e6ee}
-.pf-n{background:#5B51E8;color:#fff;border-radius:50%;width:6.5mm;height:6.5mm;line-height:6.5mm;text-align:center;font-size:9.5pt;font-weight:700}
-.pf-dt{font-size:10.5pt}
-.pf-tag{font-size:8.5pt;color:#555;border:0.8pt solid #c8c8d4;border-radius:999px;padding:0.4mm 2.2mm}
-.pf-gr{margin-left:auto;font-size:19pt;font-weight:700;color:var(--g);line-height:1}
-.pf-mets{display:flex;gap:2mm;margin:2mm 0}
-.pf-mets div{flex:1;border-radius:2mm;background:#f5f5fa;padding:1.8mm 1mm;text-align:center}
-.pf-mets b{display:block;font-size:11pt}
-.pf-mets span{font-size:8pt;color:#777}
-.pf-mets .ok{background:#EAFBF7}
-.pf-mets .ok b{color:#1f9e8a}
-.pf-mets .no b{color:#c0392b}
+/* ── 세션 카드 ── */
+.pf-sess{border:0.9pt solid var(--line);border-radius:2.5mm;padding:3mm;margin:3mm 0;page-break-inside:avoid;background:var(--card)}
+.pf-sh{display:flex;align-items:center;gap:2mm;flex-wrap:wrap;padding-bottom:2mm;border-bottom:0.8pt solid var(--line)}
+.pf-n{background:var(--ac);color:#04121a;border-radius:50%;width:6.2mm;height:6.2mm;line-height:6.2mm;text-align:center;font-size:9pt;font-weight:700}
+.pf-dt{font-size:10pt}
+.pf-tag{font-size:8.2pt;color:var(--mut);border:0.8pt solid var(--line);border-radius:999px;padding:0.4mm 2.2mm}
+.pf-gr{margin-left:auto;font-size:18pt;font-weight:700;color:var(--g);line-height:1;text-shadow:var(--glow)}
+.pf-seq{display:flex;flex-wrap:wrap;gap:1.2mm;align-items:center;margin:2mm 0}
+.pf-seq span{font-size:8.5pt;background:var(--panel);color:var(--ac);border:0.6pt solid var(--line);border-radius:999px;padding:0.5mm 2.4mm}
+.pf-seq em{font-style:normal;font-size:8.2pt;color:var(--mut);margin-left:1mm}
+.pf-hr{margin:2.5mm 0 1mm}
+.pf-hrt{position:relative;height:4.6mm;border-radius:999px;display:flex;overflow:visible}
+.pf-hrt span{height:4.6mm}
+.pf-hrt .z1{flex:64;background:rgba(53,208,186,.22);border-radius:999px 0 0 999px}
+.pf-hrt .z2{flex:13;background:rgba(232,168,12,.28)}
+.pf-hrt .z3{flex:23;background:rgba(244,91,105,.28);border-radius:0 999px 999px 0}
+.pf-hrt .mk{position:absolute;top:-1.8mm;transform:translateX(-50%)}
+.pf-hrt .mk b{display:block;font-size:7.8pt;font-weight:700;white-space:nowrap;border-radius:999px;padding:0.5mm 2mm;line-height:1.35}
+.pf-hrt .pre b{background:var(--card);border:0.9pt solid var(--mut);color:var(--fg)}
+.pf-hrt .post b{background:#F45B69;color:#fff;border:0.9pt solid #F45B69}
+.pf-hrl{display:flex;margin-top:0.6mm;font-size:7.4pt;color:var(--mut)}
+.pf-hrl span:nth-child(1){flex:64}.pf-hrl span:nth-child(2){flex:13;text-align:center}
+.pf-hrl span:nth-child(3){flex:23;text-align:right}
+.pf-hrs{font-size:8.8pt;color:var(--mut);margin-top:1.4mm}
+.pf-hrs b{color:var(--fg)}.pf-hrs em{font-style:normal;color:#F45B69;font-weight:700}
+.pf-hrs b.ok{color:var(--ac2)}.pf-hrs b.no{color:#F45B69}
+.pf-hrs.no-hr{color:#F45B69;background:rgba(244,91,105,.12);border-radius:2mm;padding:1.6mm 2.4mm;margin:2.5mm 0 1mm}
+.pf-mets{display:flex;gap:1.6mm;margin:2mm 0}
+.pf-mets div{flex:1;border-radius:2mm;background:var(--soft);border:0.6pt solid var(--line);padding:1.8mm 0.6mm;text-align:center}
+.pf-mets b{display:block;font-size:10.5pt}
+.pf-mets span{font-size:7.6pt;color:var(--mut)}
+.pf-mets .big{background:var(--panel)}
+.pf-mets .big b{color:var(--ac);font-size:12.5pt;text-shadow:var(--glow)}
+.pf-mets .pt b{color:var(--ac2)}
+.pf-jw{margin:2mm 0 0}
+.pf-jb{display:flex;height:3.4mm;border-radius:999px;overflow:hidden;background:var(--soft)}
+.pf-jl{display:flex;flex-wrap:wrap;gap:2.4mm;margin-top:1.2mm;font-size:8pt;color:var(--mut)}
+.pf-jl span{display:inline-flex;align-items:center;gap:1mm}
+.pf-jl i{width:2.2mm;height:2.2mm;border-radius:50%;display:inline-block}
+.pf-jl b{color:var(--fg)}
 .pf-rf{margin-top:1mm}
 .pf-selfs{display:flex;gap:1.6mm;margin-top:2.5mm}
-.pf-selfs .pf-sf{flex:1;border:0.8pt solid #d8d8e4;border-radius:2mm;padding:1.4mm;text-align:center}
-.pf-selfs .pf-sf.on{border-color:#35D0BA;background:#EAFBF7}
-.pf-selfs span{display:block;font-size:7.8pt;color:#666;line-height:1.3}
-.pf-selfs b{font-size:9.5pt}
-.pf-late{background:#FFF4F5;border:0.8pt solid #F45B69;border-radius:2mm;padding:1.4mm 2mm;font-size:8.5pt;color:#c0392b;margin-bottom:2mm}
-.pf-end{margin-top:8mm;padding:6mm;border-radius:3mm;background:#F4F3FF;text-align:center;color:#3b34a8;font-size:11pt;line-height:1.9}
-.pf-end b{font-size:15pt}
+.pf-selfs .pf-sf{flex:1;border:0.8pt solid var(--line);border-radius:2mm;padding:1.4mm;text-align:center;background:var(--soft)}
+.pf-selfs .pf-sf.on{border-color:var(--ac2);background:var(--panel)}
+.pf-selfs span{display:block;font-size:7.6pt;color:var(--mut);line-height:1.3}
+.pf-selfs b{font-size:9.2pt}
+.pf-late{background:rgba(244,91,105,.14);border:0.8pt solid #F45B69;border-radius:2mm;padding:1.4mm 2mm;font-size:8.4pt;color:#F45B69;margin-bottom:2mm}
+.pf-end{margin-top:8mm;padding:6mm;border-radius:2.5mm;background:var(--panel);border:0.8pt solid var(--line);
+  text-align:center;color:var(--ac);font-size:10.5pt;line-height:1.9}
+.pf-end b{font-size:15pt;text-shadow:var(--glow)}
 @media print{.pf-bar{display:none}}
 `;
 
@@ -4626,7 +4744,7 @@ function pfOpen(cls, list) {
   const body = list.map(s => pfStudent(cls, s)).join("");
   const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8">
     <title>타바타 운동 포트폴리오 — ${pfEsc(cls)}</title><style>${PF_CSS}</style></head>
-    <body><div class="pf-bar"><button onclick="window.print()">🖨 인쇄 / PDF로 저장</button>
+    <body class="t-hud"><div class="pf-bar"><button class="go" onclick="window.print()">🖨 인쇄 / PDF로 저장</button><button onclick="document.body.classList.toggle('t-hud');document.body.classList.toggle('t-paper');this.textContent=document.body.classList.contains('t-hud')?'📄 종이용(밝게)':'🌑 화면용(HUD)'">📄 종이용(밝게)</button>
       <span>${pfEsc(cls)} · ${list.length}명 — 학생마다 새 쪽에서 시작합니다. 이 줄은 인쇄되지 않습니다.</span></div>
     ${body}</body></html>`;
   const w = window.open("", "_blank");
@@ -4673,7 +4791,7 @@ if ($("pfMineBtn")) $("pfMineBtn").addEventListener("click", () => {
   if (!ctx.plan && !ctx.rs.length) { alert("아직 묶을 기록이 없습니다. 운동을 한 번 해보세요."); return; }
   const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8">
     <title>${pfEsc(me.name)} — 타바타 운동 포트폴리오</title><style>${PF_CSS}</style></head>
-    <body><div class="pf-bar"><button onclick="window.print()">🖨 인쇄 / PDF로 저장</button>
+    <body class="t-hud"><div class="pf-bar"><button class="go" onclick="window.print()">🖨 인쇄 / PDF로 저장</button><button onclick="document.body.classList.toggle('t-hud');document.body.classList.toggle('t-paper');this.textContent=document.body.classList.contains('t-hud')?'📄 종이용(밝게)':'🌑 화면용(HUD)'">📄 종이용(밝게)</button>
       <span>이 줄은 인쇄되지 않습니다.</span></div>${pfRender(ctx)}</body></html>`;
   const w = window.open("", "_blank");
   if (w) { w.document.write(html); w.document.close(); }
