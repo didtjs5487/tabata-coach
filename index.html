@@ -4435,6 +4435,46 @@ function pfRender(ctx) {
       + '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '">' + bars + line + '</svg></div>';
   }
 
+  /* ── 회차별 심박 추이: 운동 전 / 운동 후, 그 사이를 상승폭으로 칠한다 ──
+     안정 시 심박이 내려가면 체력이 좋아졌다는 뜻이라 학생에게 보여줄 값어치가 있다. */
+  const hrRows = rs.map(function (r, i) { return { i: i, pre: +r.hrPre || 0, post: +r.hr || 0 }; })
+    .filter(function (x) { return x.pre && x.post; });
+  const preFirst = hrRows.length ? hrRows[0].pre : null;
+  const preLast = hrRows.length ? hrRows[hrRows.length - 1].pre : null;
+  const avgRise = hrRows.length
+    ? Math.round(hrRows.reduce(function (a, x) { return a + (x.post - x.pre); }, 0) / hrRows.length) : null;
+  let hrChart = "";
+  if (hrRows.length >= 2) {
+    const W = 560, H = 140, padL = 22, padR = 16, top = 22, bot = 26;
+    const lo = Math.min.apply(null, hrRows.map(function (x) { return x.pre; })) - 12;
+    const hi = Math.max.apply(null, hrRows.map(function (x) { return x.post; })) + 12;
+    const n = hrRows.length;
+    const X = function (i) { return padL + (n > 1 ? i * (W - padL - padR) / (n - 1) : (W - padL - padR) / 2); };
+    const Y = function (v) { return top + (hi - v) / (hi - lo) * (H - top - bot); };
+    const area = hrRows.map(function (x, i) { return X(i) + "," + Y(x.post); }).join(" ")
+      + " " + hrRows.map(function (x, i) { return X(n - 1 - i) + "," + Y(hrRows[n - 1 - i].pre); }).join(" ");
+    const dots = function (key, col, dy) {
+      return hrRows.map(function (x, i) {
+        return '<circle cx="' + X(i) + '" cy="' + Y(x[key]) + '" r="3.4" fill="' + col + '"/>'
+          + '<text x="' + X(i) + '" y="' + (Y(x[key]) + dy) + '" text-anchor="middle"'
+          + ' font-size="9" font-weight="700" fill="' + col + '">' + x[key] + '</text>';
+      }).join("");
+    };
+    hrChart = '<div class="pf-chart"><div class="pf-ct">회차별 <b class="hp">운동 직후 심박</b>과 <b class="hr0">안정 시 심박</b>'
+      + (avgRise != null ? ' &nbsp;·&nbsp; 평균 <b class="hp">+' + avgRise + '</b> 올랐어요' : '') + '</div>'
+      + '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="' + H + '">'
+      + '<polygon points="' + area + '" fill="#F45B69" fill-opacity=".10"/>'
+      + '<polyline fill="none" stroke="#F45B69" stroke-width="2" points="'
+        + hrRows.map(function (x, i) { return X(i) + "," + Y(x.post); }).join(" ") + '"/>'
+      + '<polyline fill="none" stroke="#12B39B" stroke-width="2" stroke-dasharray="4 3" points="'
+        + hrRows.map(function (x, i) { return X(i) + "," + Y(x.pre); }).join(" ") + '"/>'
+      + dots("post", "#F45B69", -8) + dots("pre", "#12B39B", 15)
+      + hrRows.map(function (x, i) {
+          return '<text x="' + X(i) + '" y="' + (H - 7) + '" text-anchor="middle" font-size="9" fill="currentColor" opacity=".5">' + (x.i + 1) + '회</text>';
+        }).join("")
+      + '</svg></div>';
+  }
+
   /* ── 활동 구성 · 누적 판정 · 최고 기록 ── */
   const nDuel = rs.filter(function (r) { return String(r.task || "").indexOf("vs") >= 0; }).length;
   const nTask = rs.filter(function (r) {
@@ -4455,6 +4495,52 @@ function pfRender(ctx) {
         return '<span><i style="background:' + x[2] + '"></i>' + x[0] + ' <b>' + x[1] + '</b></span>'; }).join("")
     + '</div></div>' : "";
 
+  /* ── 계획 대비 실천 ──
+     계획서에 스스로 적은 목표(주 몇 회·목표 실천 횟수)를 실제 기록과 견준다. */
+  const dayNum = function (d) { const t = Date.parse(String(d || "").slice(0, 10)); return isNaN(t) ? null : t / 86400000; };
+  const d0 = rs.length ? dayNum(rs[0].date) : null, d1 = rs.length ? dayNum(rs[rs.length - 1].date) : null;
+  const weeks = (d0 != null && d1 != null) ? Math.max(1, (d1 - d0 + 1) / 7) : null;
+  const perWeek = weeks ? Math.round(rs.length / weeks * 10) / 10 : null;
+  const targetN = p ? (+p.target || 0) : 0;
+  const freqN = p ? (+p.freq || 0) : 0;
+  const doneRate = targetN ? Math.round(rs.length / targetN * 100) : null;
+  const dilRate = rs.length ? Math.round(dil / rs.length * 100) : null;
+  const bar = function (label, now, goal, unit, pct) {
+    const w = Math.max(2, Math.min(100, pct == null ? 0 : pct));
+    return '<div class="pf-gl"><div class="pf-gt"><span>' + label + '</span>'
+      + '<b>' + now + (goal ? ' / ' + goal : '') + unit + '</b>'
+      + (pct == null ? '' : '<i>' + pct + '%</i>') + '</div>'
+      + '<div class="pf-gb"><span style="width:' + w + '%"></span></div></div>';
+  };
+  const goalPanel = (p && (targetN || freqN)) || rs.length ? '<div class="pf-goalp brk">'
+    + '<div class="pf-gh">계획 대비 실천</div>'
+    + (targetN ? bar("목표 실천 횟수", rs.length, targetN, "회", doneRate) : "")
+    + (freqN && perWeek != null ? bar("주당 실천", perWeek, freqN, "회", Math.round(perWeek / freqN * 100)) : "")
+    + (dilRate != null ? bar("성실 수행 비율", dil, rs.length, "회", dilRate) : "")
+    + '</div>' : "";
+
+  /* ── 심박이 알려주는 것 ── */
+  const HM = 220 - STUDENT_AGE;
+  const zc = [0, 0, 0];
+  rs.forEach(function (r) { const v = +r.hr || 0; if (v) zc[v / HM >= 0.77 ? 2 : v / HM >= 0.64 ? 1 : 0]++; });
+  const tips = [];
+  if (preFirst != null && preLast != null && hrRows.length > 1) {
+    const d = preFirst - preLast;
+    if (d >= 3) tips.push(['안정 시 심박이 <b>' + preFirst + ' → ' + preLast + '</b>으로 <b>' + d + '회</b> 내려갔어요.',
+      '심장이 한 번에 더 많은 피를 보내게 되었다는 뜻입니다. 심폐지구력이 좋아진 신호예요.']);
+    else if (d <= -3) tips.push(['안정 시 심박이 <b>' + Math.abs(d) + '회</b> 올라갔어요.',
+      '잰 날의 컨디션·긴장·카페인에도 영향을 받습니다. 편안한 상태에서 다시 재어 보세요.']);
+    else tips.push(['안정 시 심박은 <b>' + preFirst + ' → ' + preLast + '</b>으로 큰 변화가 없었어요.',
+      '안정 시 심박은 천천히 바뀝니다. 꾸준히 이어가는 것이 중요합니다.']);
+  }
+  if (avgRise != null) tips.push(['운동하면 평균 <b>+' + avgRise + '회</b>까지 올랐어요.',
+    avgRise >= 40 ? '몸이 충분히 힘을 썼다는 뜻입니다.' : '조금 더 힘껏 하면 심박이 더 오릅니다.']);
+  if (zc[0] + zc[1] + zc[2] > 0) tips.push(['운동 강도 — 고강도 <b>' + zc[2] + '회</b> · 중강도 <b>' + zc[1] + '회</b> · 저강도 <b>' + zc[0] + '회</b>',
+    '최대 심박(220 − 나이 = ' + HM + ')의 77% 이상이면 고강도, 64% 이상이면 중강도입니다.']);
+  const hrTips = tips.length ? '<div class="pf-tips brk"><div class="pf-gh">심박수가 알려주는 것</div>'
+    + tips.map(function (t) { return '<div class="pf-tip"><div class="pf-tiph">' + t[0] + '</div><span>' + t[1] + '</span></div>'; }).join("")
+    + '</div>' : "";
+
   const mix = rs.length ? '<div class="pf-mix">'
     + [["공통 과제", nTask], ["자율 실천", nFree], ["결투", nDuel]]
       .filter(function (a) { return a[1] > 0; })
@@ -4463,19 +4549,21 @@ function pfRender(ctx) {
     + (bestAcc ? '<span><b>' + bestAcc + '%</b> 최고 정확도</span>' : '')
     + '</div>' : "";
 
-  /* 아크 리액터 — 최고 점수를 원형 게이지로 */
+  /* 아크 리액터 — 단원 전체에서 가장 잘한 회차를 원형 게이지로.
+     "S · 90점"만 덩그러니 있으면 이번 한 번의 결과처럼 보인다(앱의 세션 결과 화면과 똑같은 모양이라 더 그렇다).
+     그래서 "N회 중 최고"라는 이름표를 반드시 함께 붙인다. */
   const reactor = (function () {
     if (best == null) return "";
     const R = 44, C2 = 2 * Math.PI * R, on = C2 * Math.min(best, 100) / 100;
     const gc = bestG.c;
-    return '<svg class="pf-reactor" width="112" height="112" viewBox="0 0 112 112">'
+    return '<div class="pf-reactorwrap"><svg class="pf-reactor" width="112" height="112" viewBox="0 0 112 112">'
       + '<circle cx="56" cy="56" r="' + R + '" fill="none" stroke="currentColor" stroke-opacity=".18" stroke-width="9"/>'
       + '<circle cx="56" cy="56" r="' + R + '" fill="none" stroke="' + gc + '" stroke-width="9" stroke-linecap="round"'
       + ' stroke-dasharray="' + on.toFixed(1) + ' ' + (C2 - on).toFixed(1) + '" transform="rotate(-90 56 56)"/>'
       + '<circle cx="56" cy="56" r="31" fill="none" stroke="' + gc + '" stroke-opacity=".3" stroke-width="1"/>' + '<circle cx="56" cy="56" r="25" fill="none" stroke="currentColor" stroke-opacity=".16" stroke-width="1"/>'
       + '<text x="56" y="54" text-anchor="middle" font-size="28" font-weight="700" fill="' + gc + '">' + bestG.g + '</text>'
       + '<text x="56" y="72" text-anchor="middle" font-size="11" fill="currentColor" opacity=".7">' + best + '점</text>'
-      + '</svg>';
+      + '</svg><div class="pf-reactorcap">' + rs.length + '회 중<br><b>최고 기록</b></div></div>';
   })();
 
   /* 내가 고른 동작을 설계도처럼 나열 (앱의 스틱맨 SVG를 그대로 쓴다) */
@@ -4500,14 +4588,17 @@ function pfRender(ctx) {
     + (p && (GOAL_LABEL[p.goal] || String(p.aim || "").trim())
       ? '<div class="pf-goal"><span>내 운동 목표</span><b>' + (GOAL_LABEL[p.goal] || "–") + '</b>'
         + (String(p.aim || "").trim() ? '<em>“' + pfEsc(p.aim) + '”</em>' : '') + '</div>' : '')
+    + '<div class="pf-cv-sec">📋 전체 활동 요약 <span>· 단원 전체 ' + rs.length + '회를 합친 기록입니다</span></div>'
     + '<div class="pf-cv-mid">' + reactor
     + '<div class="pf-cv-stats">'
     + [["운동한 날", rs.length + "회"], ["움직인 시간", mins + "분"], ["평균 정확도", st ? st.avgAcc + "%" : "–"],
        ["성실 수행", dil + "회"], ["성찰 기록", Object.keys(logs).length + "회"],
-       ["첫 회 → 최고", (first == null ? "–" : first + " → " + best)]]
+       ["첫 회 → 최고", (first == null ? "–" : first + " → " + best)],
+       ["안정 시 심박", (preFirst == null ? "–" : (hrRows.length > 1 ? preFirst + " → " + preLast : String(preFirst)))],
+       ["평균 상승폭", (avgRise == null ? "–" : "+" + avgRise)]]
       .map(function (a) { return '<div class="brk"><b>' + a[1] + '</b><span>' + a[0] + '</span></div>'; }).join("")
     + '</div></div>'
-    + mix + jSum + wire + chart
+    + mix + goalPanel + jSum
     + '<div class="pf-cv-ft">이 기록은 내가 직접 계획하고, 실천하고, 돌아본 것입니다.</div>'
     + '</section>';
 
@@ -4555,6 +4646,18 @@ function pfRender(ctx) {
     const dOk = isDiligent(r);
     const pre = +r.hrPre || 0, post = +r.hr || 0;
     const rise = (pre && post) ? (post - pre) : null;
+    /* 지난 회차와 견준 변화. 안정 시 심박은 내려가는 쪽이 좋고,
+       운동 직후 심박과 상승폭은 올라가는 쪽이 열심히 했다는 뜻이다. */
+    const prev = i > 0 ? rs[i - 1] : null;
+    const dPre = (prev && pre && +prev.hrPre) ? pre - (+prev.hrPre) : null;
+    const dPost = (prev && post && +prev.hr) ? post - (+prev.hr) : null;
+    const pRise = (prev && +prev.hrPre && +prev.hr) ? (+prev.hr - +prev.hrPre) : null;
+    const dRise = (rise != null && pRise != null) ? rise - pRise : null;
+    const chg = function (v, goodDown) {
+      if (v == null || v === 0) return "";
+      const up = v > 0, good = goodDown ? !up : up;
+      return '<em class="' + (good ? "g" : "b") + '">' + (up ? "▲" : "▼") + Math.abs(v) + '</em>';
+    };
 
     /* 심박 구간 게이지 — 최대심박(220-나이) 대비 어디까지 올랐는지 */
     const HMAX = 220 - STUDENT_AGE;
@@ -4567,8 +4670,9 @@ function pfRender(ctx) {
       + '<i class="mk post" style="left:' + pos(post) + '%"><b>' + post + '</b></i>'
       + '</div>'
       + '<div class="pf-hrl"><span>저강도</span><span>중강도</span><span>고강도</span></div>'
-      + '<div class="pf-hrs">안정 시 <b>' + (pre || "–") + '</b> → 운동 직후 <b>' + post + '</b>'
-      + (rise != null ? ' <em>+' + rise + '</em>' : '')
+      + '<div class="pf-hrs">안정 시 <b>' + (pre || "–") + '</b>' + chg(dPre, true)
+      + ' → 운동 직후 <b>' + post + '</b>' + chg(dPost, false)
+      + (rise != null ? ' &nbsp;상승폭 <em class="rise">+' + rise + '</em>' + chg(dRise, false) : '')
       + (zone ? ' · <b>' + zone + '</b>' : '')
       + ' · ' + (dOk ? '<b class="ok">성실 수행 인정</b>' : '<b class="no">기준 미달</b>') + '</div>'
       + '</div>' : '<div class="pf-hrs no-hr">운동 후 심박수를 재지 않았습니다</div>';
@@ -4633,7 +4737,13 @@ function pfRender(ctx) {
     ? PF_FQ.map(function (t, k) { return '<div class="pf-sub">' + (k + 1) + '. ' + t + '</div><div class="pf-a">' + pfText(f["q" + (k + 1)]) + '</div>'; }).join("")
     : '<div class="pf-none">마무리 성찰을 쓰지 않았습니다.</div>';
 
-  return '<article class="pf-stu">' + cover
+  /* 2쪽 — 기록으로 보는 변화 (그래프와 해석을 모아 둔다) */
+  const analysis = (chart || hrChart || hrTips || wire)
+    ? '<div class="pf-page"><h2 class="pf-h2"><span>📈</span>기록으로 보는 나의 변화</h2>'
+      + chart + hrChart + hrTips + wire + '</div>'
+    : "";
+
+  return '<article class="pf-stu">' + cover + analysis
     + '<div class="pf-page"><h2 class="pf-h2"><span>Ⓐ</span>내가 세운 운동 계획</h2>' + plan + '</div>'
     + '<div class="pf-page"><h2 class="pf-h2"><span>Ⓑ</span>내가 실천한 기록과 그날의 생각<i>' + rs.length + '회</i></h2>' + time + '</div>'
     + '<div class="pf-page"><h2 class="pf-h2"><span>Ⓒ</span>단원을 마치며</h2>' + fin
@@ -4692,11 +4802,35 @@ body{font-family:"Malgun Gothic","맑은 고딕",sans-serif;margin:0;font-size:1
 .pf-mix span{flex:1 1 auto;border:0.8pt solid var(--line);border-radius:999px;padding:1.2mm 3.4mm;
   font-size:9pt;color:var(--mut);text-align:center;background:var(--soft)}
 .pf-mix b{color:var(--fg);font-size:10.5pt}
+.pf-goalp{margin-top:3.5mm;border:0.8pt solid var(--line);border-radius:2.5mm;padding:2.8mm 3.2mm;background:var(--soft);position:relative}
+.pf-gh{font-size:9pt;font-weight:700;color:var(--ac);margin-bottom:1.8mm}
+.pf-gl{margin:1.6mm 0}
+.pf-gt{display:flex;align-items:baseline;gap:2mm;font-size:9pt;color:var(--mut);margin-bottom:0.8mm}
+.pf-gt span{flex:1}
+.pf-gt b{color:var(--fg);font-size:10pt}
+.pf-gt i{font-style:normal;color:var(--ac);font-weight:700;font-size:9.5pt;min-width:11mm;text-align:right}
+.pf-gb{height:3mm;border-radius:999px;background:var(--panel);overflow:hidden}
+.pf-gb>span{display:block;height:3mm;border-radius:999px;background:var(--ac)}
+.pf-tips{margin-top:3.5mm;border:0.8pt solid var(--line);border-radius:2.5mm;padding:2.8mm 3.2mm;background:var(--soft);position:relative}
+.pf-tip{margin:1.8mm 0;padding-left:3mm;border-left:1.6pt solid var(--ac2)}
+.pf-tip .pf-tiph{font-size:10pt;font-weight:700}
+.pf-tip span{font-size:9pt;color:var(--mut)}
 .pf-jsum{margin-top:3.5mm;border:0.8pt solid var(--line);border-radius:2.5mm;padding:2.6mm 3mm;background:var(--soft)}
 .pf-jt{font-size:9pt;color:var(--mut);margin-bottom:1.4mm}
 .pf-jt b{color:var(--fg);font-size:10.5pt}
 .pf-ct b.s{color:var(--fg)}.pf-ct b.a{color:var(--ac2)}
-.pf-cv-mid{display:flex;gap:5mm;align-items:center;margin:6mm 0 0}
+.pf-ct b.hp{color:#F45B69}.pf-ct b.hr0{color:#12B39B}
+.pf-hrs em.rise{color:#F45B69;font-weight:700;font-style:normal}
+.pf-hrs em.g,.pf-hrs em.b{font-style:normal;font-size:8pt;font-weight:700;margin-left:0.7mm;
+  border-radius:999px;padding:0.2mm 1.5mm}
+.pf-hrs em.g{color:#0E8F7B;background:rgba(18,179,155,.15)}
+.pf-hrs em.b{color:#C0392B;background:rgba(244,91,105,.14)}
+.pf-cv-sec{margin:6mm 0 0;font-size:10.5pt;font-weight:700;color:var(--fg)}
+.pf-cv-sec span{font-weight:400;font-size:9pt;color:var(--mut);margin-left:1mm}
+.pf-cv-mid{display:flex;gap:5mm;align-items:center;margin:3mm 0 0}
+.pf-reactorwrap{flex:none;display:flex;flex-direction:column;align-items:center;gap:1mm}
+.pf-reactorcap{font-size:8pt;color:var(--mut);text-align:center;line-height:1.35}
+.pf-reactorcap b{color:var(--fg);font-size:8.6pt}
 .pf-reactor{flex:none}
 .pf-cv-stats{flex:1;display:flex;flex-wrap:wrap;gap:2mm}
 .pf-cv-stats div{flex:1 1 30%;background:var(--panel);border:0.8pt solid var(--line);border-radius:2.5mm;padding:2.6mm 1mm;text-align:center}
