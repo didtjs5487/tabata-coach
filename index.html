@@ -5411,12 +5411,16 @@ async function start(opts){
       // 무심코·장난으로 남의 학번을 쓰는 흔한 경우는 이 한 번의 확인으로 걸러진다.
       const rawNow=($("stuId").value||"").replace(/\D/g,"");
       const mismatch=deviceOwnerId&&rawNow&&deviceOwnerId!==rawNow;
+      const known=deviceOwnerId&&rawNow&&deviceOwnerId===rawNow;   // 이 기기에 저장된 사람과 같음 — 매번 되묻지 않는다
       if(mismatch){
         const oldKey=stuIdToKey(deviceOwnerId);
         const oldLabel=oldKey?(oldKey.cls+"반 "+(deviceOwnerName||"(이름 미상)")+" 님"):((deviceOwnerName||"이전 사용자")+" 님");
         const newLabel=(me.cls?me.cls+"반 ":"")+me.name;
         if(!confirm(`⚠️ 이 기기는 원래\n   ${oldLabel}으로 쓰였어요\n\n지금 입력한 '${newLabel}'가\n진짜 본인이 맞나요?\n\n[확인] 맞음, 계속 · [취소] 학번 다시 입력`)){goPage("pgSetup");return;}
         deviceOwnerId=rawNow; deviceOwnerName=me.name;   // 확인했으니 이제부터는 이 사람 기준으로 비교한다
+      } else if(known){
+        // 이 기기 학번과 지금 학번이 그대로임 — 매번 확인창을 띄우지 않고 바로 진행한다.
+        // (실수로 다른 실제 학번을 입력했다면 그건 위 mismatch 분기가 그대로 잡아준다.)
       } else if(!confirm(`아래 정보로 기록됩니다. 맞나요?\n\n   ${me.cls?me.cls+"반 ":""}${me.name}\n\n[확인] 시작 · [취소] 학번 다시 입력`)){goPage("pgSetup");return;}
     }
   }
