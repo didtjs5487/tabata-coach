@@ -2016,7 +2016,11 @@ function checkBattleAutoStart(){
     const iAmC=sameP(b.ch,me), iAmO=sameP(b.op,me);
     if(!iAmC&&!iAmO)return false;
     if(b.results&&b.results[iAmC?"c":"o"])return false;
-    return b.startAt>now-20000; // 20초 넘게 지난 신호는 무시(앱을 늦게 켠 경우)
+    // 이미 대기 중인 내 결투는 시간이 좀 지났다고 놓치면 안 된다 — 상대 ready 신호를 받으려고
+    // Firebase에 쓰기만 해도 이 함수가 재호출되는데, 그때마다 아래 20초 기준에 걸려 대기가
+    // 중간에 취소되는 걸 막는다(새로 진입할 때만 오래된 신호를 거른다).
+    if(battleCd&&battleCd.id===id)return true;
+    return b.startAt>now-20000; // 새로 진입할 때만: 20초 넘게 지난 신호는 무시(앱을 늦게 켠 경우)
   });
   if(!hit){ if(battleCd)cancelBattleCd(); return; }
   const [id,b]=hit;
@@ -2028,26 +2032,44 @@ function checkBattleAutoStart(){
     if(!parqPassed)need.push("건강체크");
     if(!preHrOK())need.push("운동 전 심박수");
     $("battleCdMsg").textContent=need.length
-      ? "⚠️ "+need.join(" · ")+"를 아직 안 했어요 — 지금 마치지 않으면 함께 출발하지 못합니다." : ""; }
+      ? "⚠️ "+need.join(" · ")+"를 마치지 않으면 상대와 같이 출발하지 못하고 출발이 늦어져요." : ""; }
   $("battleCdOverlay").style.display="flex";
-  battleCd={id,timer:null,lastBeep:99};
+  battleCd={id,timer:null,lastBeep:99,readySent:false};
+  // 시각(startAt)이 되어도 둘 다 준비돼야만 진짜로 출발한다 — 한쪽만 준비됐다고 먼저
+  // 가버리면 '같은 강도로 동시에 대결'이 깨지기 때문. battles/{id}는 동기화마다 통째로
+  // 새 객체로 갈아끼워지므로(id로 매번 다시 읽어야 함), b를 그대로 쓰지 않고 battles[id]를
+  // 매 틱마다 새로 읽어 상대가 방금 보낸 ready 신호를 놓치지 않는다.
   const tick=()=>{
     if(!battleCd)return;
-    const left=Math.ceil((b.startAt-Date.now())/1000);
+    const liveB=battles[id]||b;
+    const left=Math.ceil((liveB.startAt-Date.now())/1000);
     if(left>0){
       $("battleCdNum").textContent=left;
       if(left<=3&&left!==battleCd.lastBeep){battleCd.lastBeep=left;beep(700,.1);}
       return;
     }
-    cancelBattleCd();
-    if(running)return;
-    if(!parqPassed){toast("건강체크를 마치고 [시작]을 눌러주세요","task","🩺");return;}
-    if(!preHrOK()){   // 심박을 안 쟀거나 잰 지 오래됐으면 자동 출발시키지 않는다
-      toast("운동 전 심박수를 재고 [시작]을 눌러주세요","task","❤️");
-      try{$("preStart").scrollIntoView({behavior:"smooth",block:"center"});}catch(e){}
-      return;
+    if(running){cancelBattleCd();return;}
+    const role=sameP(liveB.ch,me)?"c":"o", oppRole=role==="c"?"o":"c";
+    const amReady=parqPassed&&preHrOK();
+    if(amReady&&!battleCd.readySent){
+      battleCd.readySent=true;
+      fmod.update(fmod.ref(fdb,"battles/"+id),{["ready/"+role]:true}).catch(()=>{});
     }
-    start({auto:true});
+    const oppReady=!!(liveB.ready&&liveB.ready[oppRole]);
+    if(amReady&&oppReady){ cancelBattleCd(); start({auto:true}); return; }
+    // 아직 둘 다 준비된 게 아니다 — 포기하지 않고 잠시 더 기다려 실제로 같이 출발할 확률을 높인다.
+    $("battleCdNum").textContent="⏳";
+    $("battleCdMsg").textContent=!amReady
+      ? "⚠️ 건강체크·운동 전 심박수를 마치면 상대와 함께 출발해요"
+      : "상대방이 준비하는 중이에요 — 조금만 기다려 주세요";
+    if(Date.now()-liveB.startAt>60000){   // 60초를 기다려도 안 맞으면 더는 묶어두지 않는다
+      cancelBattleCd();
+      if(amReady){ start({auto:true}); }
+      else{
+        toast("상대는 먼저 시작했을 수 있어요 — 준비되면 [시작]을 눌러 이어가세요","task","⏱️");
+        try{$("preStart").scrollIntoView({behavior:"smooth",block:"center"});}catch(e){}
+      }
+    }
   };
   battleCd.timer=setInterval(tick,200); tick();
 }
