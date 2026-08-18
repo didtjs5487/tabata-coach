@@ -1316,6 +1316,14 @@
     <button id="boardCtrlStop" style="background:#F45B69;color:#fff;border:0;border-radius:11px;padding:11px 20px;font-family:'Barlow Condensed';font-weight:700;font-size:clamp(15px,2vw,20px);cursor:pointer;box-shadow:0 3px 12px rgba(244,91,105,.3)">⏹ 전체 정지</button>
     <span id="boardCtrlMsg" style="color:#DAD8FF;font-size:clamp(12px,1.6vw,15px)"></span>
   </div>
+  <!-- 과제를 지정해 '다같이 시작'을 누르면, 학생은 바로 출발하지 않고 각자 심박부터 잰다.
+       여기서 실시간 완료 인원을 보여주다가 [지금 다음 단계로]를 누르면 그 순간 다같이 출발한다
+       (아직 못 잰 학생은 자율 실천으로 자동 전환 — 반 전체가 한 명 때문에 무한정 멈추지 않는다). -->
+  <div id="boardGoPanel" style="display:none;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:12px 16px">
+    <span style="color:#DAD8FF;font-size:clamp(13px,1.6vw,16px)">🫀 심박 측정 대기 — <b id="boardGoCount" style="color:#fff">0/0명</b></span>
+    <span id="boardGoWaiting" style="color:#A8AEE0;font-size:12px"></span>
+    <button id="boardCtrlGo" style="margin-left:auto;background:#3CBB75;color:#08210F;border:0;border-radius:11px;padding:11px 20px;font-family:'Barlow Condensed';font-weight:700;font-size:clamp(15px,2vw,20px);cursor:pointer;box-shadow:0 3px 12px rgba(60,187,117,.35)">▶ 지금 다음 단계로</button>
+  </div>
   <div style="overflow-y:auto;flex:1;min-height:0">
     <div class="board-title">🚦 접속 현황 · 실천 순위</div>
     <div id="bigStageRows" class="stage-rows"></div>
@@ -3373,6 +3381,39 @@ function renderBoardRows(){
     box.appendChild(head);
     buildStageRows(c).forEach(r=>box.appendChild(r));
   });
+  renderBoardGo();
+}
+/* ---------- 🫀 다같이 시작 — 심박 측정 대기 게이트 ----------
+   과제를 지정해 '다같이 시작'을 누르면 학생은 바로 출발하지 않고 각자 심박부터 잰다.
+   여기서 반 전체의 완료 인원(stage>=2, 운동 전 심박 측정 완료)을 실시간으로 보여주다가
+   교사가 [지금 다음 단계로]를 누른 순간에만 다같이 출발한다. */
+let boardGateTaskId=null, boardGateCls=[];
+function boardReadyInfo(clsList,minStage){
+  const now=Date.now();
+  let done=0, total=0; const waiting=[];
+  clsList.forEach(c=>{
+    const clsPresence=presenceData[c]||{};
+    const byNo={};
+    Object.keys(clsPresence).forEach(k=>{ const p=clsPresence[k]; if(!p)return; const no=parseInt(k.slice(3,5),10); if(!isNaN(no))byNo[no]=p; });
+    (rosters[c]||[]).forEach(s=>{
+      total++;
+      const p=byNo[parseInt(s.no,10)];
+      const stale=!p||(now-(+p.ts||0)>PRESENCE_STALE_MS);
+      const stage=stale?0:(p.stage||0);
+      if(stage>=minStage)done++; else waiting.push(s.name);
+    });
+  });
+  return {done,total,waiting};
+}
+function renderBoardGo(){
+  const panel=$("boardGoPanel"); if(!panel)return;
+  if(!boardGateTaskId||!boardGateCls.length){ panel.style.display="none"; return; }
+  panel.style.display="flex";
+  const {done,total,waiting}=boardReadyInfo(boardGateCls,2);
+  $("boardGoCount").textContent=`${done}/${total}명`;
+  $("boardGoWaiting").textContent=waiting.length
+    ? `대기: ${waiting.slice(0,6).join(", ")}${waiting.length>6?` 외 ${waiting.length-6}명`:""}`
+    : "전원 준비 완료!";
 }
 
 /* ---------- 성적 자동 집계 (실천 15점 환산) ---------- */
@@ -5427,6 +5468,13 @@ async function start(opts){
   // 배틀 동시 시작처럼 이미 확인을 마친 자동 시작은 확인창을 건너뛴다(그래야 양쪽이 같은 순간에 출발한다)
   const auto=!!(opts&&opts.auto===true);
   if(!seq.length){alert("운동 구성이 비어 있습니다. 운동 설계에서 추가해 주세요.");goPage("pgSetup");return;}
+  // 반 전체 '다같이 시작' 대기 중에 스스로 [시작]을 누른 경우 — 계속 기다릴지, 혼자 먼저
+  // 갈지 확인한다. 자동(auto) 시작은 이미 게이트를 통과해 온 것이므로 여기서 걸리지 않는다.
+  if(!auto && boardWaitTaskId){
+    if(!confirm("⏳ 선생님이 아직 '다같이 시작'을 누르지 않았어요.\n혼자 지금 시작할까요? (자율 실천으로 전환됩니다)"))return;
+    boardWaitTaskId=null;
+    if(currentTask)clearTask();
+  }
   // 학번 오타로 다른 학생 이름에 기록이 쌓이는 사고를 막기 위해, 시작 전 내 정보를 한 번 확인시킨다.
   if(!auto){
     const me=myKey();
@@ -6126,6 +6174,9 @@ function srvMsg(t,err){ $("srvStatus").innerHTML=err?`<span class="err">${t}</sp
 function setLive(t,err){ $("liveStatus").innerHTML=err?`<span class="err">${t}</span>`:t; updateSaveStatus(); }
 let fdb=null,fmod=null,fbBooting=false;
 let lastCtrlTs=0;
+// 반 전체 '다같이 시작'에서 심박 측정을 기다리는 동안 어떤 과제를 기다리는 중인지 담아 둔다.
+// 'go' 신호가 오거나(같은 taskId일 때만 반응) [시작]을 직접 눌러 혼자 진행하기로 하면 비운다.
+let boardWaitTaskId=null;
 window.addEventListener("DOMContentLoaded",()=>{});
 
 
@@ -6308,18 +6359,39 @@ function attachFbListeners(){
     if(!c||!c.cmd||!c.ts)return;
     if(c.ts===lastCtrlTs)return; lastCtrlTs=c.ts;
     if(Date.now()-c.ts>15000)return; // 오래된 신호 무시
+    const taskOk=c.taskId && assignments[c.taskId] && taskHasClass(assignments[c.taskId],myKey().cls);
     if(c.cmd==="start"){
-      if(!running && parqPassed && document.querySelector("nav button.on")?.dataset.page==="pgWork"){
-        // 선생님이 과제를 지정해 보냈으면 그 과제 구성으로 맞춘 뒤 시작한다
-        if(c.taskId && assignments[c.taskId] && taskHasClass(assignments[c.taskId],myKey().cls))
-          applyAssignment(c.taskId);
+      if(taskOk){
+        // 과제를 지정한 '다같이 시작'은 즉시 출발이 아니라, 각자 심박부터 재고
+        // 선생님의 'go' 신호(다같이 대기 패널의 [지금 다음 단계로])를 기다린다 —
+        // 안 그러면 준비 속도가 저마다 달라 단계가 뒤섞인 채로 시작하게 된다.
+        applyAssignment(c.taskId);
+        boardWaitTaskId=c.taskId;
+        showWorkSteps();
+        if(!running)goPage("pgWork");
+        toast("🫀 반 전체가 함께 하는 과제예요 — 심박 측정을 마치면 선생님 신호에 맞춰 다같이 시작해요","task","📢");
+      } else if(!running && parqPassed && document.querySelector("nav button.on")?.dataset.page==="pgWork"){
         showWorkSteps(); // 아직 고르지 않았어도 선생님 신호가 오면 단계가 보이도록
         start();
       } else if(!running){
         // 운동 탭이 아니거나 준비 안 됨 → 안내
         alert("📢 선생님이 '다같이 시작'을 눌렀어요! 운동하기 화면에서 건강체크 후 시작하세요.");
       }
+    } else if(c.cmd==="go"){
+      // 반 전체가 다같이 출발하는 순간 — 심박 측정을 마친 학생만 그 자리에서 함께 시작하고,
+      // 못 마친 학생은 과제에서 빠져 자율 실천으로 이어간다(한 명 때문에 전체가 안 막히도록).
+      if(boardWaitTaskId && c.taskId===boardWaitTaskId){
+        boardWaitTaskId=null;
+        if(!running){
+          if(currentTask&&currentTask.id===c.taskId&&preHrOK()){ showWorkSteps(); start({auto:true}); }
+          else{
+            if(currentTask&&currentTask.id===c.taskId)clearTask();
+            toast("친구들이 먼저 출발했어요 — 준비되면 자율 실천으로 이어가세요","task","🌱");
+          }
+        }
+      }
     } else if(c.cmd==="stop"){
+      boardWaitTaskId=null;
       if(running)stopAll();
     }
   });
@@ -6740,21 +6812,35 @@ $("boardBig").addEventListener("click",()=>{
   $("classBoardOverlay").style.display="flex";
 });
 $("boardClose").addEventListener("click",()=>{ $("classBoardOverlay").style.display="none"; });
-/* 켜져 있는 모든 반에 같은 시각(ts)으로 신호를 보낸다 — 합반 수업도 동시에 시작된다 */
+/* 켜져 있는 모든 반에 같은 시각(ts)으로 신호를 보낸다 — 합반 수업도 동시에 시작된다.
+   과제를 지정한 'start'는 즉시 출발이 아니라 '각자 심박부터 재고 대기'로 바뀌었고,
+   실제 동시 출발은 뒤이은 'go' 신호(위 대기 패널의 [지금 다음 단계로])가 담당한다. */
 function sendControlBoard(cmd){
   const msgEl=$("boardCtrlMsg");
   if(!fdb){alert("서버(Firebase)에 연결되어야 사용할 수 있습니다.");return;}
   const list=boardClasses.filter(c=>rosters[c]);
   if(!list.length){msgEl.innerHTML='<span class="err">먼저 반을 선택하세요.</span>';return;}
   const ts=Date.now();
-  const taskId=(cmd==="start"&&$("boardTaskSelect"))?$("boardTaskSelect").value:"";
+  let taskId="";
+  if(cmd==="start"){
+    taskId=$("boardTaskSelect")?$("boardTaskSelect").value:"";
+    boardGateTaskId=taskId||null; boardGateCls=taskId?[...list]:[];
+  } else if(cmd==="go"){
+    taskId=boardGateTaskId||"";
+  }
   const tName=taskId&&assignments[taskId]?` · 📋 ${assignments[taskId].title}`:"";
+  const label=cmd==="start"?(taskId?"준비(심박 측정)":"시작"):cmd==="go"?"다같이 시작":"정지";
   Promise.all(list.map(c=>fmod.set(fmod.ref(fdb,"control/"+c),{cmd,cls:c,ts,taskId})))
-    .then(()=>{msgEl.textContent=`${cmd==="start"?"▶":"⏹"} ${list.map(shortCls).join(", ")}반에 ${cmd==="start"?"시작":"정지"} 신호를 보냈습니다${tName}`;})
+    .then(()=>{
+      msgEl.textContent=`${cmd==="go"?"🚀":cmd==="start"?"▶":"⏹"} ${list.map(shortCls).join(", ")}반에 ${label} 신호를 보냈습니다${tName}`;
+      if(cmd==="go"||cmd==="stop"){ boardGateTaskId=null; boardGateCls=[]; }
+      renderBoardGo();
+    })
     .catch(()=>{msgEl.innerHTML='<span class="err">전송 실패 — 연결을 확인하세요.</span>';});
 }
 $("boardCtrlStart").addEventListener("click",()=>sendControlBoard("start"));
 $("boardCtrlStop").addEventListener("click",()=>sendControlBoard("stop"));
+$("boardCtrlGo")&&$("boardCtrlGo").addEventListener("click",()=>sendControlBoard("go"));
 
 loadAll();
 shownLevel=levelIndex(totalPts);
