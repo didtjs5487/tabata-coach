@@ -5042,7 +5042,7 @@ function pfOpen(cls, list) {
   const body = list.map(s => pfStudent(cls, s)).join("");
   const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8">
     <title>타바타 운동 포트폴리오 — ${pfEsc(cls)}</title><style>${PF_CSS}</style></head>
-    <body><div class="pf-bar"><button class="go" onclick="window.print()">🖨 인쇄 / PDF로 저장</button><button onclick="var d=document.body.classList.toggle('t-hud');this.textContent=d?'📄 밝은 배경으로':'🌑 어두운 화면용으로'">🌑 어두운 화면용으로</button>
+    <body><div class="pf-bar"><button class="go" onclick="window.print()">🖨 인쇄 / PDF로 저장</button><button onclick="var d=document.body.classList.toggle('t-hud');this.textContent=d?'📄 밝은 배경으로':'🌑 어두운 화면용으로'">🌑 어두운 화면용으로</button><button onclick="window.close()">✕ 닫기</button>
       <span>${pfEsc(cls)} · ${list.length}명 — 학생마다 새 쪽에서 시작합니다. 이 줄은 인쇄되지 않습니다.</span></div>
     ${body}</body></html>`;
   const w = window.open("", "_blank");
@@ -5089,7 +5089,7 @@ if ($("pfMineBtn")) $("pfMineBtn").addEventListener("click", () => {
   if (!ctx.plan && !ctx.rs.length) { alert("아직 묶을 기록이 없습니다. 운동을 한 번 해보세요."); return; }
   const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8">
     <title>${pfEsc(me.name)} — 타바타 운동 포트폴리오</title><style>${PF_CSS}</style></head>
-    <body><div class="pf-bar"><button class="go" onclick="window.print()">🖨 인쇄 / PDF로 저장</button><button onclick="var d=document.body.classList.toggle('t-hud');this.textContent=d?'📄 밝은 배경으로':'🌑 어두운 화면용으로'">🌑 어두운 화면용으로</button>
+    <body><div class="pf-bar"><button class="go" onclick="window.print()">🖨 인쇄 / PDF로 저장</button><button onclick="var d=document.body.classList.toggle('t-hud');this.textContent=d?'📄 밝은 배경으로':'🌑 어두운 화면용으로'">🌑 어두운 화면용으로</button><button onclick="window.close()">✕ 닫기</button>
       <span>이 줄은 인쇄되지 않습니다.</span></div>${pfRender(ctx)}</body></html>`;
   const w = window.open("", "_blank");
   if (w) { w.document.write(html); w.document.close(); }
