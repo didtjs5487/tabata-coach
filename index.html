@@ -5718,7 +5718,8 @@ function showHr(bpm){
   return {pct,zone,diligent};
 }
 $("hrSave").addEventListener("click",()=>{
-  const bpm=+$("hrManual").value||parseInt($("hrBpm").textContent)||0;
+  const typed=+$("hrManual").value||0;
+  const bpm=typed||parseInt($("hrBpm").textContent)||0;
   if(!bpm){alert("먼저 카메라로 측정하거나 BPM을 직접 입력하세요.");return;}
   // 심박→운동→심박 순서를 지키기 위해, 운동 후 심박은 '방금 마친 세션'에만 붙인다.
   // 예전 기록(어제 것)에 오늘 심박이 덮어써지던 문제를 막는다.
@@ -5730,6 +5731,11 @@ $("hrSave").addEventListener("click",()=>{
   }
   if(lastRec.hr){
     if(!confirm(`이 운동의 심박수는 이미 ${lastRec.hr} BPM으로 저장되어 있습니다.\n${bpm} BPM으로 바꿀까요?`))return;
+  }
+  // 카메라로 측정했거나 맥박 세기로 잰 값이 아니라 학생이 직접 타이핑한 값이면,
+  // 저장 전에 한 번 더 확인시킨다(정직하게 적었는지 스스로 돌아보게 하는 정도의 장치).
+  if(typed&&!hrManualIsTapped){
+    if(!confirm(`직접 입력한 ${bpm} BPM이 실제로 잰 값이 맞나요?\n\n[확인] 네, 정확해요 · [취소] 카메라나 맥박 세기로 다시 잴게요`))return;
   }
   const {pct,zone}=showHr(bpm);
   const rec=lastRec;
@@ -5763,6 +5769,12 @@ $("hrSave").addEventListener("click",()=>{
 /* ---------- 맥박 세기 도우미 (카메라 측정이 안 될 때 대안) ----------
    15초 카운트다운 동안 맥박마다 화면을 탭 → 탭 수 ×4 = BPM. 암산·타이밍 실수를 없앤다. */
 let pulseTarget=null, pulseTimer=null, pulseTaps=0, pulseState="idle";
+// 운동 후 심박을 손으로 직접 타이핑해 넣으면(카메라·맥박 세기와 달리 실제로 쟀는지 확인할
+// 길이 없어) 거짓으로 적을 수 있다는 지적이 있었다. 카메라 측정값이나 맥박 세기 결과가
+// hrManual 칸에 채워진 경우는 실제로 잰 값이므로 제외하고, 학생이 그 칸에 직접 손댄
+// 경우에만 저장 전에 "정말 이 값이 맞냐"고 한 번 더 물어 확인시킨다.
+let hrManualIsTapped=false;
+$("hrManual").addEventListener("input",()=>{ hrManualIsTapped=false; }); // 직접 타이핑하면 다시 '직접입력'으로 본다
 function setPulseTapActive(active){
   const btn=$("pulseTap");
   btn.disabled=!active;
@@ -5831,7 +5843,7 @@ $("pulseUse").addEventListener("click",()=>{
   if(bpm<40){ toast("맥박 수가 너무 적어요 — [다시 세기]로 다시 측정하세요","task","⚠️"); return; }
   $("pulseOverlay").style.display="none";
   if(pulseTarget==="preManual"){ $("preManual").value=bpm; $("preSave").click(); }
-  else if(pulseTarget==="hrManual"){ $("hrManual").value=bpm; $("hrSave").click(); }
+  else if(pulseTarget==="hrManual"){ hrManualIsTapped=true; $("hrManual").value=bpm; $("hrSave").click(); }
 });
 $("pulseRetry").addEventListener("click",resetPulse);
 $("pulseClose").addEventListener("click",()=>{ if(pulseTimer)clearInterval(pulseTimer); $("pulseOverlay").style.display="none"; });
