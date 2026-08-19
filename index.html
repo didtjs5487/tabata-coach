@@ -1449,7 +1449,7 @@ const EX={
   plank:{type:"hold",joints:[[12,24,28],[11,23,27]],lo:150,hi:200,minVis:0.22,pose:"flat",
     good:"곧게 유지 중!",bad:"엉덩이 높이 맞추기"},
   crunch:{type:"rep",joints:[[12,24,26],[11,23,25]],down:118,up:150,perfect:105,minVis:0.28,
-    pose:"flat",travelPt:"shoulder",travelMin:0.03,
+    pose:"floor",travelPt:"shoulder",travelMin:0.03,   // 상체를 살짝만 마는 크런치, 완전히 세우는 윗몸 일으키기 둘 다 인정(floor = 누워서 무릎만 굽히면 됨, 몸통 각도는 안 봄)
     good:"복부 수축 좋아요!",shallow:"상체를 더 말아올리기"},
   legraise:{type:"rep",joints:[[12,24,26],[11,23,25]],down:100,up:150,perfect:90,minVis:0.28,
     pose:"flat",travelPt:"ankle",travelMin:0.05,
@@ -2367,9 +2367,19 @@ function torsoDir(lm){
     vis: Math.min(lm[11].visibility,lm[12].visibility,lm[23].visibility,lm[24].visibility)
   };
 }
-const POSE_MSG={stand:"일어서서 몸 전체가 보이게 해주세요", flat:"엎드리거나 누운 자세가 보이게 해주세요"};
+const POSE_MSG={stand:"일어서서 몸 전체가 보이게 해주세요", flat:"엎드리거나 누운 자세가 보이게 해주세요", floor:"등을 대고 누운 자세가 보이게 해주세요"};
 function poseOK(def,lm){
   if(!def.pose)return true;
+  if(def.pose==="floor"){
+    // 크런치는 상체를 살짝만 마는 경우도, 윗몸 일으키기처럼 상체를 완전히 세우는 경우도
+    // 둘 다 인정해야 한다 — 그래서 몸통 각도(torsoDir)로는 안 걸러낸다. 대신 다리를
+    // 펴고 서 있으면 안 되므로, 무릎이 골반보다 훨씬 아래로 처져 있는지만 본다
+    // (누워서 무릎을 굽히고 있는 한 무릎은 골반과 비슷한 높이거나 더 높게 보인다).
+    const h=midPt(lm[23],lm[24]), k=midPt(lm[25],lm[26]);
+    const vis=Math.min(lm[23].visibility,lm[24].visibility,lm[25].visibility,lm[26].visibility);
+    if(vis<0.25)return true;
+    return (k.y-h.y)<0.18;
+  }
   const t=torsoDir(lm);
   if(t.vis<0.25)return true;          // 몸통이 안 보이면 판단 보류
   return def.pose==="stand"?t.upright:t.flat;
