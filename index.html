@@ -5901,7 +5901,7 @@ try{ lastHrDeviceId=localStorage.getItem(HR_CAM_KEY)||null; }catch(e){}
    ② 15초 안에 신뢰 기준을 못 넘기면 그대로 실패 처리되어 손가락을 뗐다가 처음부터
       다시 시작해야 했다 → 최소 8초 이후부터는 신호가 안정되는 즉시 끝내고(더 기다릴 필요 없음),
       불안정해도 카메라를 계속 켜둔 채 최대 24초까지 자동으로 더 측정한다(다시 누를 필요 없음). */
-async function measurePPG(waveEl,msgEl,btn,onDone,camEl){
+async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
   btn.disabled=true;
   const say=(t,err)=>{msgEl.innerHTML=err?`<span class="err">${t}</span>`:t;};
   say("카메라 준비 중…");
@@ -5923,7 +5923,14 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl){
       stream=await navigator.mediaDevices.getUserMedia({video:{...baseVideo,facingMode:{ideal:"environment"}}});
     }catch(e){
       try{ stream=await navigator.mediaDevices.getUserMedia({video:{frameRate:{ideal:30,min:15}}}); } // 후면 실패 시 아무 카메라라도
-      catch(e2){ say("카메라를 열 수 없습니다. 다른 앱이 카메라를 쓰고 있으면 닫고, 권한을 허용한 뒤 다시 시도하세요.",true); btn.disabled=false; return; }
+      catch(e2){
+        // 카메라를 아예 못 여는 경우(권한 거부·다른 앱이 점유 등)도 막다른 길이 되지 않게
+        // 바로 맥박 세기로 넘긴다 — 이 학생은 카메라를 다시 켜도 또 실패할 가능성이 높다.
+        say("카메라를 열 수 없어요 — 짝과 함께 맥박을 세어 볼게요. (권한을 허용하거나 다른 앱을 닫으면 카메라도 쓸 수 있습니다)",true);
+        btn.disabled=false;
+        if(fallbackTarget){ setTimeout(()=>{ if($("pulseOverlay").style.display!=="flex")openPulse(fallbackTarget); },600); }
+        return;
+      }
     }
   }
   ppgStream=stream;
@@ -6029,7 +6036,11 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl){
     try{track.stop();}catch(e){}
     try{if(camEl){camEl.pause();camEl.srcObject=null;}}catch(e){}
     ppgStream=null; btn.disabled=false;
-    say("맥박 신호가 뚜렷하지 않습니다. 손가락으로 렌즈를 완전히 덮었는지, 측정 중 손가락이 움직이지 않았는지 확인하고 다시 시도하거나, 10초 맥박 ×6 값을 직접 입력해 주세요.",true);
+    // 여기서 안내 문구만 띄우면 학생 입장에서는 막다른 길이었다(스스로 다른 방법을 찾아
+    // 눌러야 했다). 특히 운동 직후엔 땀·떨림 때문에 카메라가 실패하기 쉬운데, 그 사이에도
+    // 심박은 계속 떨어진다. 그래서 실패하면 곧바로 짝과 함께 하는 맥박 세기 창을 열어 준다.
+    say("카메라로는 잘 안 잡혔어요 — 짝과 함께 맥박을 세어 볼게요.",true);
+    if(fallbackTarget){ setTimeout(()=>{ if($("pulseOverlay").style.display!=="flex")openPulse(fallbackTarget); },600); }
   }
   function analyze(elapsed){
     // 오래된 데이터가 섞이면 주기 추정이 흐려지므로 최근 15초 구간만 사용
@@ -6108,7 +6119,7 @@ $("hrStart").addEventListener("click",()=>{
   measurePPG($("hrWave"),$("hrMsg"),$("hrStart"),bpm=>{
     showHr(bpm);
     $("hrMsg").textContent="측정 완료! [기록에 저장]을 누르면 세션·CSV에 연결됩니다.";
-  },$("hrCam"));
+  },$("hrCam"),"hrManual");   // 카메라가 실패하면 맥박 세기로 이어받는다
 });
 
 /* ---------- 운동 전 심박수 ---------- */
@@ -6137,7 +6148,7 @@ $("preStart").addEventListener("click",()=>{
   measurePPG($("preWave"),$("preMsg"),$("preStart"),bpm=>{
     setPreHr(bpm);
     $("preMsg").textContent="측정 완료!";
-  },$("preCam"));
+  },$("preCam"),"preManual");   // 카메라가 실패하면 맥박 세기로 이어받는다
 });
 $("preSave").addEventListener("click",()=>{
   const bpm=+$("preManual").value||0;
