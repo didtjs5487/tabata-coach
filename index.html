@@ -699,7 +699,7 @@
         <div class="hint" id="hrMsg" style="margin-top:6px"></div>
       </div>
       <div class="kpis" id="hrResult" style="display:none;flex-basis:100%">
-        <div class="kpi"><div class="v num c1" id="hrBpm">–</div><div class="k">심박수 (BPM)</div></div>
+        <div class="kpi"><div class="v num c1" id="hrBpm" style="font-size:64px">–</div><div class="k">심박수 (BPM)</div></div>
         <div class="kpi"><div class="v num c2" id="hrPct">–</div><div class="k">최대심박 대비</div></div>
         <div class="kpi"><div class="v num c3" id="hrZone">–</div><div class="k">운동 강도 판정</div></div>
       </div>
@@ -1448,8 +1448,11 @@ const EX={
   jack:{type:"jack",pose:"stand",good:"리듬 좋아요!",shallow:"팔을 머리 위까지!"},
   plank:{type:"hold",joints:[[12,24,28],[11,23,27]],lo:150,hi:200,minVis:0.22,pose:"flat",
     good:"곧게 유지 중!",bad:"엉덩이 높이 맞추기"},
-  crunch:{type:"rep",joints:[[12,24,26],[11,23,25]],down:118,up:150,perfect:105,minVis:0.28,
+  crunch:{type:"rep",joints:[[12,24,26],[11,23,25]],down:130,up:150,perfect:105,minVis:0.28,
     pose:"floor",travelPt:"shoulder",travelMin:0.03,   // 상체를 살짝만 마는 크런치, 완전히 세우는 윗몸 일으키기 둘 다 인정(floor = 누워서 무릎만 굽히면 됨, 몸통 각도는 안 봄)
+    // down을 118→130으로 낮춰 반복 시작 문턱을 낮췄다 — 힌트대로 "상체만 살짝" 말아올리는
+    // 정도로는 118도까지 못 내려가 아예 카운트가 시작되지 않는다는 현장 보고가 있었다.
+    // perfect(105)는 그대로라 깊게 할수록 여전히 더 높은 정확도로 채점된다.
     good:"복부 수축 좋아요!",shallow:"상체를 더 말아올리기"},
   legraise:{type:"rep",joints:[[12,24,26],[11,23,25]],down:100,up:150,perfect:90,minVis:0.28,
     pose:"flat",travelPt:"ankle",travelMin:0.05,
@@ -1473,8 +1476,8 @@ const EXTIP={
   lunge:"한 발 앞으로, 양 무릎 90도로 내리기",
   jack:"팔을 머리 위로, 다리는 옆으로 벌리며 점프",
   plank:"팔꿈치와 발끝으로 버티며 몸 일직선 유지",
-  crunch:"무릎 굽히고 상체만 말아올리기",
-  legraise:"누워서 다리를 곧게 들어올리기",
+  crunch:"무릎 굽히고 상체 말아올리기 (윗몸 일으키기도 OK)",
+  legraise:"누워서 다리를 곧게 들어올리기 (한 발씩 번갈아도 OK)",
   sidelunge:"옆으로 한 발 크게, 그쪽 무릎 굽히기",
   jumpsquat:"앉았다가 힘차게 위로 점프",
   highknee:"제자리에서 무릎을 허리 높이까지 번갈아",
@@ -2340,11 +2343,19 @@ function angle(a,b,c){
   return Math.acos(Math.max(-1,Math.min(1,(ab.x*cb.x+ab.y*cb.y)/m)))*180/Math.PI;
 }
 function bestSide(lm,joints){
-  let best=null,bv=-1;
+  // 예전엔 두 쪽(좌/우) 중 더 잘 보이는 쪽만 골랐다. 그런데 레그레이즈처럼 한쪽 다리씩
+  // 번갈아 드는 동작에서는, 마침 쉬고 있는 다리 쪽 시야가 살짝만 더 좋아도 계속 그쪽만
+  // 골라버려 실제로 움직이는 다리를 놓쳤다("한발 교차는 안 세지고 두발만 됨"). 그래서
+  // 둘 다 어느 정도 보이면(0.15 이상) 더 많이 움직인(각도가 더 작은=더 접힌) 쪽을 우선하고,
+  // 둘 다 시야가 나쁠 때만 예전처럼 그나마 더 잘 보이는 쪽 값을 돌려준다.
+  let bestAng=null,bestVis=-1,fbAng=null,fbVis=-1;
   for(const [a,b,c] of joints){
     const v=Math.min(lm[a].visibility,lm[b].visibility,lm[c].visibility);
-    if(v>bv){bv=v;best=angle(lm[a],lm[b],lm[c]);}
-  } return {ang:best,vis:bv};
+    const ang=angle(lm[a],lm[b],lm[c]);
+    if(v>fbVis){fbVis=v;fbAng=ang;}
+    if(v>=0.15&&(bestAng==null||ang<bestAng)){bestAng=ang;bestVis=v;}
+  }
+  return bestAng!=null?{ang:bestAng,vis:bestVis}:{ang:fbAng,vis:fbVis};
 }
 
 /* ---------- 자세가 성립하는지 확인 ----------
@@ -2372,13 +2383,16 @@ function poseOK(def,lm){
   if(!def.pose)return true;
   if(def.pose==="floor"){
     // 크런치는 상체를 살짝만 마는 경우도, 윗몸 일으키기처럼 상체를 완전히 세우는 경우도
-    // 둘 다 인정해야 한다 — 그래서 몸통 각도(torsoDir)로는 안 걸러낸다. 대신 다리를
-    // 펴고 서 있으면 안 되므로, 무릎이 골반보다 훨씬 아래로 처져 있는지만 본다
-    // (누워서 무릎을 굽히고 있는 한 무릎은 골반과 비슷한 높이거나 더 높게 보인다).
-    const h=midPt(lm[23],lm[24]), k=midPt(lm[25],lm[26]);
-    const vis=Math.min(lm[23].visibility,lm[24].visibility,lm[25].visibility,lm[26].visibility);
-    if(vis<0.25)return true;
-    return (k.y-h.y)<0.18;
+    // 둘 다 인정해야 한다 — 그래서 '상체' 방향(torsoDir)으로는 안 걸러낸다.
+    // 대신 '하체' 방향을 본다: 바닥에 누워 무릎을 세운 자세에서는 상체를 아무리 세워도
+    // 골반→발목이 가로에 가깝게 유지되지만, 서 있으면 세로가 된다.
+    const h=midPt(lm[23],lm[24]);
+    const aVis=Math.min(lm[27].visibility,lm[28].visibility);
+    const kVis=Math.min(lm[25].visibility,lm[26].visibility);
+    const hVis=Math.min(lm[23].visibility,lm[24].visibility);
+    const low=aVis>=0.25?midPt(lm[27],lm[28]):(kVis>=0.25?midPt(lm[25],lm[26]):null);
+    if(!low||hVis<0.25)return true;    // 하체가 안 보이면 판단 보류(막지 않는다)
+    return Math.abs(low.x-h.x)>Math.abs(low.y-h.y);
   }
   const t=torsoDir(lm);
   if(t.vis<0.25)return true;          // 몸통이 안 보이면 판단 보류
@@ -2388,7 +2402,10 @@ function poseOK(def,lm){
 function travelY(lm,def){
   if(def.travelPt==="hip")return midPt(lm[23],lm[24]).y;
   if(def.travelPt==="shoulder")return midPt(lm[11],lm[12]).y;
-  if(def.travelPt==="ankle")return midPt(lm[27],lm[28]).y;
+  // 발목은 두 발의 '가운데'가 아니라 '더 높이 든 쪽'을 본다 — 레그레이즈를 한 발씩 번갈아
+  // 하면 가운데 점은 절반만 움직여 이동량 기준에 걸려 카운트가 안 됐다(두 발을 같이 들어야만
+  // 인정되던 문제). 두 발을 같이 들면 어차피 둘 다 같이 올라가므로 결과는 그대로다.
+  if(def.travelPt==="ankle")return Math.min(lm[27].y,lm[28].y);
   return null;
 }
 /* 좌우가 함께 움직였는지 — 양쪽이 모두 잘 보일 때만 따진다 */
@@ -2791,8 +2808,9 @@ function loop(){
 let phase="idle",roundIdx=0,totalRounds=8,timeLeft=0,tickId=null,workSec=20,restSec=10,curEx="squat";
 let log=[]; // per-round {ex,reps,acc,type,hold}
 /* 엎드리거나 누워서 하는 동작은 정면에서 팔·몸통 각도가 겹쳐 보여 카운트가 잘 안 된다.
-   해당 동작 차례가 되면 옆으로 서라고 크게 안내한다. */
-const SIDE_VIEW={pushup:1,pushupknee:1,plank:1,crunch:1,legraise:1,burpee:1};
+   런지는 서서 하지만 무릎이 얼마나 깊게 내려가는지(앞뒤 움직임)가 핵심이라 정면보다
+   측면에서 훨씬 잘 잡힌다. 해당 동작 차례가 되면 옆으로 서라고 크게 안내한다. */
+const SIDE_VIEW={pushup:1,pushupknee:1,plank:1,crunch:1,legraise:1,burpee:1,lunge:1};
 let sideTipTimer=null;
 function showSideTip(ex,ms){
   const el=$("sideTip"); if(!el)return;
@@ -4152,6 +4170,15 @@ function renderRfSelf(){
 function openReflectDoc(entry){
   const me=myKey();
   if(!me.name){alert("운동 설계 탭에서 학번을 먼저 입력하세요.");return;}
+  // 방금 마친 운동(entry 없음)인데 운동 후 심박을 아직 안 쟀으면, 성찰부터 쓰다가 심박
+  // 측정을 깜빡 잊기 쉽다 — 심박→운동→심박 순서가 이 앱의 핵심이라 한 번 더 확인시킨다.
+  // (자동으로 열리는 경우는 이미 심박을 잰 뒤라 여기 걸리지 않는다.)
+  if(!entry && lastRec && !lastRec.hr){
+    if(confirm("❤️ 아직 운동 후 심박수를 측정하지 않았어요.\n심박수부터 재고 올까요?\n\n[확인] 심박수 재러 가기 · [취소] 그래도 성찰부터 쓸게요")){
+      try{$("hrStart").scrollIntoView({behavior:"smooth",block:"center"});}catch(e){}
+      return;
+    }
+  }
   const src=entry||{};
   rfDocKey=entry?entry.key:((lastRec&&lastRec.id)||Date.now().toString(36));
   const rec=entry?null:lastRec;
@@ -5861,6 +5888,11 @@ $("preCountBtn").addEventListener("click",()=>openPulse("preManual"));
 $("hrCountBtn").addEventListener("click",()=>openPulse("hrManual"));
 
 let ppgStream=null, lastHrDeviceId=null;
+// 예전엔 이 기기가 원래 골랐던 카메라(deviceId)를 메모리에만 담아둬서, 새로고침·다시
+// 켜기마다 잊어버리고 후면 카메라 중 아무 렌즈나(광각 등) 다시 골랐다 — 그래서 "매번
+// 다른 카메라로 바뀐다"는 문제가 있었다. 이제 이 기기에 저장해 앱을 껐다 켜도 기억한다.
+const HR_CAM_KEY="tabataHrCamId";
+try{ lastHrDeviceId=localStorage.getItem(HR_CAM_KEY)||null; }catch(e){}
 /* ---------- 심박 PPG 측정 v3 ----------
    v2까지 남아있던 두 가지 실사용 문제:
    ① 측정할 때마다 getUserMedia를 새로 요청하면 폰이 후면 카메라 중 다른 렌즈(광각 등)를
@@ -5880,7 +5912,11 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl){
   let stream;
   const baseVideo={width:320,height:240,frameRate:{ideal:30,min:15}};
   if(lastHrDeviceId){
-    try{ stream=await navigator.mediaDevices.getUserMedia({video:{...baseVideo,deviceId:{exact:lastHrDeviceId}}}); }catch(e){}
+    try{ stream=await navigator.mediaDevices.getUserMedia({video:{...baseVideo,deviceId:{exact:lastHrDeviceId}}}); }
+    catch(e){
+      // 방금 다른 카메라를 막 껐다면 아직 완전히 안 풀렸을 수 있다 — 조금 더 기다렸다가 한 번 더 시도
+      try{ await new Promise(r=>setTimeout(r,400)); stream=await navigator.mediaDevices.getUserMedia({video:{...baseVideo,deviceId:{exact:lastHrDeviceId}}}); }catch(e2){}
+    }
   }
   if(!stream){
     try{
@@ -5892,7 +5928,10 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl){
   }
   ppgStream=stream;
   const track=stream.getVideoTracks()[0];
-  try{ lastHrDeviceId=track.getSettings().deviceId||lastHrDeviceId; }catch(e){}
+  try{
+    lastHrDeviceId=track.getSettings().deviceId||lastHrDeviceId;
+    if(lastHrDeviceId)localStorage.setItem(HR_CAM_KEY,lastHrDeviceId);
+  }catch(e){}
   let hasTorch=false;
   try{
     const caps=track.getCapabilities?track.getCapabilities():{};
