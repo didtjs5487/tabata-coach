@@ -153,12 +153,30 @@
   .tc-body.open{display:block;}
   .tc-btns{display:flex; gap:6px; margin-top:9px; flex-wrap:wrap;}
   .tc-btns .btn{flex:1; min-width:78px;}
-  /* 성찰 일지에서 터치로 고르는 칩 — 손가락으로 누르기 쉽게 크게 잡는다 */
-  .rf-pick{display:flex; flex-wrap:wrap; gap:7px;}
-  .rf-pick button{background:var(--panel); border:1px solid var(--line); border-radius:11px;
-    padding:11px 14px; cursor:pointer; color:var(--ink); font-size:14px; font-weight:600;
-    font-family:inherit; white-space:nowrap; line-height:1.2;}
-  .rf-pick button.on{border-color:var(--primary); background:rgba(124,108,255,.28); color:#fff; font-weight:800;}
+  /* 성찰 일지 — 문항마다 카드로 나눠 '질문'과 '고르는 곳'을 확실히 구분한다.
+     예전엔 문항·설명·칩이 모두 비슷한 굵기로 이어 붙어 화면이 어지러웠다. */
+  .rf-card{background:var(--panel3); border:1px solid var(--line); border-radius:14px;
+    padding:13px 14px 14px; margin-top:12px;}
+  .rf-head{display:flex; align-items:flex-start; gap:10px; margin-bottom:11px;}
+  .rf-no{flex:none; width:25px; height:25px; border-radius:50%; background:var(--primary); color:#fff;
+    font-family:"Barlow Condensed",sans-serif; font-weight:700; font-size:16px;
+    display:flex; align-items:center; justify-content:center; margin-top:1px;}
+  .rf-t{font-weight:800; font-size:15.5px; line-height:1.3;}
+  .rf-sub{color:var(--muted); font-size:12.5px; margin-top:3px; line-height:1.4;}
+  .rf-card textarea{width:100%; background:var(--panel); color:var(--ink); border:1px solid var(--line);
+    border-radius:10px; padding:10px; font-family:inherit; font-size:14px; resize:vertical;}
+  /* 터치로 고르는 칩 — 손가락으로 누르기 쉽게 크게 잡는다 */
+  .rf-pick{display:flex; flex-wrap:wrap; gap:8px;}
+  .sheet .rf-pick button, .rf-pick button{background:var(--panel); border:1.5px solid var(--line);
+    border-radius:11px; padding:12px 15px; cursor:pointer; color:var(--ink); font-size:14.5px;
+    font-weight:600; font-family:inherit; white-space:nowrap; line-height:1.2; transition:none;}
+  /* 고른 것은 '진한 보라 + 흰 글씨'로 확실히 다르게 보이게 한다.
+     예전엔 옅은 보라 배경(투명도 30%)에 흰 글씨라 밝은 화면에서 글자가 거의 안 보였다
+     (대비 1.4 — 읽을 수 있는 최소 기준 4.5에 한참 못 미침). 그래서 뭘 골랐는지 헷갈렸다. */
+  .sheet .rf-pick button.on, .rf-pick button.on{border-color:var(--primary2);
+    background:var(--primary2); color:#fff; font-weight:800;
+    box-shadow:0 2px 8px rgba(91,81,232,.35);}
+  .sheet .rf-pick button.on::before, .rf-pick button.on::before{content:"✓ "; font-weight:900;}
   .rf-self{display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--line);}
   .rf-self .lb{flex:1; font-size:13.5px; line-height:1.35;}
   .rf-self .op{display:flex; gap:4px;}
@@ -169,6 +187,9 @@
     border-bottom:2px solid var(--primary2); cursor:pointer; display:flex; align-items:center; gap:8px;
     background:none; border-top:0; border-left:0; border-right:0; width:100%; text-align:left;
     color:var(--ink); font-family:inherit;}
+  /* 접혀 있어도 안 쓴 성찰이 몇 건인지 보이게 하는 빨간 배지 */
+  .rf-badge{margin-left:8px; background:var(--bad); color:#fff; font-size:12px; font-weight:800;
+    padding:3px 9px; border-radius:999px; white-space:nowrap;}
   .mine-sec .arw{margin-left:auto; color:var(--muted); font-size:13px; transition:transform .18s;}
   .mine-sec.open .arw{transform:rotate(180deg);}
   .mine-body{display:none; padding-top:10px;} .mine-body.open{display:block;}
@@ -265,6 +286,15 @@
   #confetti{position:absolute; inset:0; overflow:hidden; pointer-events:none;}
   #confetti span{position:absolute; top:-16px; border-radius:2px; opacity:.9; animation:confFall linear forwards;}
   @keyframes confFall{to{transform:translateY(105vh) rotate(720deg); opacity:.4}}
+  /* 어느 렌즈를 덮어야 하는지 그림으로 알려 주는 안내.
+     기종마다 카메라 위치가 달라 특정 위치를 짚을 수 없으므로, 위치 대신 '불이 켜진 곳 옆'이라는
+     원리만 그림으로 보여주고, 정확히 맞았는지는 아래 실시간 ✅ 표시가 확인해 준다. */
+  .cam-guide{display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap;
+    background:var(--panel3); border:1px solid var(--line); border-radius:12px;
+    padding:10px 12px; margin:0 auto 10px; max-width:340px;}
+  .cam-guide .cg-txt{flex:1; min-width:150px; font-size:13px; line-height:1.5;}
+  .cam-guide .cg-txt b{color:var(--primary);}
+  .cam-guide .cg-note{color:var(--muted); font-size:12px; margin-top:4px; line-height:1.45;}
   .hr-cam-wrap{position:relative; width:100%; max-width:280px; margin:0 auto; aspect-ratio:4/3;
     border-radius:14px; overflow:hidden; background:#1a0505;}
   .hr-cam{width:100%; height:100%; object-fit:cover;}
@@ -629,6 +659,9 @@
       </div>
       <span class="hint hr-note" id="preBadge"></span>
       <div id="preLive" style="display:none;margin-top:8px;flex-basis:100%">
+        <div class="cam-guide"><div class="cg-pic"></div>
+          <div class="cg-txt">폰을 <b>뒤집어서</b>, <b>불이 켜진 곳 바로 옆 렌즈</b>를 손가락으로 살짝 덮으세요.
+            <div class="cg-note">카메라 위치는 폰마다 달라요 — 아래 화면이 <b style="color:var(--good)">✅ 잘 덮었어요</b>로 바뀌면 맞게 덮은 거예요.</div></div></div>
         <div class="hr-cam-wrap"><video id="preCam" class="hr-cam" playsinline muted></video><div class="hr-cam-ring"></div><div class="hr-cam-hint">손가락으로 렌즈를 덮으세요</div></div>
         <canvas id="preWave" width="600" height="70" style="width:100%;height:70px;background:var(--bg);border-radius:10px;margin-top:8px"></canvas>
         <div class="hint" id="preMsg" style="margin-top:6px"></div>
@@ -642,6 +675,7 @@
       <video id="video" playsinline muted></video>
       <canvas class="ov" id="overlay"></canvas>
       <div class="stage-tools">
+        <button class="exit-fs" id="camFlipFs" title="앞/뒤 카메라 바꾸기">🔄 카메라</button>
         <button class="exit-fs" id="musicNext" title="다른 음악으로 바꾸기">🔀 음악</button>
         <button class="exit-fs" id="exitFs">✕ 종료</button>
       </div>
@@ -675,9 +709,13 @@
     </div>
     <div class="row" style="margin-top:8px">
       <button class="btn btn-go" id="startBtn">시작</button>
+      <!-- 혼자 하면 셀카, 친구가 들고 찍어주면 뒤 카메라 -->
+      <button class="btn btn-stop" id="camFlip" title="앞/뒤 카메라 바꾸기">🤳 셀카</button>
       <button class="btn btn-stop" id="musicBtn">🎵 음악 ON</button>
       <button class="btn btn-stop" id="soundTest" title="폰 스피커에서 소리가 나는지 확인">🔊 소리 확인</button>
     </div>
+    <div class="hint" style="margin:6px 0 0">🤳 <b>셀카</b>는 내 모습을 보며 혼자 할 때,
+      📷 <b>뒤 카메라</b>는 친구가 폰을 들고 찍어줄 때 고르세요. 판정은 어느 쪽이든 똑같습니다.</div>
     <div class="row" id="volRow" style="margin:8px 0 0;align-items:center">
       <span class="hint" style="white-space:nowrap">소리 크기</span>
       <input type="range" id="bgmVol" min="0" max="5" step="0.2" value="2.6" style="flex:1;min-width:120px">
@@ -700,6 +738,9 @@
       </div>
       <div class="hint hr-note"><b style="color:var(--good)">120 이상</b> 또는 <b style="color:var(--good)">안정 시보다 +40</b>이면 성실 수행</div>
       <div id="hrLive" style="display:none;flex-basis:100%">
+        <div class="cam-guide"><div class="cg-pic"></div>
+          <div class="cg-txt">폰을 <b>뒤집어서</b>, <b>불이 켜진 곳 바로 옆 렌즈</b>를 손가락으로 살짝 덮으세요.
+            <div class="cg-note">카메라 위치는 폰마다 달라요 — 아래 화면이 <b style="color:var(--good)">✅ 잘 덮었어요</b>로 바뀌면 맞게 덮은 거예요.</div></div></div>
         <div class="hr-cam-wrap"><video id="hrCam" class="hr-cam" playsinline muted></video><div class="hr-cam-ring"></div><div class="hr-cam-hint">손가락으로 렌즈를 덮으세요</div></div>
         <canvas id="hrWave" width="600" height="70" style="width:100%;height:70px;background:var(--panel3);border-radius:10px;margin-top:8px"></canvas>
         <div class="hint" id="hrMsg" style="margin-top:6px"></div>
@@ -794,7 +835,7 @@
     <div class="mine-body">
       <div id="mineDuels"></div>
     </div>
-    <button class="mine-sec" type="button">✍️ 성찰 일지<span class="arw">▾</span></button>
+    <button class="mine-sec" type="button" id="rfLogSec">✍️ 성찰 일지<span class="rf-badge" id="rfTodoBadge" style="display:none"></span><span class="arw">▾</span></button>
     <div class="mine-body">
       <div class="hint" style="margin-bottom:6px">운동한 날에만 쓸 수 있고, 저장하면 고칠 수 없습니다.</div>
       <div id="rfLogList"></div>
@@ -1215,20 +1256,34 @@
     </div>
     <div class="sheet-bd">
       <!-- 매 차시 성찰은 '터치로 고르고 한 줄만 쓰기'로 가볍게 한다.
-           길게 쓰는 깊은 성찰은 단원이 끝난 뒤 '단원 마무리 성찰'에서 한 번 받는다. -->
-      <div class="rf-q"><label>1. 오늘 운동, 얼마나 힘들었나요?</label>
-        <div class="hint" style="margin-bottom:6px">위에 있는 내 심박수와 견주어 골라 보세요.</div>
-        <div class="pc-opts rf-pick" id="rfRpe"></div></div>
+           길게 쓰는 깊은 성찰은 단원이 끝난 뒤 '단원 마무리 성찰'에서 한 번 받는다.
+           문항마다 카드로 나눠 '질문'과 '고르는 곳'이 한눈에 구분되게 한다. -->
+      <div class="rf-card">
+        <div class="rf-head"><span class="rf-no">1</span>
+          <div><div class="rf-t">오늘 운동, 얼마나 힘들었나요?</div>
+            <div class="rf-sub">위에 있는 내 심박수와 견주어 골라 보세요</div></div></div>
+        <div class="rf-pick" id="rfRpe"></div>
+      </div>
 
-      <div class="rf-q"><label>2. 가장 힘들었던 동작은?</label>
-        <div class="hint" style="margin-bottom:6px">오늘 한 동작 중에서 고르세요.</div>
-        <div class="pc-opts rf-pick" id="rfHard"></div></div>
+      <div class="rf-card">
+        <div class="rf-head"><span class="rf-no">2</span>
+          <div><div class="rf-t">가장 힘들었던 동작은?</div>
+            <div class="rf-sub">오늘 한 동작 중에서 고르세요</div></div></div>
+        <div class="rf-pick" id="rfHard"></div>
+      </div>
 
-      <div class="rf-q"><label>3. 오늘 내 컨디션은?</label>
-        <div class="pc-opts rf-pick" id="rfCond"></div></div>
+      <div class="rf-card">
+        <div class="rf-head"><span class="rf-no">3</span>
+          <div><div class="rf-t">오늘 내 컨디션은?</div></div></div>
+        <div class="rf-pick" id="rfCond"></div>
+      </div>
 
-      <div class="rf-q"><label>4. 오늘 한마디 <span style="font-weight:400;color:var(--muted)">(한 줄이면 충분해요)</span></label>
-        <textarea id="rqNote" rows="2" placeholder="예: 플랭크에서 허리가 내려갔다. 다음엔 배에 힘주고 해봐야지"></textarea></div>
+      <div class="rf-card">
+        <div class="rf-head"><span class="rf-no">4</span>
+          <div><div class="rf-t">오늘 한마디</div>
+            <div class="rf-sub">한 줄이면 충분해요 · 안 써도 괜찮아요</div></div></div>
+        <textarea id="rqNote" rows="2" placeholder="예: 플랭크에서 허리가 내려갔다. 다음엔 배에 힘주고 해봐야지"></textarea>
+      </div>
 
       <!-- 예전 방식(5문항)으로 쓴 일지를 열어볼 때만 아래가 보인다 -->
       <div id="rfOldWrap" style="display:none">
@@ -2803,12 +2858,78 @@ let landmarker=null,draw=null,running=false,rafId=null,lastVid=-1;
 function stopWorkoutCam(){
   try{const s=video.srcObject; if(s){s.getTracks().forEach(t=>t.stop()); video.srcObject=null;}}catch(e){}
 }
+/* 앞/뒤 카메라 — 혼자 할 때는 셀카(앞)로 내 모습을 보며 하고, 친구가 들고 찍어줄 때는
+   뒤 카메라로 바꾼다. 고른 값은 기기에 남겨 다음 수업에도 그대로 쓴다.
+   좌우 반전(거울)은 셀카일 때만 건다 — 남이 찍어주는데 뒤집으면 어색하다.
+   판정에는 영향이 없다: 반전은 화면에만 거는 CSS이고, 동작 판정은 원본 좌표로 한다. */
+/* ---------- 심박 측정 그림 안내 ----------
+   "어느 카메라를 가려야 하나?"에 답하는 그림. 기종마다 렌즈 위치가 달라 특정 자리를 짚으면
+   오히려 틀리므로, 위치 대신 <불이 켜진 곳 바로 옆 렌즈>라는 원리만 그린다.
+   실제로 맞게 덮었는지는 카메라 화면의 ✅/✋ 표시가 실시간으로 확인해 준다. */
+function camGuideSVG(){
+  return `<svg viewBox="0 0 120 150" width="86" height="108" aria-label="폰 뒷면에서 불이 켜진 렌즈 옆을 손가락으로 덮는 그림" xmlns="http://www.w3.org/2000/svg">
+    <rect x="14" y="6" width="92" height="138" rx="14" fill="#F3F1FD" stroke="#C9C6EE" stroke-width="2"/>
+    <text x="60" y="140" font-size="9" fill="#8A8FB5" text-anchor="middle" font-family="sans-serif">폰 뒷면</text>
+    <rect x="24" y="16" width="46" height="62" rx="12" fill="#E4E1F5" stroke="#C9C6EE" stroke-width="1.5"/>
+    <circle cx="40" cy="32" r="9" fill="#5B51E8" opacity=".30"/>
+    <circle cx="40" cy="32" r="4" fill="#2B3160" opacity=".45"/>
+    <circle cx="40" cy="62" r="9" fill="#5B51E8" opacity=".30"/>
+    <circle cx="40" cy="62" r="4" fill="#2B3160" opacity=".45"/>
+    <circle cx="59" cy="47" r="6" fill="#FFD23F" stroke="#E8A80C" stroke-width="1.5">
+      <animate attributeName="opacity" values="1;.45;1" dur="1.1s" repeatCount="indefinite"/></circle>
+    <text x="59" y="93" font-size="8" fill="#E8A80C" text-anchor="middle" font-family="sans-serif" font-weight="700">불 켜짐</text>
+    <path d="M74 26 Q96 30 100 46 Q102 60 92 66 Q78 74 66 62 Q58 52 62 40 Q66 28 74 26 Z"
+      fill="#FFD9C2" stroke="#E0A882" stroke-width="1.6"/>
+    <path d="M70 34 Q84 33 90 44" fill="none" stroke="#E0A882" stroke-width="1.2" opacity=".7"/>
+    <path d="M48 32 L34 32" stroke="#F45B69" stroke-width="2" stroke-linecap="round"/>
+    <path d="M34 32 l4 -3 M34 32 l4 3" stroke="#F45B69" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </svg>`;
+}
+function renderCamGuides(){
+  document.querySelectorAll(".cam-guide .cg-pic").forEach(el=>{ el.innerHTML=camGuideSVG(); });
+}
+const CAM_KEY="tabataCamFacing";
+let camFacing="user";
+try{ camFacing=localStorage.getItem(CAM_KEY)||"user"; }catch(e){}
+function applyCamMirror(){
+  const m=(camFacing==="user")?"scaleX(-1)":"none";
+  video.style.transform=m; overlay.style.transform=m;
+  const b=$("camFlip");
+  if(b)b.textContent=(camFacing==="user")?"🤳 셀카":"📷 뒤 카메라";
+}
 async function ensureWorkoutCam(){
   const s=video.srcObject;
   if(s && s.getVideoTracks().some(t=>t.readyState==="live")) return;
-  const ns=await navigator.mediaDevices.getUserMedia({video:{width:960,height:720,facingMode:"user"}});
+  let ns;
+  try{
+    ns=await navigator.mediaDevices.getUserMedia({video:{width:960,height:720,facingMode:{exact:camFacing}}});
+  }catch(e){
+    // 그 방향 카메라가 없는 기기(노트북 등)면 있는 카메라라도 쓴다
+    ns=await navigator.mediaDevices.getUserMedia({video:{width:960,height:720,facingMode:camFacing}});
+  }
   video.srcObject=ns; await video.play();
+  applyCamMirror();
   overlay.width=video.videoWidth||overlay.width; overlay.height=video.videoHeight||overlay.height;
+}
+/* 카메라 전환 — 운동 중에 눌러도 그 자리에서 바로 바뀐다 */
+async function flipWorkoutCam(){
+  camFacing=(camFacing==="user")?"environment":"user";
+  try{ localStorage.setItem(CAM_KEY,camFacing); }catch(e){}
+  applyCamMirror();
+  const wasRunning=!!video.srcObject;
+  if(!wasRunning){ toast(camFacing==="user"?"🤳 셀카 모드 — 내 모습을 보며 운동해요":"📷 뒤 카메라 — 친구가 찍어주세요","task","🔄"); return; }
+  stopWorkoutCam();
+  try{
+    await ensureWorkoutCam();
+    toast(camFacing==="user"?"🤳 셀카 모드로 바꿨어요":"📷 뒤 카메라로 바꿨어요 — 친구가 찍어주세요","good","🔄");
+  }catch(e){
+    // 되돌린다 — 그 방향 카메라를 못 열면 원래대로 두는 게 낫다
+    camFacing=(camFacing==="user")?"environment":"user";
+    try{ localStorage.setItem(CAM_KEY,camFacing); }catch(e2){}
+    applyCamMirror();
+    try{ await ensureWorkoutCam(); }catch(e3){}
+    toast("그 카메라를 열 수 없어 원래대로 되돌렸어요","task","⚠️");
+  }
 }
 async function setup(){
   if(!landmarker) $("intro").innerHTML='<div class="spinner"></div><p>AI 모델 불러오는 중…</p>';
@@ -4403,12 +4524,29 @@ function markReflectDone(){
 function renderRfLogs(){
   const box=$("rfLogList"); if(!box)return;
   const me=myKey();
-  if(!me.name){ box.innerHTML='<div class="hint">운동 설계 탭에서 학번을 입력하면 내 일지가 표시됩니다.</div>'; return; }
+  if(!me.name){
+    box.innerHTML='<div class="hint">운동 설계 탭에서 학번을 입력하면 내 일지가 표시됩니다.</div>';
+    const b0=$("rfTodoBadge"); if(b0)b0.style.display="none";   // 학번을 지우면 배지도 지운다
+    return;
+  }
   const logs=myLogs();
   /* 아직 성찰을 안 쓴 내 운동들 — 새로고침이나 탭 이동으로 결과 화면을 떠나면 다시 들어갈
      길이 없었다. 여기에 '미작성'으로 함께 띄워 눌러서 이어 쓸 수 있게 한다. */
   const todo=records.filter(r=>r.name===me.name&&String(r.cls)===String(me.cls)&&!myLogsLocal[r.id])
     .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  /* 이 구역은 기본으로 접혀 있어, 안 쓴 성찰이 있어도 학생 눈에 띄지 않았다.
+     ① 접힌 상태에서도 보이도록 제목에 건수 배지를 달고
+     ② 안 쓴 것이 있으면 처음 들어올 때 한 번 자동으로 펼친다(닫으면 다시 열지 않는다). */
+  const badge=$("rfTodoBadge");
+  if(badge){
+    if(todo.length){ badge.textContent=`안 쓴 것 ${todo.length}건`; badge.style.display="inline-block"; }
+    else badge.style.display="none";
+  }
+  const sec=$("rfLogSec");
+  if(sec&&todo.length&&!sec.dataset.autoOpened){
+    sec.dataset.autoOpened="1";
+    if(!sec.classList.contains("open")){ sec.classList.add("open"); sec.nextElementSibling.classList.add("open"); }
+  }
   if(!logs.length&&!todo.length){ box.innerHTML='<div class="hint">아직 쓴 일지가 없습니다. 운동을 마치면 결과 화면에서 쓸 수 있어요.</div>'; return; }
   box.innerHTML="";
   if(todo.length){
@@ -5490,6 +5628,21 @@ function renderMineTodo(){
     // 왜 내 평균이 기록 수와 안 맞는지 학생이 알 수 있게 한 줄로 알려 준다
     +(g.skippedFirst?`<div class="hint" style="margin-top:6px">🎓 첫 운동(${escHtml(String(g.firstRec.date||"").slice(5,10))})은
         <b>앱 사용법을 익히는 차시</b>라 정확도·심박·향상률 계산에서 빠집니다.</div>`:"");
+
+  // 안 쓴 성찰은 아래 접힌 구역에 있어 놓치기 쉽다 — 맨 위에서 바로 눌러 갈 수 있게 한다
+  const rfTodo=records.filter(r=>r.name===me.name&&String(r.cls)===String(me.cls)&&!myLogsLocal[r.id]).length;
+  if(rfTodo){
+    const go=document.createElement("button");
+    go.className="btn btn-stop btn-sm";
+    go.style.cssText="margin-top:8px";
+    go.innerHTML=`✍️ 아직 안 쓴 성찰 ${rfTodo}건 — 지금 쓰러 가기`;
+    go.addEventListener("click",()=>{
+      const sec=$("rfLogSec");
+      if(sec&&!sec.classList.contains("open")){ sec.classList.add("open"); sec.nextElementSibling.classList.add("open"); }
+      try{ $("rfLogList").scrollIntoView({behavior:"smooth",block:"center"}); }catch(e){}
+    });
+    box.appendChild(go);
+  }
 }
 /* ---------- 내 기록: 운동 목록 (누르면 그날 상세) ---------- */
 function judgeLine(r){
@@ -5810,6 +5963,10 @@ function exitFullscreen(){
   if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});
 }
 $("exitFs").addEventListener("click",stopAll);
+$("camFlip")&&$("camFlip").addEventListener("click",flipWorkoutCam);
+$("camFlipFs")&&$("camFlipFs").addEventListener("click",flipWorkoutCam);
+applyCamMirror();   // 저장해 둔 값을 화면에 먼저 반영해 둔다
+renderCamGuides();  // 심박 측정 그림 안내를 STEP 1·3 두 곳에 그려 둔다
 $("startBtn").addEventListener("click",start);
 $("musicBtn").addEventListener("click",()=>{
   bgmOn=!bgmOn;
@@ -6145,6 +6302,16 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
     lastHrDeviceId=track.getSettings().deviceId||lastHrDeviceId;
     if(lastHrDeviceId)localStorage.setItem(HR_CAM_KEY,lastHrDeviceId);
   }catch(e){}
+  /* 어떤 카메라를 덮어야 하는지 알려 준다 — 요즘 폰은 뒤에 렌즈가 2~3개라
+     학생이 엉뚱한 렌즈를 덮고 "왜 안 되지?" 하는 일이 잦다. */
+  let facing="";
+  try{ facing=track.getSettings().facingMode||""; }catch(e){}
+  if(!facing){ // 일부 기기는 facingMode를 안 알려줘서 카메라 이름으로 짐작한다
+    const lb=(track.label||"").toLowerCase();
+    facing=/front|user|전면/.test(lb)?"user":/back|rear|environment|후면/.test(lb)?"environment":"";
+  }
+  const camWord=facing==="environment"?"폰 <b>뒷면</b>":facing==="user"?"폰 <b>앞면</b>(셀카)":"폰";
+  const hintEl=camEl&&camEl.parentElement?camEl.parentElement.querySelector(".hr-cam-hint"):null;
   let hasTorch=false;
   try{
     const caps=track.getCapabilities?track.getCapabilities():{};
@@ -6156,6 +6323,12 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
       await track.applyConstraints({advanced:[{focusMode:"manual",focusDistance:caps.focusDistance.min}]});
     }
   }catch(e){}
+  // 시작하자마자 어디를 덮어야 하는지 먼저 알려 준다
+  if(hintEl){
+    hintEl.innerHTML=`✋ ${camWord}에서 ${hasTorch?"<b>불이 켜진 렌즈</b>":"<b>렌즈</b>"}를 덮어주세요`;
+    hintEl.style.background="rgba(244,91,105,.85)";
+  }
+  say(`📸 ${camWord} 카메라를 씁니다 — ${hasTorch?"<b>불이 켜진 렌즈</b>를":"<b>렌즈</b>를"} 손가락으로 완전히 덮으세요`);
   const v=camEl||document.createElement("video");
   v.srcObject=stream; v.playsInline=true; v.setAttribute("playsinline",""); v.muted=true;
   try{await v.play();}catch(e){ try{await new Promise(r=>setTimeout(r,200)); await v.play();}catch(e2){} }
@@ -6166,13 +6339,35 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
   const t0=performance.now(), sig=[];
   let lastWarnT=0, stopped=false, nextCheck=MIN_DUR, checking=false;
 
+  let lastR=0, lastG=0;
   function grab(){ // 새 프레임 1개당 1회만 호출됨
     try{
       cx.drawImage(v,0,0,64,48);
       const d=cx.getImageData(0,0,64,48).data;
-      let r=0; for(let i=0;i<d.length;i+=4) r+=d[i];
-      sig.push({t:performance.now()-t0, v:r/(d.length/4)});
+      let r=0,g=0; for(let i=0;i<d.length;i+=4){ r+=d[i]; g+=d[i+1]; }
+      const px=d.length/4;
+      lastR=r/px; lastG=g/px;
+      sig.push({t:performance.now()-t0, v:lastR});
     }catch(e){}
+  }
+  /* 손가락이 렌즈를 제대로 덮었는지 실시간으로 알려 준다.
+     렌즈가 여러 개인 폰에서 엉뚱한 렌즈를 덮고 있으면 이 표시가 바뀌지 않으므로,
+     학생이 렌즈를 옮겨 가며 2초 안에 맞는 렌즈를 찾을 수 있다.
+     덮으면(플래시 켜짐) 빨강만 밝고 초록은 어둡다 / 방을 비추면 빨강·초록이 비슷하다. */
+  function covered(){
+    if(hasTorch) return lastR>60 && lastR-lastG>25;
+    return lastR<45;   // 플래시가 없으면 '어두워짐'으로 판단한다
+  }
+  let lastCoverT=0, lastCover=null;
+  function showCover(t){
+    if(!hintEl||t-lastCoverT<250)return;
+    lastCoverT=t;
+    const c=covered();
+    if(c===lastCover)return;
+    lastCover=c;
+    hintEl.innerHTML=c?"✅ 잘 덮었어요 — 그대로 가만히"
+      :`✋ 아직 안 덮였어요 — ${camWord}에서 ${hasTorch?"<b>불이 켜진 렌즈</b>":"<b>렌즈</b>"}를 덮어보세요`;
+    hintEl.style.background=c?"rgba(53,208,186,.85)":"rgba(244,91,105,.85)";
   }
   function drawWave(){
     const win=sig.slice(-150);
@@ -6201,7 +6396,7 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
     const onFrame=()=>{
       if(stopped)return;
       grab(); drawWave();
-      const t=performance.now()-t0; feedback(t); maybeCheck(t);
+      const t=performance.now()-t0; showCover(t); feedback(t); maybeCheck(t);
       if(!stopped) v.requestVideoFrameCallback(onFrame);
     };
     v.requestVideoFrameCallback(onFrame);
@@ -6212,7 +6407,7 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
       if(v.currentTime!==lastVidT){ // 실제 새 프레임일 때만 샘플 — 중복 샘플링(구버전 버그) 방지
         lastVidT=v.currentTime;
         grab(); drawWave();
-        const t=performance.now()-t0; feedback(t); maybeCheck(t);
+        const t=performance.now()-t0; showCover(t); feedback(t); maybeCheck(t);
       }
       if(!stopped) requestAnimationFrame(loop);
     };
@@ -6230,18 +6425,23 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
     if(r.ok) finish(r.bpm);
     else if(t>=MAX_DUR) giveUp();
   }
+  // 측정이 끝나면 안내 문구를 원래대로 돌려 둔다(다음 측정 때 헷갈리지 않게)
+  function resetHint(){
+    if(!hintEl)return;
+    hintEl.textContent="손가락으로 렌즈를 덮으세요"; hintEl.style.background="";
+  }
   function finish(bpm){
     stopped=true;
     try{track.stop();}catch(e){}
     try{if(camEl){camEl.pause();camEl.srcObject=null;}}catch(e){}
-    ppgStream=null; btn.disabled=false;
+    ppgStream=null; btn.disabled=false; resetHint();
     onDone(bpm);
   }
   function giveUp(){
     stopped=true;
     try{track.stop();}catch(e){}
     try{if(camEl){camEl.pause();camEl.srcObject=null;}}catch(e){}
-    ppgStream=null; btn.disabled=false;
+    ppgStream=null; btn.disabled=false; resetHint();
     // 여기서 안내 문구만 띄우면 학생 입장에서는 막다른 길이었다(스스로 다른 방법을 찾아
     // 눌러야 했다). 특히 운동 직후엔 땀·떨림 때문에 카메라가 실패하기 쉬운데, 그 사이에도
     // 심박은 계속 떨어진다. 그래서 실패하면 곧바로 짝과 함께 하는 맥박 세기 창을 열어 준다.
