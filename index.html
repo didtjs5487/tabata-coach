@@ -153,6 +153,12 @@
   .tc-body.open{display:block;}
   .tc-btns{display:flex; gap:6px; margin-top:9px; flex-wrap:wrap;}
   .tc-btns .btn{flex:1; min-width:78px;}
+  /* 성찰 일지에서 터치로 고르는 칩 — 손가락으로 누르기 쉽게 크게 잡는다 */
+  .rf-pick{display:flex; flex-wrap:wrap; gap:7px;}
+  .rf-pick button{background:var(--panel); border:1px solid var(--line); border-radius:11px;
+    padding:11px 14px; cursor:pointer; color:var(--ink); font-size:14px; font-weight:600;
+    font-family:inherit; white-space:nowrap; line-height:1.2;}
+  .rf-pick button.on{border-color:var(--primary); background:rgba(124,108,255,.28); color:#fff; font-weight:800;}
   .rf-self{display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--line);}
   .rf-self .lb{flex:1; font-size:13.5px; line-height:1.35;}
   .rf-self .op{display:flex; gap:4px;}
@@ -816,19 +822,20 @@
         <button class="btn btn-go btn-sm" id="frSave">🏁 마무리 성찰 저장</button>
         <span class="hint" id="frMsg"></span>
       </div>
-
-      <!-- 마무리 성찰까지 끝내면 그동안 한 것을 한 부로 묶어 뽑을 수 있다 -->
-      <div id="pfMineBox" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">
-        <div style="font-weight:700;font-size:16px">📘 내 운동 포트폴리오</div>
-        <div class="hint" style="margin:2px 0 8px">이번 프로젝트에서 내가 한 것을 <b>한 권으로</b> 묶어 줍니다 —
-          운동 계획서부터 매 차시 운동 기록과 그날의 성찰, 마무리 성찰까지 순서대로.</div>
-        <div id="pfMineChk" class="rf-sum" style="margin-bottom:8px"></div>
-        <div class="row" style="margin:0">
-          <button class="btn btn-go btn-sm" id="pfMineBtn">📘 내 포트폴리오 만들기</button>
-          <span class="hint" id="pfMineMsg"></span>
-        </div>
-      </div>
     </div>
+    </div>
+
+    <!-- 포트폴리오는 '단원 마무리 성찰' 안에 접혀 있어 학생들이 찾기 어려웠다.
+         맨 아래에 접히지 않는 독립 항목으로 빼서 바로 눈에 띄게 한다. -->
+    <div id="pfMineBox" class="step-box" style="margin-top:18px;border:2px solid var(--primary2)">
+      <div style="font-weight:800;font-size:17px">📘 내 운동 포트폴리오</div>
+      <div class="hint" style="margin:2px 0 8px">이번 프로젝트에서 내가 한 것을 <b>한 권으로</b> 묶어 줍니다 —
+        운동 계획서부터 매 차시 운동 기록과 그날의 성찰, 마무리 성찰까지 순서대로.</div>
+      <div id="pfMineChk" class="rf-sum" style="margin-bottom:8px"></div>
+      <div class="row" style="margin:0">
+        <button class="btn btn-go" id="pfMineBtn">📘 내 포트폴리오 만들기</button>
+        <span class="hint" id="pfMineMsg"></span>
+      </div>
     </div>
   </section>
 
@@ -1141,6 +1148,9 @@
 </div>
 <div id="toastBox"></div>
 <div id="pulseOverlay" style="display:none;position:fixed;inset:0;z-index:10002;background:rgba(43,49,96,.94);flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:22px;text-align:center;overflow-y:auto">
+  <!-- 카메라 측정이 실패해 이 창으로 넘어온 경우, 왜 넘어왔는지 여기에 크게 알려준다.
+       (예전엔 실패 안내가 뒤쪽 화면에 떠서 이 창에 가려 학생이 볼 수 없었다) -->
+  <div id="pulseWhy" style="display:none;max-width:460px;background:rgba(255,159,28,.18);border:1px solid rgba(255,159,28,.6);border-radius:14px;padding:12px 16px;color:#FFD9A0;font-size:15px;font-weight:700;line-height:1.5"></div>
   <div style="color:#fff;font-family:'Barlow Condensed';font-weight:700;font-size:clamp(22px,5vw,32px)">🖐 맥박 세기 (짝과 함께)</div>
   <svg viewBox="0 0 220 150" style="width:200px;max-width:60vw;background:#fff;border-radius:16px" xmlns="http://www.w3.org/2000/svg">
     <path d="M10 55 Q60 45 100 55 L100 95 Q60 105 10 95 Z" fill="#F3F1FD" stroke="#C9C6EE" stroke-width="2"/>
@@ -1196,24 +1206,28 @@
       <div class="cfg-fixed" id="rfDocData"></div>
     </div>
     <div class="sheet-bd">
-      <div class="rf-q"><label>1. 운동 강도 돌아보기</label>
-        <div class="hint" style="margin-bottom:4px">위 심박수를 근거로, 내가 충분한 강도로 운동했는지 스스로 평가해 보세요.</div>
-        <textarea id="rq1" rows="3" placeholder="예: 운동 전 72에서 후 138까지 올라 충분히 힘을 냈다고 생각한다"></textarea></div>
-      <div class="rf-q"><label>2. 잘한 점 / 배운 점</label>
-        <div class="hint" style="margin-bottom:4px">자세·호흡·리듬·체력 등에서 잘한 점이나 새로 알게 된 점</div>
-        <textarea id="rq2" rows="3" placeholder="예: 숨을 참지 않고 내쉬면서 하니 끝까지 버틸 수 있었다"></textarea></div>
-      <div class="rf-q"><label>3. 배운 개념 연결하기</label>
-        <div class="hint" style="margin-bottom:4px">수업에서 배운 개념(심박수와 운동 강도, 운동 후 소모되는 에너지 등)을 오늘 내 경험과 이어 설명해 보세요.</div>
-        <textarea id="rq3" rows="3" placeholder="예: 운동이 끝나고도 한참 숨이 찼는데, 배운 대로 회복하는 동안에도 에너지를 쓰기 때문인 것 같다"></textarea></div>
-      <div class="rf-q"><label>4. 부족했던 점</label>
-        <div class="hint" style="margin-bottom:4px">어떤 운동이나 부분이 특히 어려웠나요? 그 이유는 무엇이라고 생각하나요?</div>
-        <textarea id="rq4" rows="3" placeholder="예: 플랭크에서 허리가 내려갔다. 배에 힘을 주는 법을 아직 잘 모르는 것 같다"></textarea></div>
-      <div class="rf-q"><label>5. 다음 실천 계획</label>
-        <div class="hint" style="margin-bottom:4px">다음 운동에서 무엇을, 어떻게 바꿔 볼 것인가요? 실천할 수 있는 구체적인 계획으로.</div>
-        <textarea id="rq5" rows="3" placeholder="예: 다음에는 플랭크를 20초씩 나눠서 하고, 배에 힘을 준 채로 숨쉬기를 먼저 연습하겠다"></textarea></div>
+      <!-- 매 차시 성찰은 '터치로 고르고 한 줄만 쓰기'로 가볍게 한다.
+           길게 쓰는 깊은 성찰은 단원이 끝난 뒤 '단원 마무리 성찰'에서 한 번 받는다. -->
+      <div class="rf-q"><label>1. 오늘 운동, 얼마나 힘들었나요?</label>
+        <div class="hint" style="margin-bottom:6px">위에 있는 내 심박수와 견주어 골라 보세요.</div>
+        <div class="pc-opts rf-pick" id="rfRpe"></div></div>
 
-      <div class="rf-q"><label>오늘의 자기 평가</label>
-        <div id="rfSelfList"></div></div>
+      <div class="rf-q"><label>2. 가장 힘들었던 동작은?</label>
+        <div class="hint" style="margin-bottom:6px">오늘 한 동작 중에서 고르세요.</div>
+        <div class="pc-opts rf-pick" id="rfHard"></div></div>
+
+      <div class="rf-q"><label>3. 오늘 내 컨디션은?</label>
+        <div class="pc-opts rf-pick" id="rfCond"></div></div>
+
+      <div class="rf-q"><label>4. 오늘 한마디 <span style="font-weight:400;color:var(--muted)">(한 줄이면 충분해요)</span></label>
+        <textarea id="rqNote" rows="2" placeholder="예: 플랭크에서 허리가 내려갔다. 다음엔 배에 힘주고 해봐야지"></textarea></div>
+
+      <!-- 예전 방식(5문항)으로 쓴 일지를 열어볼 때만 아래가 보인다 -->
+      <div id="rfOldWrap" style="display:none">
+        <div class="hint" style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line)">
+          <b>예전 방식으로 쓴 일지입니다</b> — 그대로 보관되어 있습니다.</div>
+        <div id="rfOldBody"></div>
+      </div>
     </div>
     <div class="sheet-ft">
       <button class="btn btn-go btn-sm" id="rfDocSave">💾 성찰 저장</button>
@@ -1460,8 +1474,15 @@ const EX={
   sidelunge:{type:"rep",joints:[[24,26,28],[23,25,27]],down:120,up:168,perfect:105,
     pose:"stand",travelPt:"hip",travelMin:0.04,
     good:"좋은 사이드런지!",shallow:"옆으로 더 낮게"},
-  jumpsquat:{type:"rep",joints:[[24,26,28],[23,25,27]],down:105,up:165,perfect:90,
-    pose:"stand",travelPt:"hip",travelMin:0.05,sym:true,form:"squat",
+  // 점프스쿼트는 스쿼트와 같은 기준을 쓰면 실제로 잘 해도 카운트가 잘 안 됐다. 이유는 세 가지다.
+  //  ① 빠르다 — 폭발적으로 뛰는 동작이라 내려갔다 올라오는 데 걸리는 시간이 기본 문턱(450ms)보다
+  //     짧은 경우가 많아 '관절이 튄 것'으로 버려졌다 → minRepMs를 이 동작만 300ms로 낮춘다.
+  //  ② 착지 후 다음 점프로 바로 이어져 무릎을 165도까지 완전히 펴지 않는다 → up을 155로 낮춘다.
+  //  ③ 뛰기 위해 상체를 앞으로 숙이고, 착지 순간 좌우가 잠깐 어긋난다 — 스쿼트에서는 잘못된
+  //     자세지만 점프스쿼트에서는 정상이다 → form(상체 기울기 감점)과 sym(좌우 대칭)을 뺀다.
+  // 부정행위 방지장치(서 있어야 함·엉덩이가 실제로 움직여야 함)는 그대로 남는다.
+  jumpsquat:{type:"rep",joints:[[24,26,28],[23,25,27]],down:115,up:155,perfect:95,minRepMs:300,
+    pose:"stand",travelPt:"hip",travelMin:0.05,
     good:"파워풀한 점프!",shallow:"더 깊게 앉았다 점프"},
   highknee:{type:"knee",pose:"stand",good:"무릎 높이 최고!",shallow:"무릎을 허리까지!"},
   mtclimber:{type:"knee",pose:"flat",good:"빠른 템포 좋아요!",shallow:"무릎을 가슴쪽으로 더"},
@@ -2494,7 +2515,7 @@ function procRep(lm,def){
       const reset=()=>{minAng=180;};
       if(now-lastRepT<REP_DEBOUNCE_MS){reset();return;}
       // ④ 너무 빨리 끝난 반복은 관절이 튄 것으로 본다
-      if(now-repDownT<MIN_REP_MS){ $("fb").textContent="너무 빨라요 — 끝까지 내려갔다 올라오기"; reset(); return; }
+      if(now-repDownT<(def.minRepMs??MIN_REP_MS)){ $("fb").textContent="너무 빨라요 — 끝까지 내려갔다 올라오기"; reset(); return; }
       // ② 몸이 실제로 움직였는가
       if(def.travelMin&&y!=null&&(yHi-yLo)<def.travelMin){
         $("fb").textContent="관절만 움직이지 말고 몸 전체로 동작하기"; reset(); return; }
@@ -2540,9 +2561,25 @@ function procKnee(lm,def){
   // 하이니는 서서, 마운틴클라이머는 엎드려서 하는 동작이라 몸통 방향이 맞아야 인정한다
   if(!poseOK(def,lm)){ $("fb").textContent=POSE_MSG[def.pose]; jackState="closed"; jackQ=0; return; }
   const lh=lm[23],rh=lm[24],lk=lm[25],rk=lm[26];
-  const hipY=(lh.y+rh.y)/2;
-  const lUp=lk.y<hipY+0.02, rUp=rk.y<hipY+0.02; // 무릎이 골반 근처까지
-  const lHigh=lk.y<hipY-0.04, rHigh=rk.y<hipY-0.04;
+  let lUp,rUp,lHigh,rHigh;
+  if(def.pose==="flat"){
+    /* 마운틴클라이머는 엎드린 자세라 무릎이 '위로' 올라오지 않고 가슴 쪽으로 '수평 이동'한다.
+       그래서 세로 높이(y)만 보던 예전 방식으로는 무릎을 아무리 당겨도 인식되지 않았다.
+       대신 어깨→골반을 잇는 몸통 축을 기준으로, 무릎이 그 축을 따라 어깨 쪽으로 얼마나
+       당겨졌는지를 본다(몸 크기·카메라 거리와 무관하도록 몸통 길이로 나눠 정규화).
+       엎드려 뻗은 상태면 1 안팎, 무릎을 가슴까지 당기면 0 근처까지 내려온다. */
+    const s=midPt(lm[11],lm[12]), h=midPt(lm[23],lm[24]);
+    const ax=h.x-s.x, ay=h.y-s.y;
+    const len=Math.hypot(ax,ay)||1e-6;
+    const proj=k=>((k.x-h.x)*ax+(k.y-h.y)*ay)/(len*len); // 몸통 길이를 1로 본 축 위의 위치
+    const lp=proj(lk), rp=proj(rk);
+    lUp=lp<0.50; rUp=rp<0.50;
+    lHigh=lp<0.20; rHigh=rp<0.20;
+  } else {
+    const hipY=(lh.y+rh.y)/2;
+    lUp=lk.y<hipY+0.02; rUp=rk.y<hipY+0.02; // 무릎이 골반 근처까지
+    lHigh=lk.y<hipY-0.04; rHigh=rk.y<hipY-0.04;
+  }
   const anyUp=lUp||rUp, anyHigh=lHigh||rHigh;
   if(jackState==="closed"&&anyUp){jackState="open"; jackQ=anyHigh?100:72;}
   else if(jackState==="open"){
@@ -3978,13 +4015,16 @@ function showStuDetail(cls,name){
 
   h+=`<h4>✍️ 자기성찰 (㉰) — ${logs.length}회 · 자기평가 평균 ${avgSelf(st.rf)!=null?avgSelf(st.rf):"–"}</h4>`;
   h+=logs.length?logs.map(l=>{
-      const wrote=[1,2,3,4,5].filter(i=>String(l["q"+i]||"").trim()).length;
+      const wrote=logWrote(l), tot=logTotal(l);
       return `<div class="sd-q"><b>${esc(l.date)}</b>`
       +`${l.mode?` · ${esc(l.mode)}`:""}`
-      +` · <span style="color:${wrote===5?"var(--good)":wrote?"var(--gold)":"var(--bad)"}">${wrote}/5문항</span>`
+      +` · <span style="color:${wrote===tot?"var(--good)":wrote?"var(--gold)":"var(--bad)"}">${wrote}/${tot}</span>`
       +`${l.late?` · <span style="color:var(--bad)">당일 아님</span>`:""}`
-      +RF_QS.map((q,qi)=>String(l["q"+(qi+1)]||"").trim()
-        ?`<br><span class="sd-in"><b>${qi+1}.</b> ${esc(l["q"+(qi+1)])}</span>`:"").join("")
+      +(isNewLog(l)
+        ?(logPickText(l)?`<br><span class="sd-in">${esc(logPickText(l))}</span>`:"")
+          +(String(l.note||"").trim()?`<br><span class="sd-in"><b>한마디</b> ${esc(l.note)}</span>`:"")
+        :RF_QS.map((q,qi)=>String(l["q"+(qi+1)]||"").trim()
+          ?`<br><span class="sd-in"><b>${qi+1}.</b> ${esc(l["q"+(qi+1)])}</span>`:"").join(""))
       +`</div>`;}).join("")
     :`<div class="sd-none">아직 쓴 성찰이 없습니다.</div>`;
 
@@ -4114,9 +4154,22 @@ let myLogsLocal={};                   // 내가 쓴 수시 성찰 (이 기기에
 let myFinalLocal=null;                // 내 마무리 성찰
 let lastRec=null;                     // 방금 끝낸 세션 (수시 성찰을 이 기록에 붙인다)
 let sessionEndAt=0;                   // 그 세션이 끝난 시각 — 운동 후 심박을 언제 쟀는지 재는 기준
+/* 예전 방식(5문항 서술 + 자기평가 4개)으로 쓴 일지도 그대로 열어보고 인쇄할 수 있어야 하므로
+   아래 이름표들은 남겨 둔다. 새로 쓰는 일지는 터치 3개 + 한 줄 코멘트로 받는다. */
 const RF_QS=["운동 강도 돌아보기","잘한 점 / 배운 점","배운 개념 연결하기","부족했던 점","다음 실천 계획"];
 const RF_SELF=["성실하게 끝까지 참여했다","바른 자세로 운동했다","목표한 강도로 운동했다","다음 계획을 구체적으로 세웠다"];
 const SELF_LABEL={3:"잘함",2:"보통",1:"노력 필요"};
+/* 매 차시 성찰(새 방식) — 터치로 고르는 세 가지 */
+const RPE_OPTS=[
+  {v:1,t:"😌 아주 쉬웠다"},{v:2,t:"🙂 조금 쉬웠다"},{v:3,t:"😊 딱 알맞았다"},
+  {v:4,t:"😥 조금 힘들었다"},{v:5,t:"🥵 매우 힘들었다"}];
+const COND_OPTS=[
+  {v:1,t:"💪 좋음"},{v:2,t:"🙂 보통"},{v:3,t:"😴 피곤함"},{v:4,t:"🤕 아픈 곳 있음"}];
+const RPE_LABEL={}, COND_LABEL={};
+RPE_OPTS.forEach(o=>RPE_LABEL[o.v]=o.t);
+COND_OPTS.forEach(o=>COND_LABEL[o.v]=o.t);
+// 새 방식으로 쓴 일지인지 (터치 하나라도 골랐거나 한마디를 썼으면)
+function isNewLog(l){ return !!(l&&(l.rpe||l.cond||l.hardEx||String(l.note||"").trim())); }
 function reflectOf(name,cls){ return (reflections[cls]||{})[name]||null; }
 // 내 성찰은 항상 이 기기의 것을 본다 (서버는 교사만 읽는다)
 function myReflect(){ return {logs:myLogsLocal, final:myFinalLocal}; }
@@ -4124,7 +4177,20 @@ function myLogs(){ return Object.entries(myLogsLocal||{}).map(([k,v])=>({key:k,.
     .sort((a,b)=>String(b.date).localeCompare(String(a.date))); }
 function logCount(rf){ return rf&&rf.logs?Object.keys(rf.logs).length:0; }
 function hasFinal(rf){ return !!(rf&&rf.final&&[1,2,3,4,5].some(i=>(rf.final["q"+i]||"").trim())); }
-function logWrote(l){ return [1,2,3,4,5].filter(i=>String(l["q"+i]||"").trim()).length; }
+/* 얼마나 채워 썼는지 — 예전 일지는 5문항 중 몇 개, 새 일지는 네 칸(체감·동작·컨디션·한마디) 중 몇 개 */
+function logWrote(l){
+  if(isNewLog(l)) return [l.rpe,l.hardEx,l.cond,String(l.note||"").trim()].filter(Boolean).length;
+  return [1,2,3,4,5].filter(i=>String(l["q"+i]||"").trim()).length;
+}
+function logTotal(l){ return isNewLog(l)?4:5; }
+/* 새 방식 일지를 한 줄로 요약한다 (교사 화면·엑셀·포트폴리오가 같은 문구를 쓰도록 한 곳에 둔다) */
+function logPickText(l){
+  const p=[];
+  if(l.rpe)p.push("체감 "+(RPE_LABEL[l.rpe]||l.rpe));
+  if(l.hardEx)p.push("힘든 동작 "+(EXNAME[l.hardEx]||l.hardEx));
+  if(l.cond)p.push("컨디션 "+(COND_LABEL[l.cond]||l.cond));
+  return p.join(" · ");
+}
 // 자기평가 평균 (잘함3 · 보통2 · 노력필요1)
 function avgSelf(rf){
   const vs=[];
@@ -4148,23 +4214,40 @@ function nowStamp(){
 }
 
 /* ---------- 성찰 일지 쓰기·다시보기 (하나의 화면으로 처리) ---------- */
-let rfDocKey=null, rfSelf=[0,0,0,0], rfDocMode="", rfDocTitle="", rfDocLocked=false, rfWorkDate="";
+let rfDocKey=null, rfDocMode="", rfDocTitle="", rfDocLocked=false, rfWorkDate="";
+let rfPick={rpe:0, cond:0, hardEx:""};   // 이번 일지에서 터치로 고른 값
 // 성찰은 운동한 날에 쓰는 것이 원칙 — 날짜가 다르면 미제출로 본다
 function dayOf(t){ return String(t||"").slice(0,10); }
 function sameDayOK(){ return rfWorkDate && dayOf(rfWorkDate)===todayStr(); }
-function renderRfSelf(){
-  const box=$("rfSelfList"); box.innerHTML="";
-  RF_SELF.forEach((t,i)=>{
-    const d=document.createElement("div"); d.className="rf-self";
-    d.innerHTML=`<span class="lb">${i+1}. ${t}</span><span class="op">`
-      +[3,2,1].map(v=>`<button type="button" data-v="${v}">${SELF_LABEL[v]}</button>`).join("")+`</span>`;
-    d.querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
-      rfSelf[i]=+b.dataset.v;
-      d.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
-    }));
-    if(rfSelf[i])d.querySelectorAll("button").forEach(x=>x.classList.toggle("on",+x.dataset.v===rfSelf[i]));
-    box.appendChild(d);
+/* 터치로 고르는 칩 한 줄을 그린다. opts=[{v,t}], key는 rfPick에 담을 이름 */
+function renderRfPick(boxId,opts,key){
+  const box=$(boxId); if(!box)return;
+  box.innerHTML="";
+  opts.forEach(o=>{
+    const b=document.createElement("button");
+    b.type="button"; b.textContent=o.t; b.dataset.v=String(o.v);
+    if(String(rfPick[key])===String(o.v))b.classList.add("on");
+    b.addEventListener("click",()=>{
+      if(rfDocLocked)return;
+      // 같은 걸 다시 누르면 선택 해제 — 잘못 누른 걸 되돌릴 수 있게
+      rfPick[key]=(String(rfPick[key])===String(o.v))?(typeof o.v==="number"?0:""):o.v;
+      [...box.querySelectorAll("button")].forEach(x=>
+        x.classList.toggle("on",String(rfPick[key])===String(x.dataset.v)&&rfPick[key]!==0&&rfPick[key]!==""));
+    });
+    box.appendChild(b);
   });
+}
+/* '가장 힘들었던 동작' 후보 — 그날 실제로 한 동작만 보여준다(없으면 전체 목록) */
+function rfHardOpts(entry){
+  let keys=[];
+  if(entry&&entry.seq)keys=String(entry.seq).split(",").filter(Boolean);
+  else if(!entry&&Array.isArray(seq)&&seq.length)keys=[...new Set(seq)];
+  if(!keys.length)keys=Object.keys(EXNAME);
+  const opts=keys.filter(k=>EXNAME[k]).map(k=>({v:k,t:EXNAME[k]}));
+  // 예전 일지를 다시 열었는데 그때 고른 동작이 목록에 없으면 그 값도 넣어 준다
+  if(entry&&entry.hardEx&&!opts.some(o=>o.v===entry.hardEx))
+    opts.push({v:entry.hardEx,t:EXNAME[entry.hardEx]||entry.hardEx});
+  return opts;
 }
 // entry가 없으면 방금 끝낸 세션으로 새로 쓴다
 function openReflectDoc(entry){
@@ -4197,15 +4280,33 @@ function openReflectDoc(entry){
   $("rfDocData").innerHTML=`<b>내 운동 데이터</b>`
     +`<span>운동 전 심박 ${hrPre||"–"} → 운동 후 ${hr||"– (아직 측정 안 함)"}</span>`
     +`<span>동작 정확도 ${acc!==""?acc+"%":"–"} · 종합 점수 ${score!==""?score+"점":"–"}</span>`;
-  [1,2,3,4,5].forEach(i=>$("rq"+i).value=src["q"+i]||"");
-  rfSelf=[1,2,3,4].map(i=>+src["s"+i]||0);
-  renderRfSelf();
   // 한 번 저장한 일지는 고칠 수 없다 — 그날의 생각을 그대로 남기기 위해서다
   const locked=!!(entry&&myLogsLocal[rfDocKey]);
   rfDocLocked=locked;
-  [1,2,3,4,5].forEach(i=>$("rq"+i).readOnly=locked);
-  $("rfSelfList").style.pointerEvents=locked?"none":"";
-  $("rfSelfList").style.opacity=locked?".7":"";
+  rfPick={rpe:+src.rpe||0, cond:+src.cond||0, hardEx:src.hardEx||""};
+  renderRfPick("rfRpe",RPE_OPTS,"rpe");
+  renderRfPick("rfHard",rfHardOpts(entry),"hardEx");
+  renderRfPick("rfCond",COND_OPTS,"cond");
+  $("rqNote").value=src.note||"";
+  $("rqNote").readOnly=locked;
+  ["rfRpe","rfHard","rfCond"].forEach(id=>{
+    const el=$(id); if(!el)return;
+    el.style.pointerEvents=locked?"none":"";
+    el.style.opacity=locked?".7":"";
+  });
+  // 예전 방식(5문항)으로 쓴 일지를 열었으면 그 내용을 읽기 전용으로 함께 보여준다
+  const oldWrap=$("rfOldWrap"), oldBody=$("rfOldBody");
+  const isOld=entry&&!isNewLog(src)&&[1,2,3,4,5].some(i=>String(src["q"+i]||"").trim());
+  if(oldWrap&&oldBody){
+    if(isOld){
+      oldBody.innerHTML=RF_QS.map((q,i)=>String(src["q"+(i+1)]||"").trim()
+        ?`<div class="rf-q"><label>${i+1}. ${q}</label><div class="pf-a" style="white-space:pre-wrap">${escHtml(src["q"+(i+1)])}</div></div>`:"").join("")
+        +([1,2,3,4].some(i=>src["s"+i])
+          ?`<div class="hint" style="margin-top:8px">자기평가 — `
+            +RF_SELF.map((t,si)=>`${t}: ${SELF_LABEL[src["s"+(si+1)]]||"–"}`).join(" · ")+`</div>`:"");
+      oldWrap.style.display="block";
+    } else oldWrap.style.display="none";
+  }
   $("rfDocSave").style.display=locked?"none":"";
   $("rfDocClose").textContent=locked?"닫기":"닫기";
   $("rfDocMsg").innerHTML=locked
@@ -4220,12 +4321,16 @@ $("rfDocSave").addEventListener("click",()=>{
   const me=myKey(), msg=$("rfDocMsg");
   if(!me.name){msg.innerHTML='<span class="err">운동 설계 탭에서 학번을 먼저 입력하세요.</span>';return;}
   const entry={date:$("rfDocWhen").textContent.slice(0,16)};
-  let filled=0;
-  [1,2,3,4,5].forEach(i=>{const v=($("rq"+i).value||"").trim(); entry["q"+i]=v; if(v)filled++;});
-  [1,2,3,4].forEach(i=>entry["s"+i]=rfSelf[i-1]||"");
-  if(!filled&&!rfSelf.some(Boolean)){msg.innerHTML='<span class="err">한 문항이라도 써 주세요.</span>';return;}
+  entry.rpe=rfPick.rpe||"";
+  entry.cond=rfPick.cond||"";
+  entry.hardEx=rfPick.hardEx||"";
+  entry.note=($("rqNote").value||"").trim();
+  const filled=[entry.rpe,entry.hardEx,entry.cond,entry.note].filter(Boolean).length;
+  if(!filled){msg.innerHTML='<span class="err">하나라도 골라 주세요.</span>';return;}
   // 이미 쓴 일지를 고치는 경우 원래 운동 데이터를 유지한다
   const old=myLogsLocal[rfDocKey]||{};
+  // 나중에 다시 열었을 때 '그날 한 동작'만 보여줄 수 있도록 구성을 함께 남긴다
+  entry.seq=old.seq||(Array.isArray(seq)?[...new Set(seq)].join(","):"");
   entry.hrPre=old.hrPre!==undefined?old.hrPre:((lastRec&&lastRec.hrPre)||"");
   entry.hr=old.hr!==undefined?old.hr:((lastRec&&lastRec.hr)||"");
   entry.acc=old.acc!==undefined?old.acc:((lastRec&&lastRec.acc)||"");
@@ -4242,7 +4347,7 @@ $("rfDocSave").addEventListener("click",()=>{
   msg.textContent="저장 중…";
   fmod.set(reflectRef(me,"logs/"+rfDocKey),entry)
     .then(()=>{ $("rfDocOverlay").style.display="none";
-      toast(`성찰 일지를 저장했습니다 (${filled}/5 문항)`,"good","✍️"); })
+      toast(`성찰 일지를 저장했습니다 (${filled}/4)`,"good","✍️"); })
     .catch(e=>{ msg.innerHTML='<span class="err">'+reflectErr(e)+'</span>'; });
 });
 // 운동을 마치면 결과 화면의 성찰 버튼을 새 세션용으로 되돌린다
@@ -4266,12 +4371,14 @@ function renderRfLogs(){
   box.innerHTML="";
   logs.forEach(l=>{
     const b=document.createElement("button"); b.className="rf-log";
-    const pv=[l.q1,l.q2,l.q3,l.q4,l.q5].find(t=>String(t||"").trim())||"(내용 없음)";
+    const pv=isNewLog(l)
+      ?(String(l.note||"").trim()||logPickText(l)||"(내용 없음)")
+      :([l.q1,l.q2,l.q3,l.q4,l.q5].find(t=>String(t||"").trim())||"(내용 없음)");
     const tag=(l.mode?`<span class="pt">${l.mode}</span>`:"")
       +(l.late?`<span class="pt" style="color:var(--bad);border-color:var(--bad)">미제출</span>`:"");
     b.innerHTML=`<span class="dt">${String(l.date||"").replace(" ","<br>")}</span>${tag}
       <span class="pv">${String(pv).replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]))}</span>
-      <span class="num" style="color:var(--muted);font-size:12px">${logWrote(l)}/5</span>`;
+      <span class="num" style="color:var(--muted);font-size:12px">${logWrote(l)}/${logTotal(l)}</span>`;
     b.addEventListener("click",()=>openReflectDoc(l));
     box.appendChild(b);
   });
@@ -4351,8 +4458,11 @@ function showReflectDetail(cls,name){
   h+=`<div class="hint" style="margin-bottom:4px">수시 성찰 ${logs.length}회</div>`;
   h+=logs.length?logs.map(l=>`<div class="rf-text"><b class="num" style="color:var(--muted)">${esc(l.date)}</b>
       ${l.mode?` · <b>${esc(l.mode)}</b>${l.taskTitle?" ("+esc(l.taskTitle)+")":""}`:""}${l.score?` · 종합 ${l.score}점`:""}${l.acc?` · 정확도 ${l.acc}%`:""}${(l.hrPre||l.hr)?` · 심박 ${l.hrPre||"–"}→${l.hr||"–"}`:""}
-      ${RF_QS.map((q,qi)=>String(l["q"+(qi+1)]||"").trim()?`<br><b>${qi+1}. ${q}</b><br>${esc(l["q"+(qi+1)])}`:"").join("")}
-      ${[1,2,3,4].some(i=>l["s"+i])?`<br><span style="color:var(--muted)">자기평가 — `+RF_SELF.map((t,si)=>`${t}: ${SELF_LABEL[l["s"+(si+1)]]||"–"}`).join(" · ")+`</span>`:""}</div>`).join("")
+      ${isNewLog(l)
+        ?(logPickText(l)?`<br><span style="color:var(--muted)">${esc(logPickText(l))}</span>`:"")
+          +(String(l.note||"").trim()?`<br><b>오늘 한마디</b><br>${esc(l.note)}`:"")
+        :RF_QS.map((q,qi)=>String(l["q"+(qi+1)]||"").trim()?`<br><b>${qi+1}. ${q}</b><br>${esc(l["q"+(qi+1)])}`:"").join("")
+          +([1,2,3,4].some(i=>l["s"+i])?`<br><span style="color:var(--muted)">자기평가 — `+RF_SELF.map((t,si)=>`${t}: ${SELF_LABEL[l["s"+(si+1)]]||"–"}`).join(" · ")+`</span>`:"")}</div>`).join("")
     :'<div class="hint">아직 없습니다.</div>';
   const f=rf.final;
   h+=`<div class="hint" style="margin:12px 0 4px">🏁 단원 마무리 성찰${f&&f.date?` (${esc(f.date)})`:""}</div>`;
@@ -4381,16 +4491,20 @@ $("rfExport").addEventListener("click",()=>{
         f.q1||"", f.q2||"", f.q3||"", f.q4||"", f.q5||""];
     }))
   }));
-  const logHead=["반","번호","이름","작성일","운동일","당일작성","구분","과제명","심박 전","심박 후","정확도(%)","종합점수","① 운동 강도 돌아보기","② 잘한 점/배운 점","③ 배운 개념 연결","④ 부족했던 점","⑤ 다음 실천 계획","자기평가1 성실참여","자기평가2 바른자세","자기평가3 목표강도","자기평가4 구체적계획","작성 문항수"];
+  const logHead=["반","번호","이름","작성일","운동일","당일작성","구분","과제명","심박 전","심박 후","정확도(%)","종합점수",
+    "체감 강도","가장 힘들었던 동작","컨디션","오늘 한마디",
+    "① 운동 강도 돌아보기","② 잘한 점/배운 점","③ 배운 개념 연결","④ 부족했던 점","⑤ 다음 실천 계획",
+    "자기평가1 성실참여","자기평가2 바른자세","자기평가3 목표강도","자기평가4 구체적계획","작성 문항수"];
   const logRows=[logHead];
   cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
     const rf=reflectOf(s.name,c);
     Object.values((rf&&rf.logs)||{}).sort((a,b)=>String(a.date).localeCompare(String(b.date)))
       .forEach(l=>logRows.push([c, s.no==null?"":Number(s.no), s.name, String(l.date||"").slice(0,10),
         dayOf(l.workDate)||"", l.late?"아니오(미제출)":"예", l.mode||"", l.taskTitle||"", l.hrPre||"", l.hr||"", l.acc||"", l.score||"",
+        RPE_LABEL[l.rpe]||"", l.hardEx?(EXNAME[l.hardEx]||l.hardEx):"", COND_LABEL[l.cond]||"", l.note||"",
         l.q1||"", l.q2||"", l.q3||"", l.q4||"", l.q5||"",
         SELF_LABEL[l.s1]||"", SELF_LABEL[l.s2]||"", SELF_LABEL[l.s3]||"", SELF_LABEL[l.s4]||"",
-        logWrote(l)]));
+        logWrote(l)+"/"+logTotal(l)]));
   }));
   sheets.push({name:"수시성찰 원문",rows:logRows});
   const a=document.createElement("a");
@@ -4463,7 +4577,10 @@ function buildGradeBook(){
   })));
 
   // ── 마지막 시트: 수시 성찰 원문 (한 건에 한 줄 — 횟수가 늘어도 그대로 쌓인다) ──
-  const logHead=["반","번호","이름","작성일","운동일","당일작성","구분","과제명","심박 전","심박 후","정확도(%)","종합점수","① 운동 강도 돌아보기","② 잘한 점/배운 점","③ 배운 개념 연결","④ 부족했던 점","⑤ 다음 실천 계획","자기평가1 성실참여","자기평가2 바른자세","자기평가3 목표강도","자기평가4 구체적계획","작성 문항수"];
+  const logHead=["반","번호","이름","작성일","운동일","당일작성","구분","과제명","심박 전","심박 후","정확도(%)","종합점수",
+    "체감 강도","가장 힘들었던 동작","컨디션","오늘 한마디",
+    "① 운동 강도 돌아보기","② 잘한 점/배운 점","③ 배운 개념 연결","④ 부족했던 점","⑤ 다음 실천 계획",
+    "자기평가1 성실참여","자기평가2 바른자세","자기평가3 목표강도","자기평가4 구체적계획","작성 문항수"];
   const logRows=[logHead];
   cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
     const rf=reflectOf(s.name,c);
@@ -4841,10 +4958,15 @@ function pfRender(ctx) {
       + chips.map(function (t) { return '<span>' + pfEsc(t.trim()) + '</span>'; }).join("")
       + (r.rounds ? '<em>모두 ' + r.rounds + '번</em>' : '') + '</div>' : "";
 
-    const qs = l ? PF_RQ.map(function (t, k) {
-      return '<div class="pf-sub">' + (k + 1) + '. ' + t + '</div><div class="pf-a">' + pfText(l["q" + (k + 1)]) + '</div>';
-    }).join("") : "";
-    const selfs = l ? '<div class="pf-selfs">' + PF_SELF.map(function (t, k) {
+    // 새 방식 일지(터치 3개 + 한마디)와 예전 방식 일지(5문항 + 자기평가)를 각각 알맞게 보여준다
+    const qs = !l ? ""
+      : isNewLog(l)
+        ? (logPickText(l) ? '<div class="pf-sub">오늘의 체감</div><div class="pf-a">' + pfEsc(logPickText(l)) + '</div>' : "")
+          + (String(l.note || "").trim() ? '<div class="pf-sub">오늘 한마디</div><div class="pf-a">' + pfText(l.note) + '</div>' : "")
+        : PF_RQ.map(function (t, k) {
+            return '<div class="pf-sub">' + (k + 1) + '. ' + t + '</div><div class="pf-a">' + pfText(l["q" + (k + 1)]) + '</div>';
+          }).join("");
+    const selfs = (l && !isNewLog(l)) ? '<div class="pf-selfs">' + PF_SELF.map(function (t, k) {
       const v = +l["s" + (k + 1)] || 0;
       return '<div class="pf-sf' + (v >= 3 ? ' on' : '') + '"><span>' + t + '</span><b>' + (SELF_LABEL[v] || "–") + '</b></div>';
     }).join("") + '</div>' : "";
@@ -4874,7 +4996,10 @@ function pfRender(ctx) {
   if (orphan.length) time += orphan.map(function (l) {
     return '<div class="pf-sess"><div class="pf-sh"><b class="pf-dt">' + pfEsc(String(l.date || "").slice(0, 16)) + '</b>'
       + '<span class="pf-tag">기록과 짝이 없는 성찰</span></div><div class="pf-rf">'
-      + PF_RQ.map(function (t, k) { return '<div class="pf-sub">' + (k + 1) + '. ' + t + '</div><div class="pf-a">' + pfText(l["q" + (k + 1)]) + '</div>'; }).join("")
+      + (isNewLog(l)
+        ? (logPickText(l) ? '<div class="pf-sub">오늘의 체감</div><div class="pf-a">' + pfEsc(logPickText(l)) + '</div>' : "")
+          + (String(l.note || "").trim() ? '<div class="pf-sub">오늘 한마디</div><div class="pf-a">' + pfText(l.note) + '</div>' : "")
+        : PF_RQ.map(function (t, k) { return '<div class="pf-sub">' + (k + 1) + '. ' + t + '</div><div class="pf-a">' + pfText(l["q" + (k + 1)]) + '</div>'; }).join(""))
       + '</div></div>';
   }).join("");
   if (!time) time = '<div class="pf-none">운동 기록이 없습니다.</div>';
@@ -5829,7 +5954,18 @@ function resetPulse(){
   $("pulseTapCount").textContent="";
   $("pulseResult").style.display="none";
 }
-function openPulse(targetId){ pulseTarget=targetId; resetPulse(); $("pulseOverlay").style.display="flex"; }
+/* why를 넘기면 왜 이 창이 열렸는지(=카메라 측정 실패) 창 안에 크게 안내한다.
+   그냥 열 때(학생이 직접 [🖐 맥박 세기]를 누른 경우)는 안내가 뜨지 않는다. */
+function openPulse(targetId,why){
+  pulseTarget=targetId; resetPulse();
+  const el=$("pulseWhy");
+  if(el){
+    if(why){ el.innerHTML=why; el.style.display="block"; }
+    else { el.style.display="none"; el.innerHTML=""; }
+  }
+  $("pulseOverlay").style.display="flex";
+  if(why){ toast("카메라로 측정이 안 돼 맥박 세기로 바꿨어요","task","🖐"); beep(660,.12,.16); }
+}
 function startPulse(){
   // [시작]을 빠르게 두 번 누르면(터치스크린에서 흔함) 이전 타이머를 못 지우고 새로
   // 덮어써서, 먼저 만든 타이머가 참조를 잃은 채 백그라운드에서 영원히 돌며 계속
@@ -5928,7 +6064,8 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
         // 바로 맥박 세기로 넘긴다 — 이 학생은 카메라를 다시 켜도 또 실패할 가능성이 높다.
         say("카메라를 열 수 없어요 — 짝과 함께 맥박을 세어 볼게요. (권한을 허용하거나 다른 앱을 닫으면 카메라도 쓸 수 있습니다)",true);
         btn.disabled=false;
-        if(fallbackTarget){ setTimeout(()=>{ if($("pulseOverlay").style.display!=="flex")openPulse(fallbackTarget); },600); }
+        if(fallbackTarget){ setTimeout(()=>{ if($("pulseOverlay").style.display!=="flex")
+          openPulse(fallbackTarget,"📷 <b>카메라를 열 수 없어요</b><br>대신 <b>짝과 함께 맥박을 세어</b> 측정할게요.<br><span style=\"font-weight:400;opacity:.85\">아래 [▶ 시작]을 누르고 15초 동안 심장이 뛸 때마다 큰 원을 탭하세요.</span>"); },600); }
         return;
       }
     }
@@ -6040,7 +6177,8 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
     // 눌러야 했다). 특히 운동 직후엔 땀·떨림 때문에 카메라가 실패하기 쉬운데, 그 사이에도
     // 심박은 계속 떨어진다. 그래서 실패하면 곧바로 짝과 함께 하는 맥박 세기 창을 열어 준다.
     say("카메라로는 잘 안 잡혔어요 — 짝과 함께 맥박을 세어 볼게요.",true);
-    if(fallbackTarget){ setTimeout(()=>{ if($("pulseOverlay").style.display!=="flex")openPulse(fallbackTarget); },600); }
+    if(fallbackTarget){ setTimeout(()=>{ if($("pulseOverlay").style.display!=="flex")
+      openPulse(fallbackTarget,"📷 <b>카메라로는 맥박이 잘 안 잡혔어요</b><br>대신 <b>짝과 함께 맥박을 세어</b> 측정할게요.<br><span style=\"font-weight:400;opacity:.85\">아래 [▶ 시작]을 누르고 15초 동안 심장이 뛸 때마다 큰 원을 탭하세요.</span>"); },600); }
   }
   function analyze(elapsed){
     // 오래된 데이터가 섞이면 주기 추정이 흐려지므로 최근 15초 구간만 사용
