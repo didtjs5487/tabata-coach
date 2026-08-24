@@ -1031,7 +1031,15 @@
         <label style="display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);align-self:flex-end;padding-bottom:10px">
           <input type="checkbox" id="rbRise"> ② 운동 전 대비 +40도 인정</label>
       </div>
-      <div class="hint" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+        <label style="display:inline-flex;align-items:flex-start;gap:8px;font-size:14px;cursor:pointer">
+          <input type="checkbox" id="rbSkipFirst" style="margin-top:3px">
+          <span><b>첫 운동은 성적에서 빼기</b> <span style="color:var(--muted)">(1차시는 앱 사용법을 익히는 시간)</span><br>
+            <span class="hint">학생마다 <b>맨 처음 한 운동</b>을 ②심박 · ③정확도 · ⑤향상률 계산에서 뺍니다.
+              ①공통과제 이수와 ④자율 실천 횟수에는 그대로 넣습니다(참여는 한 것이므로).
+              운동이 한 번뿐인 학생은 뺄 것이 없어 그대로 계산합니다.</span></span></label>
+      </div>
+      <div class="hint" style="margin-top:10px">
         판정 난이도(🍜 순한맛~지옥맛)는 <b>📋 공통 과제 내기 → 과제 운동설계</b>로 옮겼습니다.</div>
       <div class="row" style="margin-top:10px">
         <button class="btn btn-teal btn-sm" id="rbSave">기준 저장</button>
@@ -3508,25 +3516,34 @@ function renderBoardGo(){
    문서의 유의사항대로 이 점수는 '보조 근거'이며, 최종 판단은 교사 관찰과 함께 한다. */
 const PRACTICE_STEPS={5:20,4:16,3:12,2:8,1:4,0:4};
 function practiceScore(name,cls){
-  const rs=records.filter(r=>r.name===name&&String(r.cls)===String(cls))
+  const all=records.filter(r=>r.name===name&&String(r.cls)===String(cls))
     .sort((a,b)=>String(a.date).localeCompare(String(b.date)));
   const mine=lessonList().filter(x=>taskHasClass(x.a,cls)); // 이 반에 배정된 차시들
   const assigned=mine.length;
   let done=0,onTime=0,late=0;
   mine.forEach(x=>{
-    const rec=rs.filter(r=>r.taskId===x.id)[0]; // 첫 수행 기준
+    const rec=all.filter(r=>r.taskId===x.id)[0]; // 첫 수행 기준
     if(!rec)return;
     done++;
     const givenAt=(x.a.classes&&typeof x.a.classes[cls]==="string")?x.a.classes[cls]:(x.a.created||"");
     if(givenAt&&String(rec.date).slice(0,10)===givenAt)onTime++; else late++;
   });
+  /* 1차시는 앱 사용법을 익히는 시간이라, 맨 처음 한 운동은 '질'을 재는 항목에서 뺀다
+     (②심박 성실도 · ③평균 정확도 · ⑤향상률). 대신 '했는지'를 보는 항목(①공통과제 이수 ·
+     ④자율 실천 횟수)에는 그대로 넣는다 — 실제로 수업에 참여한 것은 맞기 때문이다.
+     운동이 한 번뿐이면 뺄 것이 없으므로 그대로 쓴다. */
+  const skipFirst=(rubric.skipFirst!==false)&&all.length>=2;
+  const rs=skipFirst?all.slice(1):all;
+  const firstRec=skipFirst?all[0]:null;
+
   const n=rs.length;
   const dil=rs.filter(isDiligent).length;
   const avgAcc=n?Math.round(rs.reduce((a,r)=>a+(+r.acc||0),0)/n):0;
   const rate=assigned?Math.round(done/assigned*100):0;
 
   // 항목4: 문서 지침대로 단순 횟수가 아니라 '질적 조건(심박 중강도 이상)'을 갖춘 자율 실천만 센다
-  const selfGood=rs.filter(r=>!r.taskId&&isDiligent(r)).length;
+  //        (참여 횟수를 보는 항목이라 첫 운동도 포함해 센다)
+  const selfGood=all.filter(r=>!r.taskId&&isDiligent(r)).length;
 
   // 항목5: 남은 향상 여지 대비 얼마나 채웠는지 (천장효과 완화). 처음부터 우수하면 유지도 인정.
   let gainPct=null, first=null, last=null;
@@ -3550,7 +3567,8 @@ function practiceScore(name,cls){
   const met=items.filter(Boolean).length;
   const score=n===0&&assigned===0?0:PRACTICE_STEPS[met];
   return {n,assigned,done,onTime,late,dil,acc:avgAcc,rate,selfGood,
-    gain:gainPct,first,last,items,met,score};
+    gain:gainPct,first,last,items,met,score,
+    nAll:all.length, skippedFirst:!!firstRec, firstRec};
 }
 // 전 학급 성적을 반마다 시트(탭)로 나눠 엑셀 파일 하나로 내보낸다.
 // 구글 드라이브에 올리면 탭이 그대로 살아있는 스프레드시트로 열린다.
@@ -4216,6 +4234,7 @@ function nowStamp(){
 /* ---------- 성찰 일지 쓰기·다시보기 (하나의 화면으로 처리) ---------- */
 let rfDocKey=null, rfDocMode="", rfDocTitle="", rfDocLocked=false, rfWorkDate="";
 let rfPick={rpe:0, cond:0, hardEx:""};   // 이번 일지에서 터치로 고른 값
+let rfDocRec=null;                        // 지금 쓰고 있는 일지가 붙을 운동 기록
 // 성찰은 운동한 날에 쓰는 것이 원칙 — 날짜가 다르면 미제출로 본다
 function dayOf(t){ return String(t||"").slice(0,10); }
 function sameDayOK(){ return rfWorkDate && dayOf(rfWorkDate)===todayStr(); }
@@ -4237,10 +4256,15 @@ function renderRfPick(boxId,opts,key){
     box.appendChild(b);
   });
 }
-/* '가장 힘들었던 동작' 후보 — 그날 실제로 한 동작만 보여준다(없으면 전체 목록) */
-function rfHardOpts(entry){
+/* '가장 힘들었던 동작' 후보 — 그날 실제로 한 동작만 보여준다(없으면 전체 목록).
+   일지(entry)는 동작 키를 쉼표로, 운동 기록(rec)은 한글 이름을 ·로 담고 있어 둘 다 받는다. */
+function rfHardOpts(entry,rec){
   let keys=[];
   if(entry&&entry.seq)keys=String(entry.seq).split(",").filter(Boolean);
+  else if(rec&&rec.seq){
+    const byName={}; Object.keys(EXNAME).forEach(k=>byName[EXNAME[k]]=k);
+    keys=[...new Set(String(rec.seq).split("·").map(s=>byName[s.trim()]).filter(Boolean))];
+  }
   else if(!entry&&Array.isArray(seq)&&seq.length)keys=[...new Set(seq)];
   if(!keys.length)keys=Object.keys(EXNAME);
   const opts=keys.filter(k=>EXNAME[k]).map(k=>({v:k,t:EXNAME[k]}));
@@ -4249,22 +4273,25 @@ function rfHardOpts(entry){
     opts.push({v:entry.hardEx,t:EXNAME[entry.hardEx]||entry.hardEx});
   return opts;
 }
-// entry가 없으면 방금 끝낸 세션으로 새로 쓴다
-function openReflectDoc(entry){
+/* entry가 있으면 이미 쓴 일지를 열고, 없으면 새로 쓴다.
+   새로 쓸 때 forRec을 주면 '그 세션'에 대해 쓴다 — 새로고침이나 탭 이동으로 lastRec이
+   사라져도 내 기록에서 지난 운동을 골라 성찰을 이어 쓸 수 있게 하기 위해서다. */
+function openReflectDoc(entry,forRec){
   const me=myKey();
   if(!me.name){alert("운동 설계 탭에서 학번을 먼저 입력하세요.");return;}
-  // 방금 마친 운동(entry 없음)인데 운동 후 심박을 아직 안 쟀으면, 성찰부터 쓰다가 심박
-  // 측정을 깜빡 잊기 쉽다 — 심박→운동→심박 순서가 이 앱의 핵심이라 한 번 더 확인시킨다.
-  // (자동으로 열리는 경우는 이미 심박을 잰 뒤라 여기 걸리지 않는다.)
-  if(!entry && lastRec && !lastRec.hr){
+  // 방금 마친 운동인데 운동 후 심박을 아직 안 쟀으면, 성찰부터 쓰다가 심박 측정을 깜빡
+  // 잊기 쉽다 — 심박→운동→심박 순서가 이 앱의 핵심이라 한 번 더 확인시킨다.
+  // (지난 세션을 골라 이어 쓰는 경우엔 이미 그 화면을 떠난 뒤라 묻지 않는다.)
+  if(!entry && !forRec && lastRec && !lastRec.hr){
     if(confirm("❤️ 아직 운동 후 심박수를 측정하지 않았어요.\n심박수부터 재고 올까요?\n\n[확인] 심박수 재러 가기 · [취소] 그래도 성찰부터 쓸게요")){
       try{$("hrStart").scrollIntoView({behavior:"smooth",block:"center"});}catch(e){}
       return;
     }
   }
   const src=entry||{};
-  rfDocKey=entry?entry.key:((lastRec&&lastRec.id)||Date.now().toString(36));
-  const rec=entry?null:lastRec;
+  const rec=entry?null:(forRec||lastRec);
+  rfDocKey=entry?entry.key:((rec&&rec.id)||Date.now().toString(36));
+  rfDocRec=rec;   // 저장할 때 이 세션의 심박·점수를 가져다 쓴다
   // 어떤 과제로 한 운동인지 함께 남긴다 (공통과제 / 자율 / 결투)
   const mode=entry?(src.mode||""):(rec?(rec.taskId?"공통과제":(String(rec.task||"").indexOf("vs")>=0?"결투":"자율")):"");
   const modeTitle=entry?(src.taskTitle||""):(rec?(rec.taskId?String(rec.task||""):""):"");
@@ -4275,7 +4302,10 @@ function openReflectDoc(entry){
   const badge=mode?("  ·  "+mode+(modeTitle?" ("+modeTitle+")":"")):"";
   rfWorkDate=entry?(src.workDate||src.date||""):((rec&&rec.date)||nowStamp());
   const late=entry?(src.late?" · <b style=\"color:var(--bad)\">미제출(당일 아님)</b>":""):"";
-  $("rfDocWhen").innerHTML=(entry?src.date:nowStamp())+(entry?" 에 쓴 일지":" · 방금 마친 운동")+badge+late;
+  // 지난 운동을 골라 이어 쓰는 경우엔 '방금 마친 운동'이 아니라 그 운동 날짜를 보여준다
+  $("rfDocWhen").innerHTML=(entry?src.date+" 에 쓴 일지"
+      :forRec?String(rec.date||"")+" 에 한 운동"
+      :nowStamp()+" · 방금 마친 운동")+badge+late;
   rfDocMode=mode; rfDocTitle=modeTitle;
   $("rfDocData").innerHTML=`<b>내 운동 데이터</b>`
     +`<span>운동 전 심박 ${hrPre||"–"} → 운동 후 ${hr||"– (아직 측정 안 함)"}</span>`
@@ -4285,7 +4315,7 @@ function openReflectDoc(entry){
   rfDocLocked=locked;
   rfPick={rpe:+src.rpe||0, cond:+src.cond||0, hardEx:src.hardEx||""};
   renderRfPick("rfRpe",RPE_OPTS,"rpe");
-  renderRfPick("rfHard",rfHardOpts(entry),"hardEx");
+  renderRfPick("rfHard",rfHardOpts(entry,rec),"hardEx");
   renderRfPick("rfCond",COND_OPTS,"cond");
   $("rqNote").value=src.note||"";
   $("rqNote").readOnly=locked;
@@ -4320,7 +4350,10 @@ $("rfDocSave").addEventListener("click",()=>{
   if(rfDocLocked)return;
   const me=myKey(), msg=$("rfDocMsg");
   if(!me.name){msg.innerHTML='<span class="err">운동 설계 탭에서 학번을 먼저 입력하세요.</span>';return;}
-  const entry={date:$("rfDocWhen").textContent.slice(0,16)};
+  // date는 '이 일지를 쓴 시각'이다. 예전엔 화면 문구에서 잘라 썼는데, 지난 운동을 골라
+  // 이어 쓰면 그 문구가 운동 날짜라 작성일이 잘못 남는다 — 그래서 직접 지금 시각을 쓴다.
+  // (운동한 날은 아래 entry.workDate에, 늦게 썼는지는 entry.late에 따로 남는다)
+  const entry={date:nowStamp()};
   entry.rpe=rfPick.rpe||"";
   entry.cond=rfPick.cond||"";
   entry.hardEx=rfPick.hardEx||"";
@@ -4329,12 +4362,17 @@ $("rfDocSave").addEventListener("click",()=>{
   if(!filled){msg.innerHTML='<span class="err">하나라도 골라 주세요.</span>';return;}
   // 이미 쓴 일지를 고치는 경우 원래 운동 데이터를 유지한다
   const old=myLogsLocal[rfDocKey]||{};
+  // 지난 세션을 골라 이어 쓰는 경우엔 그 세션(rfDocRec)의 값을 가져다 쓴다
+  const R=rfDocRec||lastRec;
   // 나중에 다시 열었을 때 '그날 한 동작'만 보여줄 수 있도록 구성을 함께 남긴다
-  entry.seq=old.seq||(Array.isArray(seq)?[...new Set(seq)].join(","):"");
-  entry.hrPre=old.hrPre!==undefined?old.hrPre:((lastRec&&lastRec.hrPre)||"");
-  entry.hr=old.hr!==undefined?old.hr:((lastRec&&lastRec.hr)||"");
-  entry.acc=old.acc!==undefined?old.acc:((lastRec&&lastRec.acc)||"");
-  entry.score=old.score!==undefined?old.score:((lastRec&&lastRec.score)||"");
+  const byName={}; Object.keys(EXNAME).forEach(k=>byName[EXNAME[k]]=k);
+  entry.seq=old.seq
+    ||(R&&R.seq?[...new Set(String(R.seq).split("·").map(s=>byName[s.trim()]).filter(Boolean))].join(",")
+      :(Array.isArray(seq)?[...new Set(seq)].join(","):""));
+  entry.hrPre=old.hrPre!==undefined?old.hrPre:((R&&R.hrPre)||"");
+  entry.hr=old.hr!==undefined?old.hr:((R&&R.hr)||"");
+  entry.acc=old.acc!==undefined?old.acc:((R&&R.acc)||"");
+  entry.score=old.score!==undefined?old.score:((R&&R.score)||"");
   entry.date=old.date||entry.date;
   entry.mode=old.mode||rfDocMode||"";
   entry.taskTitle=old.taskTitle||rfDocTitle||"";
@@ -4367,8 +4405,35 @@ function renderRfLogs(){
   const me=myKey();
   if(!me.name){ box.innerHTML='<div class="hint">운동 설계 탭에서 학번을 입력하면 내 일지가 표시됩니다.</div>'; return; }
   const logs=myLogs();
-  if(!logs.length){ box.innerHTML='<div class="hint">아직 쓴 일지가 없습니다. 운동을 마치면 결과 화면에서 쓸 수 있어요.</div>'; return; }
+  /* 아직 성찰을 안 쓴 내 운동들 — 새로고침이나 탭 이동으로 결과 화면을 떠나면 다시 들어갈
+     길이 없었다. 여기에 '미작성'으로 함께 띄워 눌러서 이어 쓸 수 있게 한다. */
+  const todo=records.filter(r=>r.name===me.name&&String(r.cls)===String(me.cls)&&!myLogsLocal[r.id])
+    .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  if(!logs.length&&!todo.length){ box.innerHTML='<div class="hint">아직 쓴 일지가 없습니다. 운동을 마치면 결과 화면에서 쓸 수 있어요.</div>'; return; }
   box.innerHTML="";
+  if(todo.length){
+    const h=document.createElement("div");
+    h.className="hint"; h.style.cssText="margin:2px 0 6px;font-weight:700;color:var(--bad)";
+    h.textContent=`✍️ 아직 안 쓴 성찰 ${todo.length}건 — 눌러서 지금 쓸 수 있어요`;
+    box.appendChild(h);
+    todo.forEach(r=>{
+      const b=document.createElement("button"); b.className="rf-log";
+      const sameDay=String(r.date||"").slice(0,10)===todayStr();
+      b.innerHTML=`<span class="dt">${String(r.date||"").replace(" ","<br>")}</span>`
+        +`<span class="pt" style="color:var(--bad);border-color:var(--bad)">미작성</span>`
+        +`<span class="pv">${escHtml(r.task||"자율")} · 종합 ${r.score||0}점`
+        +`${sameDay?"":' <b style="color:var(--gold)">(오늘이 아니라 미제출로 기록돼요)</b>'}</span>`
+        +`<span class="num" style="color:var(--bad);font-size:12px">쓰기 ›</span>`;
+      b.addEventListener("click",()=>openReflectDoc(null,r));
+      box.appendChild(b);
+    });
+    if(logs.length){
+      const h2=document.createElement("div");
+      h2.className="hint"; h2.style.cssText="margin:12px 0 6px;font-weight:700";
+      h2.textContent="✔ 이미 쓴 일지";
+      box.appendChild(h2);
+    }
+  }
   logs.forEach(l=>{
     const b=document.createElement("button"); b.className="rf-log";
     const pv=isNewLog(l)
@@ -5421,7 +5486,10 @@ function renderMineTodo(){
     +chip(submitted>0, `계획서 제출 ${submitted?`(${submitted}개)`:""}`)
     +chip(logs>0, `성찰 일지 ${logs}회`)
     +chip(fin, "단원 마무리 성찰")
-    +`</div>`;
+    +`</div>`
+    // 왜 내 평균이 기록 수와 안 맞는지 학생이 알 수 있게 한 줄로 알려 준다
+    +(g.skippedFirst?`<div class="hint" style="margin-top:6px">🎓 첫 운동(${escHtml(String(g.firstRec.date||"").slice(5,10))})은
+        <b>앱 사용법을 익히는 차시</b>라 정확도·심박·향상률 계산에서 빠집니다.</div>`:"");
 }
 /* ---------- 내 기록: 운동 목록 (누르면 그날 상세) ---------- */
 function judgeLine(r){
@@ -5820,6 +5888,7 @@ const RUBRIC_DEFAULT={
   selfN:5,       // 항목4 질적 조건을 갖춘 자율 실천 횟수
   gain:20,       // 항목5 남은 향상 여지 대비 채운 비율(%)
   keep:85,       // 항목5 처음부터 이 점수 이상이면 '유지'도 향상으로 인정
+  skipFirst:true,// 1차시는 앱 사용법을 익히는 시간 — 맨 처음 운동을 ②③⑤ 계산에서 뺀다
   judge:"normal" // 동작 판정 난이도 — 아래 JUDGE_TIERS 참고
 };
 /* 판정 난이도.
@@ -6377,6 +6446,7 @@ function renderRubric(){
   $("rbDone").value=rubric.doneRate; $("rbAcc").value=rubric.acc;
   $("rbSelf").value=rubric.selfN; $("rbGain").value=rubric.gain;
   $("rbKeep").value=rubric.keep; $("rbRise").checked=!!rubric.useRise;
+  if($("rbSkipFirst"))$("rbSkipFirst").checked=(rubric.skipFirst!==false);
   if($("rbJudge")){ $("rbJudge").value=rubric.judge||"normal"; syncRbJudgeChip(); judgeHint(); }
 }
 /* rbJudge는 이제 숨은 input이라(과제 운동설계 화면에 🍜 칩으로 보임) 값은 여기서 직접 바꾸고
@@ -6400,6 +6470,7 @@ if($("rbSave"))$("rbSave").addEventListener("click",()=>{
     doneRate:+$("rbDone").value||0, acc:+$("rbAcc").value||0,
     selfN:+$("rbSelf").value||0, gain:+$("rbGain").value||0,
     keep:+$("rbKeep").value||85, useRise:$("rbRise").checked, rise:40,
+    skipFirst:$("rbSkipFirst")?$("rbSkipFirst").checked:true,
     judge:$("rbJudge")?$("rbJudge").value:"normal"};
   saveAll(); renderStats(); pushRubric();
 });
