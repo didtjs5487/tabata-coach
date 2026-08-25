@@ -548,6 +548,20 @@
       <span class="hint" id="stuIdHint" style="align-self:center"></span>
     </div>
 
+    <!-- 학교 와이파이에서 여러 명이 동시에 시작하면 자세 인식 파일(약 9MB)을 한꺼번에 받아
+         수업이 버벅인다. 만든 쪽 설정이 '1시간만 보관'이라 교시마다 다시 받게 되기 때문이다.
+         여기서 한 번 받아 두면 이 기기는 그 뒤로 다시 받지 않는다. -->
+    <div class="step-box" id="prefetchBox" style="margin-top:12px;border:2px solid var(--primary2)">
+      <div style="font-weight:800;font-size:15px">📶 처음 한 번만 — 자세 인식 파일 받아두기</div>
+      <div class="hint" style="margin:3px 0 8px">약 <b>9MB</b>를 이 기기에 저장합니다.
+        받아두면 수업 때 여럿이 함께 써도 <b>끊기지 않습니다.</b>
+        <b>와이파이가 여유로울 때</b>(수업 시작 전·쉬는 시간) 눌러 주세요.</div>
+      <div class="row" style="margin:0">
+        <button class="btn btn-go btn-sm" id="prefetchBtn">⬇️ 지금 받아두기</button>
+        <span class="hint" id="prefetchMsg" style="flex:1;min-width:160px"></span>
+      </div>
+    </div>
+
     <h3>② 자율 실천 운동설계</h3>
 
     <div class="step-box" style="margin-top:0">
@@ -3741,9 +3755,22 @@ function startPresenceHeartbeat(){
   presenceHeartbeat=setInterval(()=>updatePresence(myStage),20000);
 }
 function stopPresenceHeartbeat(){ if(presenceHeartbeat){clearInterval(presenceHeartbeat);presenceHeartbeat=null;} }
+/* 접속 현황판은 교사 화면에서만 쓴다. 그런데 예전에는 학생 기기도 모두 구독하고 있었다.
+   학생 60명이 20초마다 신호를 보내면 그때마다 전체 현황이 60대 모두에게 다시 내려가
+   와이파이가 계속 붐볐다. 이제 교사가 로그인했을 때만 구독한다(학생 기기는 신호를 보내기만 한다). */
+let presenceOff=null;
 function attachPresenceListener(){
   if(!fdb)return;
-  fmod.onValue(fmod.ref(fdb,"presence"),snap=>{
+  const want=isTeacher();
+  if(want===!!presenceOff)return;          // 이미 원하는 상태면 그대로 둔다
+  if(!want){                                // 교사가 아니면 구독을 끊는다
+    try{presenceOff&&presenceOff();}catch(e){}
+    presenceOff=null;
+    if(presenceTimer){clearInterval(presenceTimer);presenceTimer=null;}
+    presenceData={}; renderStageRows();
+    return;
+  }
+  presenceOff=fmod.onValue(fmod.ref(fdb,"presence"),snap=>{
     presenceData=snap.val()||{};
     renderStageRows();
   });
@@ -7111,7 +7138,7 @@ async function ensureAuth(app){
       Object.keys(reflections).forEach(k=>delete reflections[k]);
       Object.keys(reports).forEach(k=>delete reports[k]); renderReports();
     }
-    if(fmod&&fdb){ attachProtected(fmod.onValue,fmod.ref); attachReports(); }
+    if(fmod&&fdb){ attachProtected(fmod.onValue,fmod.ref); attachReports(); attachPresenceListener(); }
     renderAuth();
     if(u)toast("교사 로그인됨 — 성찰·계획서를 볼 수 있습니다","good","🔐");
   });
@@ -7695,9 +7722,66 @@ restoreMyId(); // 이 기기에서 마지막에 쓴 학번을 자동으로 채�
 initJoinShare();
 initFirebase();
 // 크롬 PWA 설치(주소창 옆 설치 아이콘)는 매니페스트의 icons 배열 + 등록된 서비스워커가 있어야 뜬다
+/* 자세 인식에 쓰는 큰 파일(약 9MB)을 이 기기에 미리 받아 둔다.
+   만든 쪽 설정이 '1시간만 보관'이라 교시가 바뀔 때마다 다시 받게 되는데,
+   30~60명이 동시에 받으면 학교 와이파이가 감당하지 못해 수업이 버벅였다.
+   서비스워커가 한 번 받아 두면 그 뒤로는 네트워크를 쓰지 않는다. */
+const BIG_ASSETS=[
+  "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",
+  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.12/wasm/vision_wasm_internal.wasm",
+  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.12/wasm/vision_wasm_internal.js"
+];
+function prefetchMsg(html){ const el=$("prefetchMsg"); if(el)el.innerHTML=html; }
+/* 이미 받아 뒀는지 확인해 학생이 눌러야 할지 알려 준다 */
+async function checkBigAssets(){
+  const btn=$("prefetchBtn"); if(!btn)return;
+  if(!("caches" in window)||!("serviceWorker" in navigator)){
+    prefetchMsg('<span style="color:var(--muted)">이 브라우저에서는 미리 받아두기를 쓸 수 없어요 — 그냥 수업하셔도 됩니다.</span>');
+    btn.disabled=true; return;
+  }
+  try{
+    const c=await caches.open("tabata-model-v1");
+    const hit=await c.match(BIG_ASSETS[0]);
+    if(hit){
+      prefetchMsg('<b style="color:var(--good)">✔ 이미 받아뒀어요 — 다시 받을 필요 없습니다</b>');
+      btn.textContent="✔ 준비됨"; btn.disabled=true;
+      btn.classList.remove("btn-go"); btn.classList.add("btn-stop");
+    } else {
+      prefetchMsg('<span style="color:var(--gold)">아직 안 받았어요 — 수업 전에 한 번 눌러 주세요</span>');
+    }
+  }catch(e){}
+}
+function prefetchBigAssets(){
+  const sw=navigator.serviceWorker&&navigator.serviceWorker.controller;
+  if(!sw){
+    prefetchMsg('<span style="color:var(--gold)">준비 중입니다 — 화면을 한 번 새로고침한 뒤 다시 눌러 주세요</span>');
+    return;
+  }
+  const btn=$("prefetchBtn"); if(btn){btn.disabled=true;btn.textContent="⬇️ 받는 중…";}
+  prefetchMsg("받는 중… 화면을 끄지 말고 잠시 기다려 주세요 (약 9MB)");
+  sw.postMessage({type:"PREFETCH",urls:BIG_ASSETS});
+  // 응답이 없으면(오래된 서비스워커 등) 계속 '받는 중'으로 남지 않게 되돌린다
+  setTimeout(()=>{ if(btn&&btn.disabled&&btn.textContent==="⬇️ 받는 중…"){
+    btn.disabled=false; btn.textContent="⬇️ 지금 받아두기";
+    prefetchMsg('<span class="err">받지 못했어요 — 와이파이를 확인하고 다시 눌러 주세요</span>');
+  } },90000);
+}
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); });
+  navigator.serviceWorker.addEventListener("message",e=>{
+    if(e.data&&e.data.type==="PREFETCH_DONE"){
+      const btn=$("prefetchBtn");
+      if(btn){ btn.textContent="✔ 준비됨"; btn.disabled=true;
+        btn.classList.remove("btn-go"); btn.classList.add("btn-stop"); }
+      prefetchMsg('<b style="color:var(--good)">✔ 준비 완료 — 이제 이 기기는 수업 때 다시 받지 않습니다</b>');
+      toast("자세 인식 파일 준비 완료","good","✅");
+    }
+  });
+  // 서비스워커가 화면을 넘겨받은 뒤 상태를 확인한다
+  navigator.serviceWorker.ready.then(()=>setTimeout(checkBigAssets,300)).catch(()=>{});
 }
+if($("prefetchBtn"))$("prefetchBtn").addEventListener("click",prefetchBigAssets);
+checkBigAssets();
 </script>
 </body>
 </html>
