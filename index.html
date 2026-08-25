@@ -529,6 +529,7 @@
 
 <nav>
   <button class="on" data-page="pgSetup">운동 설계</button>
+  <button data-page="pgTasks">내 과제</button>
   <button data-page="pgWork">운동하기</button>
   <button data-page="pgMine">내 기록</button>
   <button data-page="pgAdmin">🔒 학습센터</button>
@@ -635,6 +636,27 @@
   </section>
 
   <!-- ================= WORKOUT ================= -->
+  <!-- ================= MY TASKS ================= -->
+  <section class="page" id="pgTasks">
+    <h3>내 과제</h3>
+    <div class="hint" style="margin-bottom:10px">할 것을 고르면 <b>운동하기</b>로 넘어갑니다.
+      선생님이 낸 <b>공통과제</b>와 내가 만든 <b>자율 실천과제</b>가 모두 여기 모입니다.</div>
+    <div id="taskCards"></div>
+
+    <!-- 앱이 안 되는 것을 학생이 그 자리에서 알릴 수 있게 한다 — 수업 중 바로 확인해 고치기 위함 -->
+    <div class="step-box" style="margin-top:20px">
+      <div style="font-weight:800;font-size:16px">🛠 앱이 이상해요 (선생님께 알리기)</div>
+      <div class="hint" style="margin:2px 0 8px">안 되는 것·불편한 것을 적어 주세요.
+        <b>선생님만</b> 볼 수 있고, 어떤 기기에서 생긴 일인지 자동으로 함께 전해집니다.</div>
+      <textarea id="rpText" rows="3" style="width:100%;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:14px;resize:vertical" placeholder="예: 크런치를 했는데 횟수가 안 올라가요 / 심박 측정에서 화면이 멈춰요"></textarea>
+      <div class="row" style="margin:8px 0 0">
+        <button class="btn btn-go btn-sm" id="rpSend">📨 보내기</button>
+        <span class="hint" id="rpMsg"></span>
+      </div>
+      <div class="hint" id="rpMine" style="margin-top:8px"></div>
+    </div>
+  </section>
+
   <section class="page" id="pgWork">
     <div id="healthGate" class="step-box" style="border-color:var(--bad);background:#FDECEE">
       <div style="font-weight:700;color:var(--bad);margin-bottom:6px">🩺 운동 전 건강 자가체크</div>
@@ -646,7 +668,9 @@
       </div>
     </div>
     <div id="workBody" style="display:none">
-    <div id="taskCards"></div>
+    <!-- 과제 목록은 '내 과제' 탭으로 옮겼다 — 과제가 쌓일수록 STEP 1·2·3이 화면 아래로
+         밀려 매번 스크롤해야 했기 때문이다. 여기에는 지금 고른 과제만 한 줄로 보여준다. -->
+    <div id="pickedTask" class="step-box" style="display:none;margin-bottom:10px"></div>
     <div id="workSteps" style="display:none">
     <div class="step-tag">STEP 1 · 운동 전 심박수</div>
     <div class="step-box hr-card">
@@ -675,6 +699,7 @@
       <video id="video" playsinline muted></video>
       <canvas class="ov" id="overlay"></canvas>
       <div class="stage-tools">
+        <button class="exit-fs" id="camRefresh" title="화면이 멈췄을 때 인식을 다시 잡기">♻️ 새로고침</button>
         <button class="exit-fs" id="camFlipFs" title="앞/뒤 카메라 바꾸기">🔄 카메라</button>
         <button class="exit-fs" id="musicNext" title="다른 음악으로 바꾸기">🔀 음악</button>
         <button class="exit-fs" id="exitFs">✕ 종료</button>
@@ -925,6 +950,17 @@
         </div>
       </div>
     </div>
+    </details>
+
+    <details class="collapsible" id="rpAdminBox">
+    <summary>🛠 학생이 알린 앱 문제 <span id="rpCount" style="color:var(--bad);font-weight:800"></span></summary>
+    <div class="hint" style="margin:10px 0 8px">학생이 <b>내 과제</b> 탭에서 보낸 것입니다. 어떤 기기에서 생긴 일인지 함께 표시됩니다.
+      고친 뒤에는 <b>[확인함]</b>으로 정리하세요.</div>
+    <div class="row" style="margin:0 0 8px">
+      <button class="btn btn-stop btn-sm" id="rpReload">🔄 다시 불러오기</button>
+      <span class="hint" id="rpAdminMsg"></span>
+    </div>
+    <div id="rpList"></div>
     </details>
 
     <details class="collapsible">
@@ -1679,6 +1715,28 @@ function confirmTaskBreak(){
 // 무엇을 할지 고르면 심박→운동→심박 단계를 연다
 function showWorkSteps(){
   const el=$("workSteps"); if(el)el.style.display="block";
+  renderPickedTask();
+}
+/* 운동하기 화면 맨 위에 '지금 고른 것'만 한 줄로 보여준다.
+   과제 목록 전체는 '내 과제' 탭에 있으므로 여기서는 자리를 거의 차지하지 않는다. */
+function renderPickedTask(){
+  const box=$("pickedTask"); if(!box)return;
+  let label="", sub="";
+  if(currentBattle){ label=`⚔️ 결투 — vs ${escHtml(currentBattle.vs)}`; sub="상대와 같은 구성으로 겨룹니다"; }
+  else if(currentTask){ label=`📋 공통과제 — ${escHtml(currentTask.title)}`; sub="선생님이 낸 과제입니다"; }
+  else {
+    const p=currentPlanId?myPlans.find(x=>x.id===currentPlanId):null;
+    if(p){ label=`🌱 자율 실천 — ${escHtml(p.name||"내 운동")}`; sub=`${(p.n||0)+1}회차 · 완료 시 가산점 +20%`; }
+    else { label="🌱 자율 실천"; sub="운동 설계에서 만든 구성으로 합니다"; }
+  }
+  box.innerHTML=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:150px"><b style="font-size:15px">${label}</b>
+        <div class="hint" style="margin-top:2px">${sub}</div></div>
+      <button class="btn btn-stop btn-sm" id="pickedChange">🔄 바꾸기</button>
+    </div>`;
+  box.style.display="block";
+  const b=$("pickedChange");
+  if(b)b.addEventListener("click",()=>goPage("pgTasks"));
 }
 function applyAssignment(id){
   const a=assignments[id]; if(!a)return;
@@ -1850,7 +1908,8 @@ function renderTasks(){
       +`<br><span style="color:var(--muted)">만든 날 ${p.made||"–"}</span>`);
     c.add("혼자","btn-go",()=>{
       applyPlan(p); currentPlanId=p.id;
-      clearTask(); currentBattle=null; updateModeBadge(); showWorkSteps();
+      clearTask(); currentBattle=null; updateModeBadge();
+      goPage("pgWork"); showWorkSteps();   // 고르면 바로 운동하기로 넘어간다
       toast(`'${p.name}' ${(p.n||0)+1}회차 시작 — 준비되면 [시작]을 누르세요`,"task","🌱");
     });
     c.add("⚔️ 결투","btn-stop",()=>{
@@ -2441,6 +2500,18 @@ function angle(a,b,c){
   const m=Math.hypot(ab.x,ab.y)*Math.hypot(cb.x,cb.y); if(!m)return 180;
   return Math.acos(Math.max(-1,Math.min(1,(ab.x*cb.x+ab.y*cb.y)/m)))*180/Math.PI;
 }
+/* 몸 기준 3차원 좌표로 재는 각도 — 카메라를 어디서 들고 있든 같은 자세면 같은 값이 나온다. */
+function angle3(a,b,c){
+  const ab={x:a.x-b.x,y:a.y-b.y,z:a.z-b.z},cb={x:c.x-b.x,y:c.y-b.y,z:c.z-b.z};
+  const m=Math.hypot(ab.x,ab.y,ab.z)*Math.hypot(cb.x,cb.y,cb.z); if(!m)return 180;
+  return Math.acos(Math.max(-1,Math.min(1,(ab.x*cb.x+ab.y*cb.y+ab.z*cb.z)/m)))*180/Math.PI;
+}
+let curWorld=null;   // 이번 프레임의 3차원 좌표(없는 기기에서는 null → 예전처럼 2차원으로)
+/* 관절 각도 하나를 재는 단일 창구. 3차원 좌표가 있으면 그것으로, 없으면 화면 좌표로 잰다. */
+function jointAngle(lm,a,b,c){
+  if(curWorld&&curWorld[a]&&curWorld[b]&&curWorld[c]) return angle3(curWorld[a],curWorld[b],curWorld[c]);
+  return angle(lm[a],lm[b],lm[c]);
+}
 function bestSide(lm,joints){
   // 예전엔 두 쪽(좌/우) 중 더 잘 보이는 쪽만 골랐다. 그런데 레그레이즈처럼 한쪽 다리씩
   // 번갈아 드는 동작에서는, 마침 쉬고 있는 다리 쪽 시야가 살짝만 더 좋아도 계속 그쪽만
@@ -2450,7 +2521,7 @@ function bestSide(lm,joints){
   let bestAng=null,bestVis=-1,fbAng=null,fbVis=-1;
   for(const [a,b,c] of joints){
     const v=Math.min(lm[a].visibility,lm[b].visibility,lm[c].visibility);
-    const ang=angle(lm[a],lm[b],lm[c]);
+    const ang=jointAngle(lm,a,b,c);   // 시점과 무관한 3차원 각도(가능할 때)
     if(v>fbVis){fbVis=v;fbAng=ang;}
     if(v>=0.15&&(bestAng==null||ang<bestAng)){bestAng=ang;bestVis=v;}
   }
@@ -2511,7 +2582,7 @@ function travelY(lm,def){
 function symOK(lm,def){
   if(!def.sym||!def.joints||def.joints.length<2)return true;
   const vals=def.joints.map(([a,b,c])=>({
-    v:Math.min(lm[a].visibility,lm[b].visibility,lm[c].visibility), a:angle(lm[a],lm[b],lm[c])}));
+    v:Math.min(lm[a].visibility,lm[b].visibility,lm[c].visibility), a:jointAngle(lm,a,b,c)}));
   if(vals.some(x=>x.v<0.5))return true;
   return Math.abs(vals[0].a-vals[1].a)<=SYM_TOL;
 }
@@ -2967,6 +3038,25 @@ async function ensureWorkoutCam(){
   applyCamMirror();
   overlay.width=video.videoWidth||overlay.width; overlay.height=video.videoHeight||overlay.height;
 }
+/* ♻️ 운동 새로고침 — 화면이 멈췄을 때 쓰는 구조용 버튼.
+   운동을 처음부터 다시 하지 않고, 카메라와 자세 인식만 다시 잡는다.
+   지금까지 센 횟수·남은 시간·타이머는 그대로 이어진다(운동을 잃지 않는다). */
+async function refreshWorkoutCam(){
+  const btn=$("camRefresh");
+  if(btn){btn.disabled=true;btn.textContent="♻️ 다시 잡는 중…";}
+  try{
+    if(rafId)cancelAnimationFrame(rafId);     // 멈춘 그리기 루프를 확실히 끊는다
+    stopWorkoutCam();
+    await new Promise(r=>setTimeout(r,350));  // 카메라가 놓일 시간
+    await ensureWorkoutCam();
+    lastVid=-1;                               // 같은 프레임으로 오해해 건너뛰지 않도록 초기화
+    if(running){ rafId=requestAnimationFrame(loop); }
+    toast("화면을 다시 잡았어요 — 이어서 하세요","good","♻️");
+  }catch(e){
+    toast("다시 잡지 못했어요 — [✕ 종료] 후 다시 시작해 주세요","task","⚠️");
+  }
+  if(btn){btn.disabled=false;btn.textContent="♻️ 새로고침";}
+}
 /* 카메라 전환 — 운동 중에 눌러도 그 자리에서 바로 바뀐다 */
 async function flipWorkoutCam(){
   camFacing=(camFacing==="user")?"environment":"user";
@@ -3027,6 +3117,12 @@ function loop(){
     lastVid=video.currentTime;
     const res=landmarker.detectForVideo(video,performance.now());
     ctx.clearRect(0,0,overlay.width,overlay.height);
+    /* 각도는 '화면에 비친 2차원 좌표' 대신 '몸 기준 3차원 좌표'로 잰다.
+       화면 좌표로 재면 카메라를 어디서 들고 있느냐에 따라 같은 자세가 다른 각도로 보여
+       점수가 제각각이 된다(옆에서 보면 108°, 비스듬히 보면 75°로 보이는 식).
+       3차원 좌표는 카메라 위치와 무관하므로 어디서 찍어도 같은 자세면 같은 점수가 나온다.
+       화면에 뼈대를 그리는 것과 '몸이 보이는지'는 그대로 2차원 좌표를 쓴다. */
+    curWorld=(res.worldLandmarks&&res.worldLandmarks.length)?res.worldLandmarks[0]:null;
     if(res.landmarks&&res.landmarks.length){
       const lm=res.landmarks[0];
       draw.drawConnectors(lm,PoseLandmarker.POSE_CONNECTIONS,{color:"#35D0BA88",lineWidth:3});
@@ -6052,6 +6148,86 @@ function exitFullscreen(){
 $("exitFs").addEventListener("click",stopAll);
 $("camFlip")&&$("camFlip").addEventListener("click",flipWorkoutCam);
 $("camFlipFs")&&$("camFlipFs").addEventListener("click",flipWorkoutCam);
+$("camRefresh")&&$("camRefresh").addEventListener("click",refreshWorkoutCam);
+
+/* ---------- 🛠 앱 문제 알리기 ----------
+   학생이 그 자리에서 알리고 교사가 수업 중 바로 확인할 수 있게 한다.
+   재현하려면 '누가 어떤 기기에서'가 꼭 필요하므로 이름과 기기 정보를 함께 담는다.
+   내가 보낸 것은 이 기기에 남겨 두 번 보내지 않게 하고, 읽기는 교사만 한다. */
+const RP_KEY="tabataReports";
+let myReports=[];
+try{ myReports=JSON.parse(localStorage.getItem(RP_KEY)||"[]"); }catch(e){}
+function deviceInfo(){
+  const ua=navigator.userAgent||"";
+  const os=/Android/i.test(ua)?"안드로이드":/iPhone|iPad|iPod/i.test(ua)?"아이폰·아이패드":/Windows/i.test(ua)?"윈도우":/Mac/i.test(ua)?"맥":"기타";
+  const br=/SamsungBrowser/i.test(ua)?"삼성인터넷":/Edg/i.test(ua)?"엣지":/Chrome/i.test(ua)?"크롬":/Firefox/i.test(ua)?"파이어폭스":/Safari/i.test(ua)?"사파리":"기타";
+  return {os,br,scr:`${screen.width}x${screen.height}`,ua:ua.slice(0,160)};
+}
+function renderMyReports(){
+  const el=$("rpMine"); if(!el)return;
+  el.innerHTML=myReports.length
+    ? `보낸 것 ${myReports.length}건 — `+myReports.slice(-3).map(r=>`<b>${escHtml(String(r.date||"").slice(5,16))}</b>`).join(", ")
+    : "";
+}
+if($("rpSend"))$("rpSend").addEventListener("click",()=>{
+  const msg=$("rpMsg"), txt=($("rpText").value||"").trim();
+  if(!txt){msg.innerHTML='<span class="err">무엇이 안 되는지 적어 주세요.</span>';return;}
+  const me=myKey();
+  if(!me.name){msg.innerHTML='<span class="err">운동 설계 탭에서 학번을 먼저 입력하세요.</span>';return;}
+  const d=deviceInfo();
+  const rep={name:me.name,cls:me.cls,text:txt,date:nowStamp(),
+    os:d.os,br:d.br,scr:d.scr,ua:d.ua,
+    where:(document.querySelector("nav button.on")||{}).textContent||""};
+  myReports.push({date:rep.date,text:txt});
+  try{ localStorage.setItem(RP_KEY,JSON.stringify(myReports)); }catch(e){}
+  $("rpText").value=""; renderMyReports();
+  if(!fdb){ msg.innerHTML='<b style="color:var(--good)">이 기기에 저장했습니다 — 인터넷이 연결되면 다시 보내주세요.</b>'; return; }
+  msg.textContent="보내는 중…";
+  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  fmod.set(fmod.ref(fdb,"reports/"+id),rep)
+    .then(()=>{ msg.innerHTML='<b style="color:var(--good)">보냈습니다 — 선생님이 확인합니다 ✔</b>';
+      toast("선생님께 전달했습니다","good","🛠"); })
+    .catch(()=>{ msg.innerHTML='<span class="err">전송 실패 — 인터넷을 확인하세요.</span>'; });
+});
+renderMyReports();
+
+/* 교사 화면 — 학생이 알린 문제 목록. 읽기는 교사만 하도록 규칙으로 막혀 있어야 한다. */
+const reports={};
+function renderReports(){
+  const box=$("rpList"); if(!box)return;
+  const ks=Object.keys(reports).sort((a,b)=>String(reports[b].date).localeCompare(String(reports[a].date)));
+  const open=ks.filter(k=>!reports[k].done);
+  const cnt=$("rpCount"); if(cnt)cnt.textContent=open.length?`· 새 ${open.length}건`:"";
+  if(!ks.length){ box.innerHTML='<div class="hint">아직 알려온 것이 없습니다.</div>'; return; }
+  box.innerHTML=ks.map(k=>{
+    const r=reports[k];
+    return `<div class="step-box" style="margin:0 0 8px;${r.done?"opacity:.55":""}">
+      <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
+        <b>${escHtml(r.cls||"")}반 ${escHtml(r.name||"")}</b>
+        <span class="hint">${escHtml(String(r.date||"").slice(0,16))}</span>
+        <span class="hint">· ${escHtml(r.os||"")} ${escHtml(r.br||"")} ${escHtml(r.scr||"")}</span>
+        ${r.where?`<span class="hint">· ${escHtml(r.where)}에서</span>`:""}
+        ${r.done?'<span class="hint" style="color:var(--good)">✔ 확인함</span>':""}
+      </div>
+      <div style="margin-top:6px;white-space:pre-wrap">${escHtml(r.text||"")}</div>
+      ${r.done?"":`<div class="row" style="margin:8px 0 0"><button class="btn btn-teal btn-sm" data-rp="${k}">확인함</button></div>`}
+    </div>`;
+  }).join("");
+  box.querySelectorAll("button[data-rp]").forEach(b=>b.addEventListener("click",()=>{
+    const k=b.dataset.rp;
+    if(!fdb){reports[k].done=true;renderReports();return;}
+    fmod.update(fmod.ref(fdb,"reports/"+k),{done:true}).catch(()=>{});
+  }));
+}
+function attachReports(){
+  if(!fdb||!isTeacher())return;
+  fmod.onValue(fmod.ref(fdb,"reports"),snap=>{
+    Object.keys(reports).forEach(k=>delete reports[k]);
+    Object.assign(reports,snap.val()||{});
+    renderReports();
+  },()=>{ const m=$("rpAdminMsg"); if(m)m.innerHTML='<span class="err">읽을 권한이 없습니다 — Firebase 규칙에 reports를 추가해 주세요.</span>'; });
+}
+if($("rpReload"))$("rpReload").addEventListener("click",attachReports);
 applyCamMirror();   // 저장해 둔 값을 화면에 먼저 반영해 둔다
 renderCamGuides();  // 심박 측정 그림 안내를 STEP 1·3 두 곳에 그려 둔다
 $("startBtn").addEventListener("click",start);
@@ -6409,6 +6585,17 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
     if(caps.focusMode&&caps.focusMode.includes("manual")&&caps.focusDistance){
       await track.applyConstraints({advanced:[{focusMode:"manual",focusDistance:caps.focusDistance.min}]});
     }
+    /* 밝기·색을 자동 조절하게 두면 카메라가 스스로 밝기를 오르내리는데, 그 주기가 심박 범위와
+       겹치면 앱이 '심박' 대신 '카메라가 깜빡이는 주기'를 읽는다. 폰마다 그 주기가 달라
+       측정값이 제각각으로 나오는 원인이 된다. 그래서 지원하는 기기에서는 아예 고정한다.
+       (하나씩 따로 걸어, 일부만 지원하는 기기에서도 되는 것만 적용되게 한다) */
+    const lock=async(c)=>{ try{ await track.applyConstraints({advanced:[c]}); }catch(e){} };
+    if(caps.exposureMode&&caps.exposureMode.includes("manual")) await lock({exposureMode:"manual"});
+    else if(caps.exposureMode&&caps.exposureMode.includes("single-shot")) await lock({exposureMode:"single-shot"});
+    if(caps.whiteBalanceMode&&caps.whiteBalanceMode.includes("manual")) await lock({whiteBalanceMode:"manual"});
+    if(caps.exposureCompensation) await lock({exposureCompensation:caps.exposureCompensation.min});
+    // 고정한 직후에는 값이 한 번 출렁이므로, 그 구간이 측정에 섞이지 않게 잠깐 기다린다
+    await new Promise(r=>setTimeout(r,250));
   }catch(e){}
   // 시작하자마자 어디를 덮어야 하는지 먼저 알려 준다
   if(hintEl){
@@ -6536,59 +6723,69 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
     if(fallbackTarget){ setTimeout(()=>{ if($("pulseOverlay").style.display!=="flex")
       openPulse(fallbackTarget,"📷 <b>카메라로는 맥박이 잘 안 잡혔어요</b><br>대신 <b>짝과 함께 맥박을 세어</b> 측정할게요.<br><span style=\"font-weight:400;opacity:.85\">아래 [▶ 시작]을 누르고 15초 동안 심장이 뛸 때마다 큰 원을 탭하세요.</span>"); },600); }
   }
+  function medianOf(a){ const b=a.slice().sort((x,y)=>x-y); return b[Math.floor(b.length/2)]; }
+  /* 한 구간의 주기와 뚜렷한 정도. 겹치는 표본 수로 나눠 lag 치우침을 없앤다. */
+  function periodOf(x,FS,loBpm,hiBpm){
+    const n=x.length;
+    const mean=x.reduce((a,b)=>a+b,0)/n;
+    const c=x.map(v=>v-mean);
+    const e0=c.reduce((a,b)=>a+b*b,0)/n||1e-9;
+    const minLag=Math.max(2,Math.round(FS*60/hiBpm)), maxLag=Math.min(Math.round(FS*60/loBpm),n-FS);
+    let bestLag=-1,best=-2;
+    for(let lag=minLag;lag<=maxLag;lag++){
+      let s=0,cnt=0;
+      for(let i=0;i<n-lag;i++){ s+=c[i]*c[i+lag]; cnt++; }
+      const r=(s/cnt)/e0;
+      if(r>best){best=r;bestLag=lag;}
+    }
+    return {bpm:bestLag>0?60*FS/bestLag:0, corr:best, rms:Math.sqrt(e0), cent:c};
+  }
   function analyze(elapsed){
-    // 오래된 데이터가 섞이면 주기 추정이 흐려지므로 최근 15초 구간만 사용
     const from=Math.max(0,elapsed-15000);
     const pts=sig.filter(p=>p.t>=from);
-    const n=pts.length;
-    if(n<40) return {ok:false};
-    // 1) 균일 시간격자(30Hz)로 리샘플 — 실제 카메라 fps가 들쭉날쭉해도 이후 필터가 안정적으로 동작
+    if(pts.length<40) return {ok:false,why:"표본 부족"};
     const FS=30, stepMs=1000/FS;
-    const t0local=pts[0].t;
-    const totalMs=pts[n-1].t-t0local;
-    const m=Math.max(1,Math.floor(totalMs/stepMs));
+    const t0=pts[0].t, total=pts[pts.length-1].t-t0;
+    const m=Math.max(1,Math.floor(total/stepMs));
     const rs=new Array(m); let j=0;
     for(let i=0;i<m;i++){
-      const tt=t0local+i*stepMs;
-      while(j<n-2&&pts[j+1].t<tt) j++;
-      const a=pts[j], b=pts[Math.min(j+1,n-1)];
+      const tt=t0+i*stepMs;
+      while(j<pts.length-2&&pts[j+1].t<tt) j++;
+      const a=pts[j], b=pts[Math.min(j+1,pts.length-1)];
       const span=(b.t-a.t)||1, k=Math.max(0,Math.min(1,(tt-a.t)/span));
       rs[i]=a.v+(b.v-a.v)*k;
     }
-    // 2) 대역통과 유사 필터: 1초 이동평균으로 기저선(조명 변화 등) 제거 → 짧은 이동평균으로 고주파 잡음 완화
+    /* ① 손가락이 움직인 순간 메우기 — 갑자기 크게 튀는 프레임은 앞 값으로 잇는다.
+       사람 맥박은 한 프레임 만에 그렇게 크게 변하지 않으므로, 그런 변화는 움직임이다. */
+    const d=[]; for(let i=1;i<m;i++) d.push(Math.abs(rs[i]-rs[i-1]));
+    const medStep=medianOf(d)||0.01;
+    const jumpLimit=Math.max(medStep*6,1.0);
+    let patched=0;
+    for(let i=1;i<m;i++){ if(Math.abs(rs[i]-rs[i-1])>jumpLimit){ rs[i]=rs[i-1]; patched++; } }
+    if(patched>m*0.35) return {ok:false,why:"움직임이 너무 많음"};
+    // 기저선 제거 + 다듬기 (지금 앱과 같은 방식)
     const baseW=Math.round(FS*1.0), smoothW=3;
     const hp=new Array(m);
-    for(let i=0;i<m;i++){
-      let s=0,c=0;
-      for(let k2=Math.max(0,i-baseW);k2<Math.min(m,i+baseW);k2++){s+=rs[k2];c++;}
-      hp[i]=rs[i]-s/c;
-    }
+    for(let i=0;i<m;i++){ let s=0,c=0;
+      for(let k=Math.max(0,i-baseW);k<Math.min(m,i+baseW);k++){s+=rs[k];c++;} hp[i]=rs[i]-s/c; }
     const filt=new Array(m);
-    for(let i=0;i<m;i++){
-      let s=0,c=0;
-      for(let k2=Math.max(0,i-smoothW);k2<=Math.min(m-1,i+smoothW);k2++){s+=hp[k2];c++;}
-      filt[i]=s/c;
-    }
-    const trim=FS; // 필터 경계 왜곡되는 앞뒤 1초 버림
-    const sig2=filt.slice(trim,m-trim);
-    if(sig2.length<FS*5) return {ok:false};
-
-    // 3) 자기상관으로 주기 추정 (40~220bpm) — 피크 하나하나를 따지지 않고 신호 전체의 주기성을 보므로 잡음에 더 강함
-    const minLag=Math.round(FS*60/220), maxLag=Math.min(Math.round(FS*60/40), sig2.length-1);
-    const mean=sig2.reduce((a,b)=>a+b,0)/sig2.length;
-    const cent=sig2.map(x=>x-mean);
-    const energy=cent.reduce((a,b)=>a+b*b,0)||1;
-    let bestLag=-1,bestCorr=-1;
-    for(let lag=minLag;lag<=maxLag;lag++){
-      let s=0; for(let i=0;i<cent.length-lag;i++) s+=cent[i]*cent[i+lag];
-      const corr=s/energy;
-      if(corr>bestCorr){bestCorr=corr;bestLag=lag;}
-    }
-    const acBpm=bestLag>0?Math.round(60*FS/bestLag):0;
-
-    // 4) 적응형 피크 검출 (교차검증용)
-    const amp=Math.sqrt(cent.reduce((a,b)=>a+b*b,0)/cent.length);
-    const peaks=[], thr=amp*0.5, refr=Math.round(FS*0.28); // 최대 약 214bpm까지 허용
+    for(let i=0;i<m;i++){ let s=0,c=0;
+      for(let k=Math.max(0,i-smoothW);k<=Math.min(m-1,i+smoothW);k++){s+=hp[k];c++;} filt[i]=s/c; }
+    const sig2=filt.slice(FS,m-FS);
+    if(sig2.length<FS*5) return {ok:false,why:"시간 부족"};
+    /* ② 구간을 나눠 각각 재고, 서로 맞는 구간만 쓴다 — 한 번 움직인 구간만 버릴 수 있다 */
+    const segs=[], SEG=Math.max(FS*5,Math.floor(sig2.length/2)), STEP2=Math.max(1,Math.floor(SEG/2));
+    for(let s=0;s+SEG<=sig2.length;s+=STEP2) segs.push(periodOf(sig2.slice(s,s+SEG),FS,40,220));
+    if(!segs.length) segs.push(periodOf(sig2,FS,40,220));
+    const bpms=segs.map(s=>s.bpm), med=medianOf(bpms);
+    const agreeIdx=bpms.map((b,i)=>Math.abs(b-med)<=Math.max(8,med*0.12)?i:-1).filter(i=>i>=0);
+    if(!agreeIdx.length) return {ok:false,why:"구간마다 값이 달라 못 믿음"};
+    const acBpm=Math.round(agreeIdx.reduce((a,i)=>a+bpms[i],0)/agreeIdx.length);
+    const bestCorr=Math.max(...agreeIdx.map(i=>segs[i].corr));
+    /* ③ 신뢰 판정은 지금 앱과 같은 기준을 그대로 쓴다(진폭·피크 교차검증) */
+    const whole=periodOf(sig2,FS,40,220), cent=whole.cent;
+    const amp=whole.rms;
+    const peaks=[], thr=amp*0.5, refr=Math.round(FS*0.28);
     for(let i=1;i<cent.length-1;i++){
       if(cent[i]>thr&&cent[i]>=cent[i-1]&&cent[i]>cent[i+1]){
         if(!peaks.length||i-peaks[peaks.length-1]>refr) peaks.push(i);
@@ -6600,11 +6797,8 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
       ivs.sort((a,b)=>a-b);
       peakBpm=Math.round(60*FS/ivs[Math.floor(ivs.length/2)]);
     }
-
-    // 5) 자기상관 신뢰도 + 두 추정치 일치 여부로 신뢰 가능한 값인지 판정
-    // (여러 시점에서 반복 확인하므로 v2보다 기준을 살짝 완화해도 오탐 위험이 크게 늘지 않는다)
     const reliable=bestCorr>0.20&&amp>0.10&&(!peakBpm||Math.abs(acBpm-peakBpm)<=Math.max(8,acBpm*0.12));
-    if(!reliable||acBpm<45||acBpm>210) return {ok:false};
+    if(!reliable||acBpm<45||acBpm>210) return {ok:false,why:"맥박이 뚜렷하지 않음"};
     return {ok:true,bpm:peakBpm?Math.round((acBpm+peakBpm)/2):acBpm};
   }
 }
@@ -6865,8 +7059,9 @@ async function ensureAuth(app){
     if(!u){ // 로그아웃하면 화면에 남은 남의 자료를 지운다
       Object.keys(plans).forEach(k=>delete plans[k]);
       Object.keys(reflections).forEach(k=>delete reflections[k]);
+      Object.keys(reports).forEach(k=>delete reports[k]); renderReports();
     }
-    if(fmod&&fdb)attachProtected(fmod.onValue,fmod.ref);
+    if(fmod&&fdb){ attachProtected(fmod.onValue,fmod.ref); attachReports(); }
     renderAuth();
     if(u)toast("교사 로그인됨 — 성찰·계획서를 볼 수 있습니다","good","🔐");
   });
@@ -7042,6 +7237,7 @@ function attachFbListeners(){
     checkBattleAutoStart();                               // 수락된 배틀이 있으면 동시 시작 카운트다운
   });
   attachProtected(onValue,ref);
+  attachReports();   // 학생이 알린 앱 문제 (교사만 읽힌다)
   // 채점 기준은 서버 값을 따른다 — 교사 기기마다 학생 점수가 달라지지 않게
   onValue(ref(fdb,"rubric"),snap=>{
     const v=snap.val(); if(!v)return;
