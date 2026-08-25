@@ -548,20 +548,6 @@
       <span class="hint" id="stuIdHint" style="align-self:center"></span>
     </div>
 
-    <!-- 학교 와이파이에서 여러 명이 동시에 시작하면 자세 인식 파일(약 9MB)을 한꺼번에 받아
-         수업이 버벅인다. 만든 쪽 설정이 '1시간만 보관'이라 교시마다 다시 받게 되기 때문이다.
-         여기서 한 번 받아 두면 이 기기는 그 뒤로 다시 받지 않는다. -->
-    <div class="step-box" id="prefetchBox" style="margin-top:12px;border:2px solid var(--primary2)">
-      <div style="font-weight:800;font-size:15px">📶 처음 한 번만 — 자세 인식 파일 받아두기</div>
-      <div class="hint" style="margin:3px 0 8px">약 <b>9MB</b>를 이 기기에 저장합니다.
-        받아두면 수업 때 여럿이 함께 써도 <b>끊기지 않습니다.</b>
-        <b>와이파이가 여유로울 때</b>(수업 시작 전·쉬는 시간) 눌러 주세요.</div>
-      <div class="row" style="margin:0">
-        <button class="btn btn-go btn-sm" id="prefetchBtn">⬇️ 지금 받아두기</button>
-        <span class="hint" id="prefetchMsg" style="flex:1;min-width:160px"></span>
-      </div>
-    </div>
-
     <h3>② 자율 실천 운동설계</h3>
 
     <div class="step-box" style="margin-top:0">
@@ -647,6 +633,21 @@
       <div class="hint" id="bCfgHint"></div>
       <div id="battleList" style="margin-top:10px"></div>
     </details>
+
+    <!-- 학교 와이파이에서 여러 명이 동시에 시작하면 자세 인식 파일(약 9MB)을 한꺼번에 받아
+         수업이 버벅인다. 만든 쪽 설정이 '1시간만 보관'이라 교시마다 다시 받게 되기 때문이다.
+         한 번 받아 두면 이 기기는 그 뒤로 다시 받지 않는다.
+         평소에는 쓸 일이 없으므로 화면 맨 아래에 둔다. -->
+    <div class="step-box" id="prefetchBox" style="margin-top:24px">
+      <div style="font-weight:700;font-size:14px;color:var(--muted)">📶 처음 한 번만 — 자세 인식 파일 받아두기</div>
+      <div class="hint" style="margin:3px 0 8px">약 <b>9MB</b>를 이 기기에 저장합니다.
+        받아두면 수업 때 여럿이 함께 써도 <b>끊기지 않습니다.</b>
+        <b>와이파이가 여유로울 때</b>(수업 시작 전·쉬는 시간) 한 번만 눌러 주세요.</div>
+      <div class="row" style="margin:0">
+        <button class="btn btn-stop btn-sm" id="prefetchBtn">⬇️ 지금 받아두기</button>
+        <span class="hint" id="prefetchMsg" style="flex:1;min-width:160px"></span>
+      </div>
+    </div>
   </section>
 
   <!-- ================= WORKOUT ================= -->
@@ -7745,7 +7746,7 @@ async function checkBigAssets(){
     if(hit){
       prefetchMsg('<b style="color:var(--good)">✔ 이미 받아뒀어요 — 다시 받을 필요 없습니다</b>');
       btn.textContent="✔ 준비됨"; btn.disabled=true;
-      btn.classList.remove("btn-go"); btn.classList.add("btn-stop");
+      btn.style.opacity=".6";
     } else {
       prefetchMsg('<span style="color:var(--gold)">아직 안 받았어요 — 수업 전에 한 번 눌러 주세요</span>');
     }
@@ -7772,7 +7773,7 @@ if("serviceWorker" in navigator){
     if(e.data&&e.data.type==="PREFETCH_DONE"){
       const btn=$("prefetchBtn");
       if(btn){ btn.textContent="✔ 준비됨"; btn.disabled=true;
-        btn.classList.remove("btn-go"); btn.classList.add("btn-stop"); }
+        btn.style.opacity=".6"; }
       prefetchMsg('<b style="color:var(--good)">✔ 준비 완료 — 이제 이 기기는 수업 때 다시 받지 않습니다</b>');
       toast("자세 인식 파일 준비 완료","good","✅");
     }
