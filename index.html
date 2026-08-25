@@ -1015,6 +1015,15 @@
     <div class="row" style="margin-top:8px">
       <button class="btn btn-teal btn-sm" id="taskAdd">이 설계로 과제 등록</button>
     </div>
+    <!-- 시간마다 반별로 과제를 내면 목록이 금방 길어진다. 반을 골라 그 반 것만 보게 한다. -->
+    <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line)">
+      <div class="row" style="margin:0 0 6px;align-items:center">
+        <b style="font-size:15px">등록된 공통과제</b>
+        <span class="hint" id="taskFilterCount" style="margin-left:auto"></span>
+      </div>
+      <div class="hint" style="margin-bottom:6px">반을 누르면 그 반에 낸 과제만 보입니다.</div>
+      <div id="taskFilterPick" class="task-class-pick"></div>
+    </div>
     <div class="seqlist" id="taskChips"></div>
 
     <h3 style="margin-top:18px">📈 반별 차시 진도</h3>
@@ -1804,6 +1813,23 @@ function renderLessonGrid(){
   });
   tb.innerHTML=h+'</tbody>';
 }
+/* 학습센터에서 과제 목록을 어느 반 기준으로 볼지 — ""이면 전체 */
+let taskFilterCls="";
+function renderTaskFilter(){
+  const box=$("taskFilterPick"); if(!box)return;
+  const cls=classNames();
+  box.innerHTML="";
+  const mk=(val,label,count)=>{
+    const b=document.createElement("button");
+    b.className=(taskFilterCls===val)?"on":"";
+    b.innerHTML=label+(count!=null?` <span style="opacity:.7">${count}</span>`:"");
+    b.addEventListener("click",()=>{ taskFilterCls=(taskFilterCls===val)?"":val; renderTasks(); });
+    box.appendChild(b);
+  };
+  const ids=Object.keys(assignments);
+  mk("","전체",ids.length);
+  cls.forEach(c=>mk(c,shortCls(c)+"반",ids.filter(id=>taskHasClass(assignments[id],c)).length));
+}
 function renderTasks(){
   // 학생: 과제 카드 — 내 반에 배정된 과제만 보인다
   // 학생(운동하기 탭): 오늘 무엇을 할지 고르는 카드들 — 고르면 심박→운동→심박 단계가 열린다
@@ -1931,11 +1957,35 @@ function renderTasks(){
   const chips=$("taskChips"); chips.innerHTML="";
   const tv=$("taskView"); const keep=tv.value;
   tv.innerHTML=ids.length?"":'<option value="">과제를 등록하세요</option>';
-  ids.forEach(id=>{
+  /* 반별로 시간마다 과제를 내면 목록이 금방 길어진다 — 고른 반의 것만 보여준다.
+     완료현황 select는 자체 반 필터가 따로 있으므로 여기서는 칩 목록만 거른다. */
+  renderTaskFilter();
+  /* 만들어진 차례가 아니라 차시 순서로 세운다 — 수업 진행 순서와 같아 찾기 쉽다.
+     차시를 안 적은 과제는 맨 뒤로 보내고, 같은 차시면 나중에 만든 것을 뒤에 둔다. */
+  const byLesson=(x,y)=>{
+    const ax=+assignments[x].lesson||9999, ay=+assignments[y].lesson||9999;
+    if(ax!==ay)return ax-ay;
+    return String(assignments[x].created||"").localeCompare(String(assignments[y].created||""));
+  };
+  const shown=ids.filter(id=>!taskFilterCls||taskHasClass(assignments[id],taskFilterCls)).sort(byLesson);
+  const fc=$("taskFilterCount");
+  if(fc)fc.innerHTML=taskFilterCls
+    ? `<b style="color:var(--primary)">${shortCls(taskFilterCls)}반 ${shown.length}개</b> · 전체 ${ids.length}개`
+    : (ids.length?`전체 <b>${ids.length}개</b>`:"");
+  // 완료현황 고르는 칸은 반 필터와 무관하게 전체를 담되, 순서는 똑같이 차시순으로
+  [...ids].sort(byLesson).forEach(id=>{
     const a=assignments[id];
-    const doneSet=new Set(records.filter(r=>r.taskId===id).map(r=>r.name+"|"+r.cls));
     const lv=a.lesson?`${a.lesson}차시 · `:"";
     tv.insertAdjacentHTML("beforeend",`<option value="${id}">${lv}${a.title} (${taskClassLabel(a)})</option>`);
+  });
+  if(!shown.length&&ids.length){
+    const none=document.createElement("div"); none.className="hint";
+    none.innerHTML=`<b>${shortCls(taskFilterCls)}반</b>에 낸 과제가 없습니다. 위에서 <b>전체</b>를 누르면 모두 볼 수 있어요.`;
+    chips.appendChild(none);
+  }
+  shown.forEach(id=>{
+    const a=assignments[id];
+    const doneSet=new Set(records.filter(r=>r.taskId===id).map(r=>r.name+"|"+r.cls));
     const chip=document.createElement("div"); chip.className="chip";
     chip.innerHTML=`<span class="ord num">${a.lesson?a.lesson+"차시":"📋"}</span>${a.title}<span class="task-cls-tag">${taskClassLabel(a)}</span>
       <span class="hint">완료 ${doneSet.size}명</span>`;
