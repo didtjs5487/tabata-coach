@@ -1195,6 +1195,15 @@
     <div class="lu-sub">축하해요! 아바타가 성장했어요</div>
   </div>
 </div>
+<!-- 포트폴리오는 앱 안에서 띄운다 — 새 창은 폰에서 팝업 차단에 막힌다 -->
+<div id="pfOverlay" style="display:none;position:fixed;inset:0;z-index:10007;background:var(--bg);flex-direction:column">
+  <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap">
+    <b id="pfViewTitle" style="font-size:15px;flex:1;min-width:120px">운동 포트폴리오</b>
+    <button class="btn btn-go btn-sm" id="pfPrintBtn">🖨 인쇄 / PDF로 저장</button>
+    <button class="btn btn-stop btn-sm" id="pfCloseBtn">✕ 닫기</button>
+  </div>
+  <iframe id="pfFrame" title="운동 포트폴리오" style="flex:1;width:100%;border:0;background:#fff"></iframe>
+</div>
 <div id="toastBox"></div>
 <div id="pulseOverlay" style="display:none;position:fixed;inset:0;z-index:10002;background:rgba(43,49,96,.94);flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:22px;text-align:center;overflow-y:auto">
   <!-- 카메라 측정이 실패해 이 창으로 넘어온 경우, 왜 넘어왔는지 여기에 크게 알려준다.
@@ -1525,11 +1534,17 @@ const EX={
   jack:{type:"jack",pose:"stand",good:"리듬 좋아요!",shallow:"팔을 머리 위까지!"},
   plank:{type:"hold",joints:[[12,24,28],[11,23,27]],lo:150,hi:200,minVis:0.22,pose:"flat",
     good:"곧게 유지 중!",bad:"엉덩이 높이 맞추기"},
-  crunch:{type:"rep",joints:[[12,24,26],[11,23,25]],down:130,up:150,perfect:105,minVis:0.28,
-    pose:"floor",travelPt:"shoulder",travelMin:0.03,   // 상체를 살짝만 마는 크런치, 완전히 세우는 윗몸 일으키기 둘 다 인정(floor = 누워서 무릎만 굽히면 됨, 몸통 각도는 안 봄)
-    // down을 118→130으로 낮춰 반복 시작 문턱을 낮췄다 — 힌트대로 "상체만 살짝" 말아올리는
-    // 정도로는 118도까지 못 내려가 아예 카운트가 시작되지 않는다는 현장 보고가 있었다.
-    // perfect(105)는 그대로라 깊게 할수록 여전히 더 높은 정확도로 채점된다.
+  /* 크런치·윗몸 일으키기는 고정 각도로 재면 안 된다.
+     어깨-골반-무릎 각도는 '무릎을 얼마나 굽혔는지'에 따라 누워 있을 때부터 크게 다르다
+     (발을 멀리 두면 166°, 엉덩이 쪽으로 당기면 135°, 아주 가까이면 120°).
+     그래서 up=150 같은 고정 문턱을 쓰면, 무릎을 제대로 굽힌 정석 자세일수록 누워 있을 때조차
+     150을 못 넘어 반복이 영영 세어지지 않았다 — 수업에서 "크런치가 안 된다"고 나온 이유다.
+     이제 adaptive로 그 학생이 '누워 있을 때의 각도'를 스스로 기준 삼아,
+     거기서 얼마나 말아올렸는지(curl)로 판단한다. 어떤 무릎 각도에서도 똑같이 동작한다. */
+  crunch:{type:"rep",joints:[[12,24,26],[11,23,25]],minVis:0.28,
+    adaptive:true, dropDown:20, dropUp:8, fullCurl:35, minRest:95,
+    down:130,up:150,perfect:105,          // adaptive를 못 쓸 때(기준을 못 잡았을 때)의 예비값
+    pose:"floor",travelPt:"shoulder",travelMin:0.02,
     good:"복부 수축 좋아요!",shallow:"상체를 더 말아올리기"},
   legraise:{type:"rep",joints:[[12,24,26],[11,23,25]],down:100,up:150,perfect:90,minVis:0.28,
     pose:"flat",travelPt:"ankle",travelMin:0.05,
@@ -2518,6 +2533,7 @@ function formPenalty(lm,def){
 
 /* ---------- rep/hold engines ---------- */
 let repState,minAng,jackState,jackQ=0;
+let adaptRest=0;   // 적응형 동작(크런치)에서 '누워 있을 때의 각도' — 라운드마다 새로 잡는다
 let roundReps=0,roundAccSum=0,roundAccN=0,holdMs=0,holdJudgeMs=0,badMs=0,lastT=0;
 let roundJ={p:0,g:0,gd:0,o:0,b:0};
 // 랜드마크가 순간적으로 튀면 문턱값을 두 번 왔다갔다 하며 같은 반복이 중복 카운트될 수 있어
@@ -2528,7 +2544,7 @@ let repDownT=0, yLo=0, yHi=0;   // 한 번 하는 동안의 시작 시각과 기
 /* 운동 중에는 "옆으로 돌아 주세요"라고 하지 않는다 — 이미 엎드린 뒤라 돌 수가 없고,
    옆으로 서라는 안내는 휴식 시간에 미리 하기 때문이다. */
 function sightMsg(){ $("fb").textContent="카메라에 몸이 다 보이게 해주세요"; }
-function resetRound(){repState="up";minAng=180;jackState="closed";jackQ=0;burpeePhase="stand";roundReps=0;roundAccSum=0;roundAccN=0;holdMs=0;holdJudgeMs=0;badMs=0;roundJ={p:0,g:0,gd:0,o:0,b:0};lastT=performance.now();lastRepT=0;repDownT=0;yLo=yHi=0;updateJCount();}
+function resetRound(){repState="up";minAng=180;jackState="closed";jackQ=0;burpeePhase="stand";roundReps=0;roundAccSum=0;roundAccN=0;holdMs=0;holdJudgeMs=0;badMs=0;roundJ={p:0,g:0,gd:0,o:0,b:0};lastT=performance.now();lastRepT=0;repDownT=0;yLo=yHi=0;adaptRest=0;updateJCount();}
 function updateJCount(){
   const el=$("jCount"); el.style.display="block";
   el.innerHTML=`<span class="jp">P ${roundJ.p}</span>·<span class="jg">G ${roundJ.g}</span>·<span class="jgd">GD ${roundJ.gd}</span>·<span class="jo">OK ${roundJ.o}</span>·<span class="jb">M ${roundJ.b}</span>`;
@@ -2560,19 +2576,42 @@ function repAccuracy(min,def){
   if(min>=def.down)return 55;
   return Math.round(100-45*(min-full)/(def.down-full));
 }
+/* 적응형(크런치 등) 점수 — 그 학생이 누워 있을 때 각도에서 얼마나 말아올렸는지로 잰다.
+   fullCurl만큼 말아올리면 만점, 전혀 안 움직이면 55점. */
+function curlAccuracy(rest,min,def){
+  const curl=Math.max(0,rest-min);
+  const full=def.fullCurl||35;
+  return Math.round(55+45*Math.min(1,curl/full));
+}
 function procRep(lm,def){
   const {ang,vis}=bestSide(lm,def.joints);
   if(vis<(def.minVis??0.4)||ang==null){sightMsg();return;}
   if(!poseOK(def,lm)){ $("fb").textContent=POSE_MSG[def.pose]; repState="up"; minAng=180; return; }
   const y=travelY(lm,def);
-  if(repState==="up"&&ang<def.down){
+  /* 적응형 동작은 문턱값을 그 학생의 '누워 있을 때 각도'에서 뽑아 쓴다.
+     쉬는 자세에서 본 가장 큰 각도를 기준으로 삼되, 한 번 잡은 기준이 요동치지 않도록
+     올릴 때만 바로 반영하고 내릴 때는 천천히 따라가게 한다. */
+  let dThr=def.down, uThr=def.up;
+  if(def.adaptive){
+    if(repState==="up"){                       // 쉬고 있을 때만 기준을 갱신한다
+      if(ang>adaptRest) adaptRest=ang;         // 더 펴진 자세를 보면 바로 올린다
+      else if(adaptRest-ang<4) adaptRest=adaptRest*0.98+ang*0.02;  // 조금씩만 따라 내린다
+    }
+    if(adaptRest<(def.minRest||95)){           // 아직 누운 기준을 못 잡음 — 예비값으로 버틴다
+      $("fb").textContent="누워서 잠깐 편하게 있어 주세요 — 기준을 잡는 중";
+    } else {
+      dThr=adaptRest-(def.dropDown||20);
+      uThr=adaptRest-(def.dropUp||8);
+    }
+  }
+  if(repState==="up"&&ang<dThr){
     repState="down"; minAng=ang; repDownT=performance.now();
     if(y!=null){yLo=yHi=y;}
   }
   else if(repState==="down"){
     minAng=Math.min(minAng,ang);
     if(y!=null){ yLo=Math.min(yLo,y); yHi=Math.max(yHi,y); }
-    if(ang>def.up){
+    if(ang>uThr){
       repState="up";
       const now=performance.now();
       const reset=()=>{minAng=180;};
@@ -2585,7 +2624,10 @@ function procRep(lm,def){
       // ③ 좌우가 함께 움직였는가
       if(!symOK(lm,def)){ $("fb").textContent="양쪽을 함께 움직여 주세요"; reset(); return; }
       lastRepT=now; roundReps++;
-      const acc=Math.max(40,repAccuracy(minAng,def)-formPenalty(lm,def));
+      const base=(def.adaptive&&adaptRest>=(def.minRest||95))
+        ? curlAccuracy(adaptRest,minAng,def)   // 내 누운 자세 기준으로 얼마나 말아올렸나
+        : repAccuracy(minAng,def);
+      const acc=Math.max(40,base-formPenalty(lm,def));
       roundAccSum+=acc; roundAccN++;
       $("repN").textContent=roundReps;
       $("accN").textContent=Math.round(roundAccSum/roundAccN)+"%";
@@ -2897,16 +2939,30 @@ function applyCamMirror(){
   const b=$("camFlip");
   if(b)b.textContent=(camFacing==="user")?"🤳 셀카":"📷 뒤 카메라";
 }
+/* 카메라를 여는 일은 수업에서 가장 잘 깨지는 지점이다 — 직전에 심박 측정이 쓴 카메라가
+   아직 안 풀렸거나, 기기에 그 방향 카메라가 없거나, 해상도 요구를 못 맞추는 경우가 있다.
+   한 번 실패하면 운동을 아예 시작하지 못하므로, 조건을 하나씩 풀어가며 여러 번 시도한다. */
 async function ensureWorkoutCam(){
   const s=video.srcObject;
   if(s && s.getVideoTracks().some(t=>t.readyState==="live")) return;
-  let ns;
-  try{
-    ns=await navigator.mediaDevices.getUserMedia({video:{width:960,height:720,facingMode:{exact:camFacing}}});
-  }catch(e){
-    // 그 방향 카메라가 없는 기기(노트북 등)면 있는 카메라라도 쓴다
-    ns=await navigator.mediaDevices.getUserMedia({video:{width:960,height:720,facingMode:camFacing}});
+  // 심박 측정 카메라가 남아 있으면 먼저 확실히 놓아준다(폰은 카메라를 하나만 쓸 수 있다)
+  if(ppgStream){ try{ppgStream.getTracks().forEach(t=>t.stop());}catch(e){} ppgStream=null; }
+  const tries=[
+    {width:960,height:720,facingMode:{exact:camFacing}},   // ① 원하는 방향으로 또렷하게
+    {width:960,height:720,facingMode:camFacing},           // ② 방향은 '되도록'
+    {facingMode:camFacing},                                // ③ 해상도 요구를 뺀다
+    {},                                                    // ④ 아무 카메라라도
+  ];
+  let ns=null, lastErr=null;
+  for(let i=0;i<tries.length;i++){
+    try{ ns=await navigator.mediaDevices.getUserMedia({video:tries[i]}); break; }
+    catch(e){
+      lastErr=e;
+      // 직전 카메라가 아직 안 놓인 경우가 흔하다 — 잠깐 기다렸다 다음 조건으로 넘어간다
+      await new Promise(r=>setTimeout(r,i===0?350:200));
+    }
   }
+  if(!ns) throw lastErr||new Error("카메라를 열 수 없습니다");
   video.srcObject=ns; await video.play();
   applyCamMirror();
   overlay.width=video.videoWidth||overlay.width; overlay.height=video.videoHeight||overlay.height;
@@ -2935,7 +2991,25 @@ async function setup(){
   if(!landmarker) $("intro").innerHTML='<div class="spinner"></div><p>AI 모델 불러오는 중…</p>';
   try{
     await ensureWorkoutCam();
-  }catch(e){$("intro").innerHTML='<h2>카메라를 열 수 없어요</h2><p class="err">카메라 권한을 허용해 주세요. 다른 앱이나 심박 측정이 카메라를 쓰고 있으면 닫고 다시 시도하세요.</p>';throw e;}
+  }catch(e){
+    /* 예전엔 이 안내가 운동 화면 안쪽에만 조용히 떠서, 학생은 [시작]을 눌러도 아무 일도
+       안 일어나는 것처럼 느꼈다("운동이 시작되지 않는다"). 이제 화면 안내와 함께
+       눈에 띄는 알림·소리로 알리고, 무엇을 하면 되는지까지 알려 준다. */
+    const why=String((e&&(e.name||e.message))||"");
+    const tip=/NotAllowed|Permission/i.test(why)
+      ? "카메라 권한이 꺼져 있어요 — 주소창 옆 자물쇠(또는 설정 → 사이트 권한)에서 카메라를 허용해 주세요."
+      : /NotReadable|TrackStart|AbortError/i.test(why)
+      ? "다른 앱이 카메라를 쓰고 있어요 — 카메라·영상통화 앱을 완전히 닫고 다시 눌러 주세요."
+      : /NotFound|Overconstrained/i.test(why)
+      ? "이 기기에서 쓸 수 있는 카메라를 찾지 못했어요 — [🔄 카메라]로 앞/뒤를 바꿔 보세요."
+      : "잠시 뒤 [시작]을 다시 눌러 주세요. 계속 안 되면 앱을 새로고침해 주세요.";
+    $("intro").innerHTML='<h2>카메라를 열 수 없어요</h2><p class="err">'+tip+'</p>'
+      +'<p class="hint">화면이 그대로면 [시작]을 한 번 더 눌러 주세요.</p>';
+    $("intro").style.display="";
+    toast("카메라를 열지 못했어요 — 화면의 안내를 확인해 주세요","task","📷");
+    try{ beep(440,.18,.18); }catch(e2){}
+    throw e;
+  }
   if(landmarker){ draw=draw||new DrawingUtils(ctx); return; }
   try{
     const vision=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.12/wasm");
@@ -5401,26 +5475,46 @@ table.pf-tb{width:100%;border-collapse:collapse;font-size:9.2pt;margin:1mm 0}
 @media print{.pf-bar{display:none}}
 `;
 
+/* ---------- 포트폴리오 보기 ----------
+   예전에는 새 창(window.open)으로 띄웠는데, 폰 브라우저가 팝업으로 막아버려 학생 화면에서는
+   아무 일도 안 일어난 것처럼 보였다("포트폴리오가 안 열려요"). 막히면 파일로 내려받게 해뒀지만
+   폰에서는 그 파일을 찾아 여는 것도 어렵다.
+   그래서 앱 안에서 그대로 띄운다. 내용은 iframe에 통째로 넣어 포트폴리오 전용 스타일이
+   앱 화면과 섞이지 않게 하고, 인쇄도 그 iframe만 인쇄해 깨끗하게 나온다. */
+function pfShow(html, title) {
+  const ov = $("pfOverlay"), fr = $("pfFrame");
+  if (!ov || !fr) {   // 화면이 없으면(구버전) 예전 방식으로라도 연다
+    const w = window.open("", "_blank");
+    if (w) { w.document.write(html); w.document.close(); }
+    return;
+  }
+  $("pfViewTitle").textContent = title || "운동 포트폴리오";
+  fr.srcdoc = html;
+  ov.style.display = "flex";
+  document.body.classList.add("fs-lock");
+}
+function pfHide() {
+  const ov = $("pfOverlay");
+  if (ov) ov.style.display = "none";
+  const fr = $("pfFrame"); if (fr) fr.srcdoc = "";
+  document.body.classList.remove("fs-lock");
+}
+function pfPrint() {
+  const fr = $("pfFrame");
+  try { fr.contentWindow.focus(); fr.contentWindow.print(); }
+  catch (e) { toast("인쇄를 열지 못했어요 — 브라우저 메뉴에서 인쇄를 눌러 주세요", "task", "🖨"); }
+}
 function pfOpen(cls, list) {
   if (fdb && !isTeacher()) { alert("🔐 교사 로그인을 먼저 해주세요. 로그인 전에는 계획서·성찰이 비어 있습니다."); return; }
   if (!list.length) { alert("학생이 없습니다."); return; }
   const body = list.map(s => pfStudent(cls, s)).join("");
   const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8">
     <title>타바타 운동 포트폴리오 — ${pfEsc(cls)}</title><style>${PF_CSS}</style></head>
-    <body><div class="pf-bar"><button class="go" onclick="window.print()">🖨 인쇄 / PDF로 저장</button><button onclick="var d=document.body.classList.toggle('t-hud');this.textContent=d?'📄 밝은 배경으로':'🌑 어두운 화면용으로'">🌑 어두운 화면용으로</button><button onclick="window.close()">✕ 닫기</button>
-      <span>${pfEsc(cls)} · ${list.length}명 — 학생마다 새 쪽에서 시작합니다. 이 줄은 인쇄되지 않습니다.</span></div>
+    <body><div class="pf-bar"><button class="go" onclick="window.print()">🖨 인쇄 / PDF로 저장</button><button onclick="var d=document.body.classList.toggle('t-hud');this.textContent=d?'📄 밝은 배경으로':'🌑 어두운 화면용으로'">🌑 어두운 화면용으로</button>      <span>${pfEsc(cls)} · ${list.length}명 — 학생마다 새 쪽에서 시작합니다. 이 줄은 인쇄되지 않습니다.</span></div>
     ${body}</body></html>`;
-  const w = window.open("", "_blank");
-  if (w) { w.document.write(html); w.document.close(); }
-  else {  // 팝업이 막히면 파일로 내려받는다
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([html], { type: "text/html;charset=utf-8" }));
-    a.download = `타바타_포트폴리오_${cls}_${todayStr()}.html`; a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  }
+  pfShow(html, `${pfEsc(cls)} · ${list.length}명`);
   const miss = list.filter(s => !bestPlan(plansOf(s.name, cls))).length;
-  $("pfMsg").innerHTML = `${list.length}명 준비됨.` + (miss ? ` <b style="color:var(--gold)">계획서 미제출 ${miss}명</b>은 그 자리에 '미제출'로 표시됩니다.` : "")
-    + (w ? "" : ' <b style="color:var(--gold)">팝업이 막혀 파일로 내려받았습니다 — 열어서 인쇄하세요.</b>');
+  $("pfMsg").innerHTML = `${list.length}명 준비됨.` + (miss ? ` <b style="color:var(--gold)">계획서 미제출 ${miss}명</b>은 그 자리에 '미제출'로 표시됩니다.` : "");
 }
 
 /* 내 기록 탭 — 학생이 자기 포트폴리오를 뽑는다.
@@ -5454,18 +5548,11 @@ if ($("pfMineBtn")) $("pfMineBtn").addEventListener("click", () => {
   if (!ctx.plan && !ctx.rs.length) { alert("아직 묶을 기록이 없습니다. 운동을 한 번 해보세요."); return; }
   const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8">
     <title>${pfEsc(me.name)} — 타바타 운동 포트폴리오</title><style>${PF_CSS}</style></head>
-    <body><div class="pf-bar"><button class="go" onclick="window.print()">🖨 인쇄 / PDF로 저장</button><button onclick="var d=document.body.classList.toggle('t-hud');this.textContent=d?'📄 밝은 배경으로':'🌑 어두운 화면용으로'">🌑 어두운 화면용으로</button><button onclick="window.close()">✕ 닫기</button>
-      <span>이 줄은 인쇄되지 않습니다.</span></div>${pfRender(ctx)}</body></html>`;
-  const w = window.open("", "_blank");
-  if (w) { w.document.write(html); w.document.close(); }
-  else {
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([html], { type: "text/html;charset=utf-8" }));
-    a.download = `타바타_포트폴리오_${me.name}_${todayStr()}.html`; a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    toast("팝업이 막혀 파일로 내려받았습니다 — 열어서 인쇄하세요", "task", "📘");
-  }
+    <body><div class="pf-bar"><button class="go" onclick="window.print()">🖨 인쇄 / PDF로 저장</button><button onclick="var d=document.body.classList.toggle('t-hud');this.textContent=d?'📄 밝은 배경으로':'🌑 어두운 화면용으로'">🌑 어두운 화면용으로</button>      <span>이 줄은 인쇄되지 않습니다.</span></div>${pfRender(ctx)}</body></html>`;
+  pfShow(html, `${pfEsc(me.name)}의 포트폴리오`);
 });
+if ($("pfPrintBtn")) $("pfPrintBtn").addEventListener("click", pfPrint);
+if ($("pfCloseBtn")) $("pfCloseBtn").addEventListener("click", pfHide);
 if ($("pfClass")) {
   $("pfClass").addEventListener("change", pfFillStus);
   $("pfOne").addEventListener("click", () => {
