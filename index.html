@@ -2573,8 +2573,12 @@ function angle3(a,b,c){
 }
 let curWorld=null;   // 이번 프레임의 3차원 좌표(없는 기기에서는 null → 예전처럼 2차원으로)
 /* 관절 각도 하나를 재는 단일 창구. 3차원 좌표가 있으면 그것으로, 없으면 화면 좌표로 잰다. */
+/* 각도는 '화면에 비친 2차원 좌표'로 잰다.
+   3차원 좌표(worldLandmarks)로 바꿔 본 적이 있는데, 카메라 위치와 무관해지는 장점은 있지만
+   지금 채점 기준값(down/up/perfect)이 전부 2차원 기준으로 맞춰져 있어 기준이 통째로
+   어긋났다 — 수업에서 거의 모든 동작이 인식되지 않았다. 기준값을 3차원으로 다시 잡기 전에는
+   2차원을 쓴다. (카메라 위치 문제는 '옆으로 서세요' 안내로 다룬다) */
 function jointAngle(lm,a,b,c){
-  if(curWorld&&curWorld[a]&&curWorld[b]&&curWorld[c]) return angle3(curWorld[a],curWorld[b],curWorld[c]);
   return angle(lm[a],lm[b],lm[c]);
 }
 function bestSide(lm,joints){
