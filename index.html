@@ -1117,13 +1117,17 @@
 
     <details class="collapsible">
       <summary>⚖️ 채점 기준 (㉯ 운동 실천 20점)</summary>
-      <div class="hint" style="margin:10px 0 8px">만족 개수 → <b>5개 20점 · 4개 16 · 3개 12 · 2개 8 · 1개 이하 4점.</b>
+      <div class="hint" style="margin:10px 0 8px">필수 <b>4개</b> 만족 개수 → <b>4개 20점 · 3개 16 · 2개 12 · 1개 8 · 0개 4점.</b>
+        여기에 <b>동작 정확도가 좋으면 +1~2점</b>을 얹습니다(상한 20점).<br>
+        <span style="color:var(--muted)">정확도는 카메라 한 대로 관절 각도를 재는 것이라 기기·거리에 따라 편차가 큽니다.
+        그래서 <b>못 받은 학생이 손해 보는 필수 항목에서 빼고</b>, 잘 나온 학생에게만 얹는 가산점으로 씁니다.</span><br>
         계획서 유의사항대로 이 점수는 <b>보조 근거</b>이며 최종 판단은 선생님 관찰과 함께 하세요.</div>
       <div class="row">
         <div class="field"><label>② 심박 기준(bpm)</label><input type="number" id="rbHr" min="90" max="200" style="width:90px"></div>
         <div class="field"><label>② 달성 비율(%)</label><input type="number" id="rbHrRate" min="0" max="100" style="width:90px"></div>
         <div class="field"><label>① 이수율(%)</label><input type="number" id="rbDone" min="0" max="100" style="width:90px"></div>
-        <div class="field"><label>③ 평균 정확도(%)</label><input type="number" id="rbAcc" min="0" max="100" style="width:90px"></div>
+        <div class="field"><label>★ 정확도 +1점(%)</label><input type="number" id="rbAccB1" min="0" max="100" style="width:90px"></div>
+        <div class="field"><label>★ 정확도 +2점(%)</label><input type="number" id="rbAccB2" min="0" max="100" style="width:90px"></div>
       </div>
       <div class="row">
         <div class="field"><label>④ 자율 실천 횟수</label><input type="number" id="rbSelf" min="0" max="60" style="width:90px"></div>
@@ -3898,7 +3902,9 @@ function renderBoardGo(){
 /* ---------- 성적 자동 집계 (실천 15점 환산) ---------- */
 /* 평가계획서(v2) ㉯ 운동 실천 — 5개 항목 중 만족 개수로 20/16/12/8/4점.
    문서의 유의사항대로 이 점수는 '보조 근거'이며, 최종 판단은 교사 관찰과 함께 한다. */
-const PRACTICE_STEPS={5:20,4:16,3:12,2:8,1:4,0:4};
+/* 필수 항목이 5개에서 4개로 줄었다(동작 정확도는 가산점으로 뺐다).
+   최고 20점·최저 4점이라는 계획서 기준은 그대로 두고 칸만 다시 나눈다. */
+const PRACTICE_STEPS={4:20,3:16,2:12,1:8,0:4};
 function practiceScore(name,cls){
   const all=records.filter(r=>r.name===name&&String(r.cls)===String(cls))
     .sort((a,b)=>String(a.date).localeCompare(String(b.date)));
@@ -3941,17 +3947,24 @@ function practiceScore(name,cls){
   const kept=(first!=null&&first>=(+rubric.keep||85)&&last>=first-3); // 우수 수준 유지
   const improved=(gainPct!=null&&gainPct>=(+rubric.gain||20))||kept;
 
+  /* 동작 정확도는 '필수 항목'에서 뺐다.
+     카메라 한 대로 관절 각도를 몇 도 단위까지 재는 일이라, 기기·거리·각도에 따라 편차가 커서
+     못 받은 학생이 손해를 보는 근거로 쓰기 어렵다. 대신 잘 나온 학생에게만 얹는 가산점으로
+     돌린다 — 인식이 안 된 학생은 잃는 것이 없고, 자세가 좋은 학생은 보상을 받는다. */
   const items=[
     assigned>0 && rate>=(+rubric.doneRate||80),               // ① 공통과제 기간 내 제출
     n>0 && Math.round(dil/n*100)>=(+rubric.hrRate||50),        // ② 심박 기준 성실 수행
-    n>0 && avgAcc>=(+rubric.acc||80),                          // ③ 동작 정확도 우수
-    selfGood>=(+rubric.selfN||5),                              // ④ 자율 실천 꾸준함(질적 조건 포함)
-    !!improved                                                 // ⑤ 향상 또는 우수 유지
+    selfGood>=(+rubric.selfN||5),                              // ③ 자율 실천 꾸준함(질적 조건 포함)
+    !!improved                                                 // ④ 향상 또는 우수 유지
   ];
   const met=items.filter(Boolean).length;
-  const score=n===0&&assigned===0?0:PRACTICE_STEPS[met];
+  const base=n===0&&assigned===0?0:PRACTICE_STEPS[met];
+  // 가산점 — 평균 정확도가 높을수록 1~2점. 계획서의 20점 상한은 넘지 않는다.
+  const b2=+rubric.accB2||92, b1=+rubric.accB1||85;
+  const accBonus=(n>0&&base>0)?(avgAcc>=b2?2:avgAcc>=b1?1:0):0;
+  const score=Math.min(20,base+accBonus);
   return {n,assigned,done,onTime,late,dil,acc:avgAcc,rate,selfGood,
-    gain:gainPct,first,last,items,met,score,
+    gain:gainPct,first,last,items,met,score,base,accBonus,accB1:b1,accB2:b2,
     nAll:all.length, skippedFirst:!!firstRec, firstRec};
 }
 // 전 학급 성적을 반마다 시트(탭)로 나눠 엑셀 파일 하나로 내보낸다.
@@ -3963,7 +3976,7 @@ $("gradeCsv").addEventListener("click",()=>{
   // 평가계획서 ㉯ 5개 항목의 ○×와 그 근거 수치를 함께 내보낸다 (최종 판단은 교사 몫)
   const OX=b=>b?"○":"×";
   const head=["번호","이름","성별",
-    "①과제제출","②심박","③정확도","④자율실천","⑤향상","만족개수","실천점수(20점)",
+    "①과제제출","②심박","③자율실천","④향상","만족개수","정확도가산","실천점수(20점)",
     "배정차시","이수차시","당일","보충","이수율(%)",
     "세션수",`심박달성(≥${rubric.hr})`,"심박달성률(%)","평균정확도(%)","질적자율실천",
     "초기평균","최근평균","향상률(%)","최고점수","퍼펙트그레이트율(%)","최근심박","누적P","최근수행일",
@@ -3973,7 +3986,7 @@ $("gradeCsv").addEventListener("click",()=>{
     rows:[head].concat((rosters[c]||[]).map(s=>{
       const st=statsFor(s.name,c), g=practiceScore(s.name,c), rf=reflectOf(s.name,c);
       return [num(s.no), s.name, s.sex||"",
-        OX(g.items[0]),OX(g.items[1]),OX(g.items[2]),OX(g.items[3]),OX(g.items[4]),g.met,num(g.score),
+        OX(g.items[0]),OX(g.items[1]),OX(g.items[2]),OX(g.items[3]),g.met,num(g.accBonus),num(g.score),
         g.assigned, g.done, g.onTime, g.late, g.assigned?g.rate:"",
         g.n, g.dil, g.n?Math.round(g.dil/g.n*100):"", g.n?g.acc:"", g.selfGood,
         g.first!=null?g.first:"", g.last!=null?g.last:"", g.gain!=null?g.gain:"",
@@ -4386,9 +4399,12 @@ function showStuDetail(cls,name){
     +line(st.fin,"🏁","마무리 성찰", hasFinal(st.rf)?"작성함":"미작성")
     +`</div>`;
 
-  h+=`<h4>🏃 운동 실천 (㉯) — 실천점수 ${g.score}점 · 만족 ${g.met}/5</h4>`
-    +`<div class="sd-ox">`+["과제 제출","심박 달성","동작 정확도","자율 실천","향상·유지"]
-      .map((t,i)=>`<span style="color:${g.items[i]?"var(--good)":"var(--bad)"}">${g.items[i]?"○":"×"} ${t}</span>`).join("")+`</div>`
+  h+=`<h4>🏃 운동 실천 (㉯) — 실천점수 ${g.score}점 `
+    +`<span style="font-weight:400;color:var(--muted)">(기본 ${g.base} · 만족 ${g.met}/4`
+    +`${g.accBonus?` · 정확도 가산 +${g.accBonus}`:""})</span></h4>`
+    +`<div class="sd-ox">`+["과제 제출","심박 달성","자율 실천","향상·유지"]
+      .map((t,i)=>`<span style="color:${g.items[i]?"var(--good)":"var(--bad)"}">${g.items[i]?"○":"×"} ${t}</span>`).join("")
+    +`<span style="color:${g.accBonus?"var(--gold)":"var(--muted)"}">${g.accBonus?"★":"☆"} 정확도 가산 ${g.accBonus?`+${g.accBonus}`:"없음"}</span></div>`
     +`<div class="hint">세션 ${g.n}회 · 심박달성 ${g.dil}회 · 평균 정확도 ${g.n?g.acc+"%":"–"}`
     +`${stat?` · 최고 ${stat.best}점`:""}${g.first!=null?` · 초기 ${g.first} → 최근 ${g.last}`:""}</div>`;
 
@@ -5007,7 +5023,7 @@ function buildGradeBook(){
     "㉮제출","㉮계획서 이름","㉮운동 구성","㉮설정","㉮목표","㉮체감 체력",
     "㉮생활자세","㉮운동습관","㉮식습관","㉮수면습관","㉮체력저하 원인","㉮왜 이 목표?","㉮왜 이렇게 계획?","㉮조심할 부위","㉮어떻게 고려?","㉮실천 시간·장소","㉮확인 방법","㉮주 실천(회)","㉮목표 실천(회)","㉮서술 칸수",
     // ㉯ 운동실천
-    "㉯①과제제출","㉯②심박","㉯③정확도","㉯④자율실천","㉯⑤향상","㉯만족개수","㉯실천점수(20)",
+    "㉯①과제제출","㉯②심박","㉯③자율실천","㉯④향상","㉯만족개수","㉯정확도가산","㉯실천점수(20)",
     "㉯배정차시","㉯이수차시","㉯이수율(%)","㉯세션수","㉯심박달성","㉯평균정확도(%)","㉯향상률(%)","㉯최고점수","㉯최근수행일",
     // ㉰ 자기성찰
     // 수시 성찰은 운동 횟수만큼 늘어나므로 여기엔 요약만 두고, 원문은 마지막 시트에 한 줄씩 편다
@@ -5033,7 +5049,7 @@ function buildGradeBook(){
         p?(p.habitWhy||""):"", p?(p.goalWhy||""):"", p?(p.reason||""):"", p?(p.careText||""):"", p?(p.careWhy||""):"",
         p?(p.when||""):"", p?(p.check||""):"",
         p?(num(p.freq)||""):"", p?(num(p.target)||""):"", p?planWrote(p):"",
-        OX(g.items[0]),OX(g.items[1]),OX(g.items[2]),OX(g.items[3]),OX(g.items[4]),g.met,num(g.score),
+        OX(g.items[0]),OX(g.items[1]),OX(g.items[2]),OX(g.items[3]),g.met,num(g.accBonus),num(g.score),
         g.assigned, g.done, g.assigned?num(g.rate):"", g.n, g.dil, g.n?num(g.acc):"",
         g.gain!=null?num(g.gain):"", st?num(st.best):"", st?st.date:"",
         logs.length, fe==null?"":num(fe),
@@ -6397,11 +6413,12 @@ const RUBRIC_DEFAULT={
   rise:40,
   doneRate:80,   // 항목1 공통과제 이수율(%) 합격선
   hrRate:50,     // 항목2 심박 달성 세션 비율(%) 합격선
-  acc:80,        // 항목3 평균 정확도(%) 합격선
-  selfN:5,       // 항목4 질적 조건을 갖춘 자율 실천 횟수
-  gain:20,       // 항목5 남은 향상 여지 대비 채운 비율(%)
-  keep:85,       // 항목5 처음부터 이 점수 이상이면 '유지'도 향상으로 인정
-  skipFirst:true,// 1차시는 앱 사용법을 익히는 시간 — 맨 처음 운동을 ②③⑤ 계산에서 뺀다
+  accB1:85,      // 평균 정확도가 이 이상이면 가산 +1점
+  accB2:92,      // 이 이상이면 가산 +2점 (정확도는 필수 항목이 아니라 가산점이다)
+  selfN:5,       // 항목3 질적 조건을 갖춘 자율 실천 횟수
+  gain:20,       // 항목4 남은 향상 여지 대비 채운 비율(%)
+  keep:85,       // 항목4 처음부터 이 점수 이상이면 '유지'도 향상으로 인정
+  skipFirst:true,// 1차시는 앱 사용법을 익히는 시간 — 맨 처음 운동을 심박·정확도·향상 계산에서 뺀다
   judge:"normal" // 동작 판정 난이도 — 아래 JUDGE_TIERS 참고
 };
 /* 판정 난이도.
@@ -7017,7 +7034,9 @@ function judgeHint(){
 function renderRubric(){
   if(!$("rbHr"))return;
   $("rbHr").value=rubric.hr; $("rbHrRate").value=rubric.hrRate;
-  $("rbDone").value=rubric.doneRate; $("rbAcc").value=rubric.acc;
+  $("rbDone").value=rubric.doneRate;
+  if($("rbAccB1"))$("rbAccB1").value=rubric.accB1!==undefined?rubric.accB1:85;
+  if($("rbAccB2"))$("rbAccB2").value=rubric.accB2!==undefined?rubric.accB2:92;
   $("rbSelf").value=rubric.selfN; $("rbGain").value=rubric.gain;
   $("rbKeep").value=rubric.keep; $("rbRise").checked=!!rubric.useRise;
   if($("rbSkipFirst"))$("rbSkipFirst").checked=(rubric.skipFirst!==false);
@@ -7041,7 +7060,8 @@ if($("rbJudgePick"))$("rbJudgePick").addEventListener("click",e=>{
 });
 if($("rbSave"))$("rbSave").addEventListener("click",()=>{
   rubric={hr:+$("rbHr").value||130, hrRate:+$("rbHrRate").value||0,
-    doneRate:+$("rbDone").value||0, acc:+$("rbAcc").value||0,
+    doneRate:+$("rbDone").value||0,
+    accB1:+$("rbAccB1").value||85, accB2:+$("rbAccB2").value||92,
     selfN:+$("rbSelf").value||0, gain:+$("rbGain").value||0,
     keep:+$("rbKeep").value||85, useRise:$("rbRise").checked, rise:40,
     skipFirst:$("rbSkipFirst")?$("rbSkipFirst").checked:true,
