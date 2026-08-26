@@ -1602,7 +1602,11 @@ const EX={
      이제 adaptive로 그 학생이 '누워 있을 때의 각도'를 스스로 기준 삼아,
      거기서 얼마나 말아올렸는지(curl)로 판단한다. 어떤 무릎 각도에서도 똑같이 동작한다. */
   crunch:{type:"rep",joints:[[12,24,26],[11,23,25]],minVis:0.28,
-    adaptive:true, dropDown:20, dropUp:8, fullCurl:35, minRest:95,
+    /* 값을 실제 동작에 맞춰 다시 잡았다 — 예전 값(20/8/35, 최소 450ms)으로는
+       ① 20도 이하로 말아올리면 아예 세어지지 않았고
+       ② 1초에 한 번 정도의 보통 속도가 '너무 빠름'으로 버려졌다(크런치는 원래 빠른 동작이다).
+       상체를 바닥에서 떼는 정도(어깨-골반-무릎 각도로 10도 남짓)면 인정한다. */
+    adaptive:true, dropDown:9, dropUp:4, fullCurl:22, minRest:70, minRepMs:200,
     down:130,up:150,perfect:105,          // adaptive를 못 쓸 때(기준을 못 잡았을 때)의 예비값
     pose:"floor",travelPt:"shoulder",travelMin:0.02,
     good:"복부 수축 좋아요!",shallow:"상체를 더 말아올리기"},
@@ -1619,7 +1623,7 @@ const EX={
   //  ③ 뛰기 위해 상체를 앞으로 숙이고, 착지 순간 좌우가 잠깐 어긋난다 — 스쿼트에서는 잘못된
   //     자세지만 점프스쿼트에서는 정상이다 → form(상체 기울기 감점)과 sym(좌우 대칭)을 뺀다.
   // 부정행위 방지장치(서 있어야 함·엉덩이가 실제로 움직여야 함)는 그대로 남는다.
-  jumpsquat:{type:"rep",joints:[[24,26,28],[23,25,27]],down:115,up:155,perfect:95,minRepMs:300,
+  jumpsquat:{type:"rep",joints:[[24,26,28],[23,25,27]],down:115,up:155,perfect:95,
     pose:"stand",travelPt:"hip",travelMin:0.05,
     good:"파워풀한 점프!",shallow:"더 깊게 앉았다 점프"},
   highknee:{type:"knee",pose:"stand",good:"무릎 높이 최고!",shallow:"무릎을 허리까지!"},
@@ -2605,7 +2609,14 @@ function bestSide(lm,joints){
      ③ 좌우 대칭   — 한쪽 팔다리만 흔들지 않았는가(양쪽이 다 보일 때만 확인)
      ④ 걸린 시간   — 한 번 하는 데 최소한의 시간이 걸렸는가
    판정을 못 할 만큼 몸이 안 보일 때는 막지 않고 넘어간다(잘 하고 있는데 0회가 되는 쪽이 더 나쁘다). */
-const MIN_REP_MS=450;          // 이보다 빠른 '반복'은 관절 튀김이나 요령으로 본다
+/* 한 번 내려갔다 올라오는 데 최소한 걸려야 하는 시간.
+   450ms로 잡았더니 타바타 속도(0.8초에 한 번)로 하는 스쿼트·푸쉬업이 10회 중 0회로
+   세어졌다 — 이 시간은 '전체 한 번'이 아니라 '문턱 아래에 머문 시간'만 재기 때문에
+   실제 동작 시간보다 훨씬 짧게 나온다. 20초 안에 최대한 많이 하는 운동인데 정상 속도가
+   전부 막혀 있었다.
+   관절 튀김·중복 카운트는 REP_DEBOUNCE_MS(반복 사이 250ms)와 이동량 검사가 막으므로,
+   이 값은 '사람이 낼 수 있는 최소 속도' 정도로만 둔다. */
+const MIN_REP_MS=180;
 const SYM_TOL=45;              // 좌우 각도가 이만큼 넘게 벌어지면 한쪽만 움직인 것으로 본다
 function midPt(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }
 function torsoDir(lm){
