@@ -1132,6 +1132,7 @@
         <div class="field"><label>② 심박 기준(bpm)</label><input type="number" id="rbHr" min="90" max="200" style="width:90px"></div>
         <div class="field"><label>② 달성 비율(%)</label><input type="number" id="rbHrRate" min="0" max="100" style="width:90px"></div>
         <div class="field"><label>① 이수율(%)</label><input type="number" id="rbDone" min="0" max="100" style="width:90px"></div>
+        <div class="field"><label>① 건강 제외 한도(회)</label><input type="number" id="rbExMax" min="0" max="60" style="width:110px"></div>
         <div class="field"><label>★ 정확도 +1점(%)</label><input type="number" id="rbAccB1" min="0" max="100" style="width:90px"></div>
         <div class="field"><label>★ 정확도 +2점(%)</label><input type="number" id="rbAccB2" min="0" max="100" style="width:90px"></div>
       </div>
@@ -1150,6 +1151,9 @@
               ①공통과제 이수와 ④자율 실천 횟수에는 그대로 넣습니다(참여는 한 것이므로).
               운동이 한 번뿐인 학생은 뺄 것이 없어 그대로 계산합니다.</span></span></label>
       </div>
+      <div class="hint" style="margin-top:10px">
+        <b>① 건강 제외 한도</b> — 몸이 안 좋아 못 한 차시는 이수율 분모에서 뺍니다(교사가 <b>✅ 과제 현황</b>에서 이름을 눌러 표시한 것만).
+        <b>한도보다 많이 빠지면 빼지 않고</b> 전체 차시로 계산합니다. 한도를 넘은 학생은 아래 학생별 화면에 따로 표시되니 직접 판단하세요.</div>
       <div class="hint" style="margin-top:10px">
         판정 난이도(🍜 순한맛~지옥맛)는 <b>📋 공통 과제 내기 → 과제 운동설계</b>로 옮겼습니다.</div>
       <div class="row" style="margin-top:10px">
@@ -2170,13 +2174,21 @@ function renderTaskBoard(){
     /* 안 한 학생을 둘로 가른다 — 몸이 안 좋아 자가진단에 체크한 학생과, 아무것도 안 한 학생.
        기준은 '그 반에 이 과제를 낸 날'에 체크가 있었는지다. */
     const rest=roster.filter(st=>!first[st.name]);
-    const sickList=rest.filter(st=>given&&healthNoteOn(tsCls,st.name,given));
-    const todoList=rest.filter(st=>!(given&&healthNoteOn(tsCls,st.name,given)));
+    /* 인정은 교사가 한다 — 이름을 눌러 표시한 학생만 '건강 사유'로 간다.
+       학생이 앱에서 자가진단에 체크한 것은 옆에 🩹로 귀띔만 한다. */
+    const sickList=rest.filter(st=>isExcused(tsCls,x.id,st.name));
+    const todoList=rest.filter(st=>!isExcused(tsCls,x.id,st.name));
     const done=doneList.length;
     const pct=total?Math.round(done/total*100):0;
     const col=done===0?"var(--bad)":(done>=total?"var(--good)":"var(--work)");
     const nameStr=list=>list.length
       ? list.map(st=>`<span style="white-space:nowrap">${st.no}&nbsp;${escHtml(st.name)}</span>`).join(" · ")
+      : "<span style='opacity:.6'>없음</span>";
+    // 누를 수 있는 이름 — 아직 안 함 ↔ 건강 사유를 오간다
+    const pickStr=(list,on)=>list.length
+      ? list.map(st=>`<span class="ex-pick" data-task="${x.id}" data-no="${st.no}" data-name="${escHtml(st.name)}"
+            title="${on?"건강 사유 해제":"질병 등으로 못 한 학생이면 누르세요"}"
+            style="white-space:nowrap;cursor:pointer;border:1px solid var(--line);border-radius:6px;padding:1px 6px;display:inline-block;margin:1px 0">${st.no}&nbsp;${escHtml(st.name)}${(!on&&given&&healthNoteOn(tsCls,st.name,given))?" 🩹":""}${on?" ✓":""}</span>`).join(" ")
       : "<span style='opacity:.6'>없음</span>";
     h+=`<div class="step-box" style="margin:0 0 8px;padding:10px 12px">
       <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
@@ -2187,12 +2199,15 @@ function renderTaskBoard(){
       <div style="height:6px;border-radius:4px;background:var(--line);margin:7px 0 8px;overflow:hidden">
         <div style="height:100%;width:${pct}%;background:${col}"></div>
       </div>
-      <div style="font-size:13px;line-height:1.7"><b style="color:var(--bad)">아직 안 함 ${todoList.length}명</b> — ${nameStr(todoList)}</div>
-      ${sickList.length?`<div style="font-size:13px;line-height:1.7;margin-top:4px"><b style="color:var(--gold)">건강 사유 ${sickList.length}명</b> — ${nameStr(sickList)}<span class="hint"> (자가진단에 체크해 운동하지 않음)</span></div>`:""}
+      <div style="font-size:13px;line-height:1.9"><b style="color:var(--bad)">아직 안 함 ${todoList.length}명</b> <span class="hint">(이름을 누르면 건강 사유로 옮깁니다 · 🩹는 학생이 자가진단에 체크한 표시)</span><br>${pickStr(todoList,false)}</div>
+      ${sickList.length?`<div style="font-size:13px;line-height:1.9;margin-top:5px"><b style="color:var(--gold)">건강 사유 ${sickList.length}명</b> <span class="hint">(다시 누르면 해제)</span><br>${pickStr(sickList,true)}</div>`:""}
       <div style="font-size:13px;line-height:1.7;margin-top:4px;color:var(--muted)"><b style="color:var(--good)">제출 ${done}명</b> — ${nameStr(doneList)}</div>
     </div>`;
   });
   box.innerHTML=h;
+  box.querySelectorAll(".ex-pick").forEach(el=>el.addEventListener("click",()=>{
+    toggleExcuse(tsCls, el.dataset.task, el.dataset.no, el.dataset.name);
+  }));
   box.querySelectorAll("b[data-ts]").forEach(b=>b.addEventListener("click",()=>{
     tsTask=b.dataset.ts; renderTaskRows();
     const tb=$("taskRows");
@@ -2227,15 +2242,15 @@ function renderTaskRows(){
     rosters[cls].forEach(s=>{
       const r=done[s.name];
       const tr=document.createElement("tr");
-      const sick=!r&&givenFor(cls)&&healthNoteOn(cls,s.name,givenFor(cls));
+      const sick=!r&&isExcused(cls,id,s.name);
       tr.innerHTML=r
         ?`<td class="num">${s.no}</td><td>${s.name}</td><td>${shortCls(cls)}</td>${cell(r)}`
-        :`<td class="num">${s.no}</td><td>${s.name}</td><td>${shortCls(cls)}</td><td colspan="5" style="color:${sick?"var(--gold)":"var(--muted)"}">${sick?"건강 사유 — 자가진단 체크(운동 안 함)":"미완료"}</td>`;
+        :`<td class="num">${s.no}</td><td>${s.name}</td><td>${shortCls(cls)}</td><td colspan="5" style="color:${sick?"var(--gold)":"var(--muted)"}">${sick?"건강 사유 — 선생님 확인(제외)":"미완료"}</td>`;
       if(tb)tb.appendChild(tr);
     });
     const list=Object.values(done);
     const on=list.filter(r=>String(r.date).slice(0,10)===givenFor(cls)).length;
-    const sickN=rosters[cls].filter(st=>!done[st.name]&&givenFor(cls)&&healthNoteOn(cls,st.name,givenFor(cls))).length;
+    const sickN=rosters[cls].filter(st=>!done[st.name]&&isExcused(cls,id,st.name)).length;
     if(cnt)cnt.textContent=`${shortCls(cls)}반 — ${list.length}/${rosters[cls].length}명 완료 (당일 ${on} · 보충 ${list.length-on})`
       +(sickN?` · 건강 사유 ${sickN}명`:"");
     return;
@@ -4053,10 +4068,10 @@ function practiceScore(name,cls){
     .sort((a,b)=>String(a.date).localeCompare(String(b.date)));
   const mine=classLessons(cls); // 이 반에 배정된 차시들 (낸 순서대로 1,2,3…)
   const assigned=mine.length;
-  let done=0,onTime=0,late=0;
+  let done=0,onTime=0,late=0,excusedN=0;
   mine.forEach(x=>{
     const rec=all.filter(r=>r.taskId===x.id)[0]; // 첫 수행 기준
-    if(!rec)return;
+    if(!rec){ if(isExcused(cls,x.id,name))excusedN++; return; }
     done++;
     const givenAt=(x.a.classes&&typeof x.a.classes[cls]==="string")?x.a.classes[cls]:(x.a.created||"");
     if(givenAt&&String(rec.date).slice(0,10)===givenAt)onTime++; else late++;
@@ -4072,7 +4087,16 @@ function practiceScore(name,cls){
   const n=rs.length;
   const dil=rs.filter(isDiligent).length;
   const avgAcc=n?Math.round(rs.reduce((a,r)=>a+(+r.acc||0),0)/n):0;
-  const rate=assigned?Math.round(done/assigned*100):0;
+  /* 몸이 안 좋아 못 한 차시는 분모에서 뺀다 — 본인이 어쩔 수 없는 이유로 이수율이 깎이지 않게.
+     다만 정한 한도보다 많이 빠지면 빼지 않고 전체 차시로 계산한다. 참여한 횟수가 너무 적으면
+     '몇 %'라는 숫자 자체가 성실도를 말해 주지 못하기 때문이다(선생님 결정).
+     한도를 넘어 제외가 취소된 학생은 아래 상세 화면에 그대로 표시해, 선생님이 따로 판단하실 수 있게 한다. */
+  const exLimit=(rubric.excuseMax==null?3:+rubric.excuseMax);
+  const exUsed=(excusedN>0&&excusedN<=exLimit)?excusedN:0;
+  const exOver=excusedN>exLimit;                    // 한도 초과 — 제외를 적용하지 않음
+  const denom=assigned-exUsed;
+  const allExcused=assigned>0&&denom<=0;            // 배정된 차시가 모두 건강 사유
+  const rate=assigned?(denom>0?Math.round(done/denom*100):100):0;
 
   // 항목4: 문서 지침대로 단순 횟수가 아니라 '질적 조건(심박 중강도 이상)'을 갖춘 자율 실천만 센다
   //        (참여 횟수를 보는 항목이라 첫 운동도 포함해 센다)
@@ -4107,6 +4131,7 @@ function practiceScore(name,cls){
   const accBonus=(n>0&&base>0)?(avgAcc>=b2?2:avgAcc>=b1?1:0):0;
   const score=Math.min(20,base+accBonus);
   return {n,assigned,done,onTime,late,dil,acc:avgAcc,rate,selfGood,
+    excusedN,exUsed,exLimit,exOver,allExcused,denom,
     gain:gainPct,first,last,items,met,score,base,accBonus,accB1:b1,accB2:b2,
     nAll:all.length, skippedFirst:!!firstRec, firstRec};
 }
@@ -4120,7 +4145,7 @@ $("gradeCsv").addEventListener("click",()=>{
   const OX=b=>b?"○":"×";
   const head=["번호","이름","성별",
     "①과제제출","②심박","③자율실천","④향상","만족개수","정확도가산","실천점수(20점)",
-    "배정차시","이수차시","당일","보충","이수율(%)",
+    "배정차시","이수차시","건강제외","제외적용","당일","보충","이수율(%)",
     "세션수",`심박달성(≥${rubric.hr})`,"심박달성률(%)","평균정확도(%)","질적자율실천",
     "초기평균","최근평균","향상률(%)","최고점수","퍼펙트그레이트율(%)","최근심박","누적P","최근수행일",
     "㉰수시성찰(회)","㉰마무리성찰"];
@@ -4130,7 +4155,7 @@ $("gradeCsv").addEventListener("click",()=>{
       const st=statsFor(s.name,c), g=practiceScore(s.name,c), rf=reflectOf(s.name,c);
       return [num(s.no), s.name, s.sex||"",
         OX(g.items[0]),OX(g.items[1]),OX(g.items[2]),OX(g.items[3]),g.met,num(g.accBonus),num(g.score),
-        g.assigned, g.done, g.onTime, g.late, g.assigned?g.rate:"",
+        g.assigned, g.done, g.excusedN, g.exOver?"한도초과-미적용":(g.exUsed||""), g.onTime, g.late, g.assigned?g.rate:"",
         g.n, g.dil, g.n?Math.round(g.dil/g.n*100):"", g.n?g.acc:"", g.selfGood,
         g.first!=null?g.first:"", g.last!=null?g.last:"", g.gain!=null?g.gain:"",
         st?num(st.best):"", (st&&st.gRate!=null)?num(st.gRate):"", st?st.hr:"", st?num(st.pts):0, st?st.date:"",
@@ -4535,7 +4560,9 @@ function showStuDetail(cls,name){
   const lateN=logs.filter(l=>l.late).length;
 
   let h=`<div class="stu-detail"><div class="sd-sum">`
-    +line(st.task,"📋","공통과제", g.assigned?`${g.done}/${g.assigned}차시 이수`:"배정된 과제 없음")
+    +line(st.task,"📋","공통과제", g.assigned
+        ?`${g.done}/${g.assigned}차시 이수${g.exUsed?` (건강 제외 ${g.exUsed}회 → ${g.done}/${g.denom})`:""}`
+        :"배정된 과제 없음")
     +line(st.self,"🏃","자율 실천", st.selfN?`${st.selfN}회 (전체 세션 ${g.n}회)`:"기록 없음")
     +line(st.plan,"📝","계획서", st.best?`제출 · 서술 ${planWrote(st.best)}/5칸`:"미제출")
     +line(st.log,"✍️","성찰 일지", logs.length?`${logs.length}회${lateN?` · 당일 아님 ${lateN}건`:""}`:"작성 없음")
@@ -4549,7 +4576,14 @@ function showStuDetail(cls,name){
       .map((t,i)=>`<span style="color:${g.items[i]?"var(--good)":"var(--bad)"}">${g.items[i]?"○":"×"} ${t}</span>`).join("")
     +`<span style="color:${g.accBonus?"var(--gold)":"var(--muted)"}">${g.accBonus?"★":"☆"} 정확도 가산 ${g.accBonus?`+${g.accBonus}`:"없음"}</span></div>`
     +`<div class="hint">세션 ${g.n}회 · 심박달성 ${g.dil}회 · 평균 정확도 ${g.n?g.acc+"%":"–"}`
-    +`${stat?` · 최고 ${stat.best}점`:""}${g.first!=null?` · 초기 ${g.first} → 최근 ${g.last}`:""}</div>`;
+    +`${stat?` · 최고 ${stat.best}점`:""}${g.first!=null?` · 초기 ${g.first} → 최근 ${g.last}`:""}</div>`
+    /* 한도를 넘어 제외가 취소된 학생은 반드시 눈에 띄게 알린다 —
+       한 번 더 아팠다는 이유로 이수율이 크게 떨어지는 구간이라, 선생님이 직접 보고 판단해야 한다. */
+    +`${g.exOver?`<div class="hint" style="color:var(--bad);font-weight:700;margin-top:4px">
+        ⚠️ 건강 사유 ${g.excusedN}회 — 제외 한도(${g.exLimit}회)를 넘어 <b>제외를 적용하지 않았습니다</b>
+        (${g.done}/${g.assigned} = ${g.rate}%). 사정을 아신다면 한도를 올리거나 점수를 직접 조정하세요.</div>`:""}`
+    +`${g.allExcused?`<div class="hint" style="color:var(--gold);font-weight:700;margin-top:4px">
+        ⚠️ 배정된 ${g.assigned}차시가 <b>모두 건강 사유</b>입니다 — 참여 근거가 없어 이수율은 100%로 두었습니다. 직접 확인하세요.</div>`:""}`;
 
   h+=`<h4>📝 운동 계획서 (㉮)</h4>`;
   if(!st.best)h+=`<div class="sd-none">아직 제출하지 않았습니다.</div>`;
@@ -5017,7 +5051,7 @@ function renderFinalReflect(){
   const cell=(k,v)=>`<div><div class="hint">${k}</div><b class="num">${v}</b></div>`;
   $("frSummary").innerHTML=
     cell("수행한 세션",g.n+"회")
-    +cell("공통과제 이수",g.assigned?`${g.done}/${g.assigned}차시`:"–")
+    +cell("공통과제 이수",g.assigned?`${g.done}/${g.assigned}차시${g.exUsed?` (건강 제외 ${g.exUsed})`:""}`:"–")
     +cell("초기 → 최근 점수",(g.first!=null?`${g.first} → ${g.last}`:"–"))
     +cell("평균 정확도",g.n?g.acc+"%":"–")
     +cell("심박 기준 달성",g.n?`${g.dil}회`:"–")
@@ -5167,7 +5201,7 @@ function buildGradeBook(){
     "㉮생활자세","㉮운동습관","㉮식습관","㉮수면습관","㉮체력저하 원인","㉮왜 이 목표?","㉮왜 이렇게 계획?","㉮조심할 부위","㉮어떻게 고려?","㉮실천 시간·장소","㉮확인 방법","㉮주 실천(회)","㉮목표 실천(회)","㉮서술 칸수",
     // ㉯ 운동실천
     "㉯①과제제출","㉯②심박","㉯③자율실천","㉯④향상","㉯만족개수","㉯정확도가산","㉯실천점수(20)",
-    "㉯배정차시","㉯이수차시","㉯이수율(%)","㉯세션수","㉯심박달성","㉯평균정확도(%)","㉯향상률(%)","㉯최고점수","㉯최근수행일",
+    "㉯배정차시","㉯이수차시","㉯건강제외","㉯이수율(%)","㉯세션수","㉯심박달성","㉯평균정확도(%)","㉯향상률(%)","㉯최고점수","㉯최근수행일",
     // ㉰ 자기성찰
     // 수시 성찰은 운동 횟수만큼 늘어나므로 여기엔 요약만 두고, 원문은 마지막 시트에 한 줄씩 편다
     "㉰수시성찰(회)","㉰자기평가 평균(3점)","㉰최근 성찰일","㉰최근 성찰 내용","㉰마무리성찰",
@@ -5193,7 +5227,7 @@ function buildGradeBook(){
         p?(p.when||""):"", p?(p.check||""):"",
         p?(num(p.freq)||""):"", p?(num(p.target)||""):"", p?planWrote(p):"",
         OX(g.items[0]),OX(g.items[1]),OX(g.items[2]),OX(g.items[3]),g.met,num(g.accBonus),num(g.score),
-        g.assigned, g.done, g.assigned?num(g.rate):"", g.n, g.dil, g.n?num(g.acc):"",
+        g.assigned, g.done, g.exOver?"한도초과-미적용":(g.excusedN||""), g.assigned?num(g.rate):"", g.n, g.dil, g.n?num(g.acc):"",
         g.gain!=null?num(g.gain):"", st?num(st.best):"", st?st.date:"",
         logs.length, fe==null?"":num(fe),
         lastLog?String(lastLog.date).slice(0,10):"", lastTxt, hasFinal(rf)?"작성":"미작성",
@@ -6521,6 +6555,43 @@ function sendHealthNote(items){
   if(fdb)fmod.set(fmod.ref(fdb,`health/${cls}/${raw}/${date}`),note).catch(()=>{});
   return true;
 }
+/* ---------- 건강 사유 제외 (교사가 표시) ----------
+   인정은 교사가 한다. 학생이 앱에서 자가진단에 체크한 것은 '이 학생이 오늘 몸이 안 좋다고 했다'는
+   참고 표시로만 쓰고, 성적 계산에는 교사가 눌러 표시한 것만 반영한다.
+   반 안에서는 번호가 유일하므로 번호를 키로 쓴다(동명이인이 있어도 꼬이지 않는다). */
+const EXCUSE_KEY="tabataExcused";
+let excused={};        // {반}{과제id}{번호} = {name,ts}
+function loadExcusedLocal(){
+  try{ excused=JSON.parse(localStorage.getItem(EXCUSE_KEY)||"{}")||{}; }catch(e){ excused={}; }
+}
+function excuseNoOf(cls,name){
+  const st=(rosters[cls]||[]).find(x=>x.name===name);
+  return st?String(st.no):"";
+}
+function isExcused(cls,taskId,name){
+  const no=excuseNoOf(cls,name);
+  return !!(no && excused[cls] && excused[cls][taskId] && excused[cls][taskId][no]);
+}
+function toggleExcuse(cls,taskId,no,name){
+  if(!excused[cls])excused[cls]={};
+  if(!excused[cls][taskId])excused[cls][taskId]={};
+  const on=!!excused[cls][taskId][no];
+  if(on)delete excused[cls][taskId][no];
+  else excused[cls][taskId][no]={name,ts:Date.now()};
+  try{ localStorage.setItem(EXCUSE_KEY,JSON.stringify(excused)); }catch(e){}
+  if(fdb){
+    const r=fmod.ref(fdb,`excused/${cls}/${taskId}/${no}`);
+    (on?fmod.remove(r):fmod.set(r,excused[cls][taskId][no])).catch(()=>{});
+  }
+  renderTaskBoard(); renderTaskRows(); renderStats();
+}
+function attachExcused(){
+  if(!fdb||!isTeacher())return;
+  fmod.onValue(fmod.ref(fdb,"excused"),snap=>{
+    excused=snap.val()||{};
+    renderTaskBoard(); renderTaskRows(); renderStats();
+  },()=>{ /* 권한이 없으면 이 기기에 표시한 것만 쓴다 */ });
+}
 function attachHealth(){
   if(!fdb||!isTeacher())return;
   fmod.onValue(fmod.ref(fdb,"health"),snap=>{
@@ -6529,7 +6600,7 @@ function attachHealth(){
     renderTaskRows();
   },()=>{ /* 권한이 없으면 기기에 남은 것만 쓴다 */ });
 }
-loadHealthLocal();
+loadHealthLocal(); loadExcusedLocal();
 function attachReports(){
   if(!fdb||!isTeacher())return;
   fmod.onValue(fmod.ref(fdb,"reports"),snap=>{
@@ -6620,6 +6691,7 @@ const RUBRIC_DEFAULT={
   useRise:true,  // 운동 전 대비 +40도 인정할지
   rise:40,
   doneRate:80,   // 항목1 공통과제 이수율(%) 합격선
+  excuseMax:3,   // 항목1 건강 사유로 빼 줄 수 있는 최대 차시 수 — 이보다 많이 빠지면 빼지 않는다
   hrRate:50,     // 항목2 심박 달성 세션 비율(%) 합격선
   accB1:85,      // 평균 정확도가 이 이상이면 가산 +1점
   accB2:92,      // 이 이상이면 가산 +2점 (정확도는 필수 항목이 아니라 가산점이다)
@@ -7244,6 +7316,7 @@ function renderRubric(){
   if(!$("rbHr"))return;
   $("rbHr").value=rubric.hr; $("rbHrRate").value=rubric.hrRate;
   $("rbDone").value=rubric.doneRate;
+  if($("rbExMax"))$("rbExMax").value=(rubric.excuseMax==null?3:rubric.excuseMax);
   if($("rbAccB1"))$("rbAccB1").value=rubric.accB1!==undefined?rubric.accB1:85;
   if($("rbAccB2"))$("rbAccB2").value=rubric.accB2!==undefined?rubric.accB2:92;
   $("rbSelf").value=rubric.selfN; $("rbGain").value=rubric.gain;
@@ -7269,7 +7342,7 @@ if($("rbJudgePick"))$("rbJudgePick").addEventListener("click",e=>{
 });
 if($("rbSave"))$("rbSave").addEventListener("click",()=>{
   rubric={hr:+$("rbHr").value||130, hrRate:+$("rbHrRate").value||0,
-    doneRate:+$("rbDone").value||0,
+    doneRate:+$("rbDone").value||0, excuseMax:$("rbExMax")?(+$("rbExMax").value||0):3,
     accB1:+$("rbAccB1").value||85, accB2:+$("rbAccB2").value||92,
     selfN:+$("rbSelf").value||0, gain:+$("rbGain").value||0,
     keep:+$("rbKeep").value||85, useRise:$("rbRise").checked, rise:40,
@@ -7383,7 +7456,7 @@ async function ensureAuth(app){
       Object.keys(reflections).forEach(k=>delete reflections[k]);
       Object.keys(reports).forEach(k=>delete reports[k]); renderReports();
     }
-    if(fmod&&fdb){ attachProtected(fmod.onValue,fmod.ref); attachReports(); attachHealth(); attachPresenceListener(); }
+    if(fmod&&fdb){ attachProtected(fmod.onValue,fmod.ref); attachReports(); attachHealth(); attachExcused(); attachPresenceListener(); }
     renderAuth();
     if(u)toast("교사 로그인됨 — 성찰·계획서를 볼 수 있습니다","good","🔐");
   });
@@ -7561,6 +7634,7 @@ function attachFbListeners(){
   attachProtected(onValue,ref);
   attachReports();   // 학생이 알린 앱 문제 (교사만 읽힌다)
   attachHealth();    // 건강 자가진단 체크 (교사만 읽힌다)
+  attachExcused();   // 교사가 표시한 건강 사유 제외
   // 채점 기준은 서버 값을 따른다 — 교사 기기마다 학생 점수가 달라지지 않게
   onValue(ref(fdb,"rubric"),snap=>{
     const v=snap.val(); if(!v)return;
