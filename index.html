@@ -3208,6 +3208,9 @@ function startBgm(mode){
 function stopBgm(){ if(bgmTimer){clearInterval(bgmTimer);bgmTimer=null;} bgmMode=null; audioIdle(); }
 const video=$("video"),overlay=$("overlay"),ctx=overlay.getContext("2d");
 let landmarker=null,draw=null,running=false,rafId=null,lastVid=-1;
+/* 카메라 없이 하는 운동 — 폰 카메라가 아예 안 열리는 학생도 수업에 참여할 수 있게.
+   자세 채점만 빠지고 타이머·소리·심박·과제 이수는 그대로다. */
+let noCamMode=false, lastCamFail="";
 function stopWorkoutCam(){
   try{const s=video.srcObject; if(s){s.getTracks().forEach(t=>t.stop()); video.srcObject=null;}}catch(e){}
 }
@@ -3317,7 +3320,50 @@ async function flipWorkoutCam(){
     toast("그 카메라를 열 수 없어 원래대로 되돌렸어요","task","⚠️");
   }
 }
+/* 카메라를 못 여는 진짜 이유를 짚어 준다.
+   "권한이 없다"는 메시지만으로는 학생이 무엇을 해야 할지 모른다. 실제로 학교에서 가장 잦은
+   원인 두 가지는 ① 카카오톡·네이버 같은 앱 안의 브라우저로 열었다 ② 주소가 https가 아니다 —
+   둘 다 권한을 아무리 허용해도 절대 안 되는 경우라, 이걸 먼저 갈라 줘야 한다. */
+function camBlockReason(errName){
+  const ua=navigator.userAgent||"";
+  // 정규식 대신 낱말 목록으로 본다 — 이스케이프가 필요 없어 안전하다
+  /* 앱 안에 들어 있는 브라우저만 골라낸다. 네이버 웨일(whale)이나 네이버 앱의 정식 브라우저는
+     카메라가 되므로 넣지 않는다 — 'naver(inapp'처럼 인앱임을 나타내는 표식만 본다. */
+  const APPS=["kakaotalk","naver(inapp","inapp;","instagram","fban","fbav","fb_iab","line/","daumapps","everytime","band/"];
+  const low=ua.toLowerCase();
+  const inApp=APPS.some(k=>low.indexOf(k)>=0);
+  if(inApp) return {
+    kind:"inapp",
+    title:"앱 안의 브라우저에서는 카메라를 쓸 수 없어요",
+    tip:"카카오톡·네이버 같은 앱 안에서 링크를 열면 카메라가 막힙니다.<br>"
+       +"화면 <b>오른쪽 아래 [⋯]</b>를 눌러 <b>‘다른 브라우저로 열기’</b>(Chrome·Safari)를 고른 뒤 다시 해 주세요."};
+  if(!window.isSecureContext) return {
+    kind:"http",
+    title:"주소가 안전하지 않아 카메라가 막혔어요",
+    tip:"주소가 <b>https://</b> 로 시작해야 카메라를 쓸 수 있습니다.<br>선생님께 받은 주소를 다시 확인해 주세요."};
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) return {
+    kind:"unsupported",
+    title:"이 브라우저는 카메라를 지원하지 않아요",
+    tip:"Chrome 또는 Safari로 열어 주세요."};
+  if(/NotAllowed|Permission|SecurityError/i.test(errName||"")) return {
+    kind:"denied",
+    title:"카메라 권한이 꺼져 있어요",
+    tip:"<b>안드로이드</b>: 주소창 왼쪽 <b>자물쇠</b> → 권한 → 카메라 <b>허용</b><br>"
+       +"<b>아이폰</b>: 설정 → Safari → <b>카메라</b> → 허용, 또는 주소창 왼쪽 <b>ᴀA</b> → 웹사이트 설정<br>"
+       +"바꾼 뒤에는 <b>새로고침</b> 해야 적용됩니다."};
+  if(/NotReadable|TrackStart|AbortError/i.test(errName||"")) return {
+    kind:"busy",
+    title:"다른 앱이 카메라를 쓰고 있어요",
+    tip:"카메라·영상통화 앱을 완전히 닫고 다시 눌러 주세요."};
+  if(/NotFound|Overconstrained/i.test(errName||"")) return {
+    kind:"nocam",
+    title:"쓸 수 있는 카메라를 찾지 못했어요",
+    tip:"[🔄 카메라]로 앞/뒤를 바꿔 보세요."};
+  return {kind:"unknown", title:"카메라를 열 수 없어요",
+    tip:"잠시 뒤 [시작]을 다시 눌러 주세요. 계속 안 되면 앱을 새로고침해 주세요."};
+}
 async function setup(){
+  if(noCamMode){ stopWorkoutCam(); return; }   // 카메라 없이 하는 운동 — 열지도, 모델을 받지도 않는다
   if(!landmarker) $("intro").innerHTML='<div class="spinner"></div><p>AI 모델 불러오는 중…</p>';
   try{
     await ensureWorkoutCam();
@@ -3326,16 +3372,17 @@ async function setup(){
        안 일어나는 것처럼 느꼈다("운동이 시작되지 않는다"). 이제 화면 안내와 함께
        눈에 띄는 알림·소리로 알리고, 무엇을 하면 되는지까지 알려 준다. */
     const why=String((e&&(e.name||e.message))||"");
-    const tip=/NotAllowed|Permission/i.test(why)
-      ? "카메라 권한이 꺼져 있어요 — 주소창 옆 자물쇠(또는 설정 → 사이트 권한)에서 카메라를 허용해 주세요."
-      : /NotReadable|TrackStart|AbortError/i.test(why)
-      ? "다른 앱이 카메라를 쓰고 있어요 — 카메라·영상통화 앱을 완전히 닫고 다시 눌러 주세요."
-      : /NotFound|Overconstrained/i.test(why)
-      ? "이 기기에서 쓸 수 있는 카메라를 찾지 못했어요 — [🔄 카메라]로 앞/뒤를 바꿔 보세요."
-      : "잠시 뒤 [시작]을 다시 눌러 주세요. 계속 안 되면 앱을 새로고침해 주세요.";
-    $("intro").innerHTML='<h2>카메라를 열 수 없어요</h2><p class="err">'+tip+'</p>'
-      +'<p class="hint">화면이 그대로면 [시작]을 한 번 더 눌러 주세요.</p>';
+    const r=camBlockReason(why);
+    lastCamFail=r.kind;
+    /* 무엇보다 중요한 것: 카메라가 안 된다고 수업에서 빠지지 않게 하는 일이다.
+       자세 채점만 못 할 뿐, 운동·심박·과제 이수는 카메라 없이도 그대로 할 수 있다. */
+    $("intro").innerHTML='<h2>'+r.title+'</h2><p class="err" style="line-height:1.6">'+r.tip+'</p>'
+      +'<p class="hint">고친 뒤 [시작]을 다시 눌러 주세요.</p>'
+      +'<button class="btn btn-go" id="noCamBtn" style="margin-top:10px">📵 카메라 없이 운동하기</button>'
+      +'<p class="hint" style="margin-top:6px">자세 채점만 빠지고 <b>운동·심박수·과제 이수는 그대로</b> 인정됩니다.</p>';
     $("intro").style.display="";
+    const nb=$("noCamBtn");
+    if(nb)nb.addEventListener("click",()=>{ start({auto:true,noCam:true}); });
     toast("카메라를 열지 못했어요 — 화면의 안내를 확인해 주세요","task","📷");
     try{ beep(440,.18,.18); }catch(e2){}
     throw e;
@@ -3353,6 +3400,10 @@ async function setup(){
 }
 function loop(){
   if(!running)return;
+  if(noCamMode){    // 볼 영상도 판정할 관절도 없다 — 타이머(tick)만 돌아간다
+    $("fb").textContent="📵 카메라 없이 진행 중 — 화면의 시간에 맞춰 운동하세요";
+    rafId=requestAnimationFrame(loop); return;
+  }
   if(video.currentTime!==lastVid){
     lastVid=video.currentTime;
     const res=landmarker.detectForVideo(video,performance.now());
@@ -3593,6 +3644,7 @@ function addRecord(s){
     /* 학번을 함께 남긴다. 이름만으로 가르면 동명이인이 섞이고, 한 폰을 두 학생이
        나눠 쓸 때 엑셀에서 누구 기록인지 확실히 구분할 방법이 없다. */
     sid:($("stuId").value||"").replace(/[^0-9]/g,""),
+    noCam:noCamMode||false,   // 카메라 없이 한 운동 — 자세 점수를 매기지 않았다
     seq:seq.map(k=>EXNAME[k]).join("·"), rounds:totalRounds,
     acc:s.avgAcc, reps:s.totalReps+(s.totalHold?`+${s.totalHold}초`:""), time:s.workTime,
     int:s.intensity, jP:s.jP, jG:s.jG, jGd:s.jGd, jO:s.jO, jB:s.jB, hrPre:pendingPreHr||"", hr:"", zone:"",
@@ -3615,8 +3667,8 @@ function addRecord(s){
 }
 $("csvBtn").addEventListener("click",()=>{
   if(!records.length){alert("저장할 기록이 없습니다.");return;}
-  const head="일시,학번,이름,학반,운동구성,라운드,평균정확도(%),총반복수,수행시간(초),강도점수,퍼펙트,그레이트,굿,오케이,미스,운동전심박(BPM),운동후심박(BPM),심박강도판정,성실수행여부,종합점수,획득포인트,구분(과제명/자율),운동후심박측정지연(초),등급,채점난이도";
-  const rows=records.map(r=>[r.date,r.sid||"",r.name,r.cls,r.seq,r.rounds,r.acc,`"${r.reps}"`,r.time,r.int,r.jP||0,r.jG||0,r.jGd||0,r.jO||0,r.jB||0,r.hrPre||"",r.hr,r.zone,(r.hr?(isDiligent(r)?"성실수행":"미달"):""),r.score,r.pts,`"${r.task||""}"`,r.hrGap||"",r.grade||"",(SPICE[r.spice]?SPICE[r.spice].name:"")].join(","));
+  const head="일시,학번,이름,학반,카메라,운동구성,라운드,평균정확도(%),총반복수,수행시간(초),강도점수,퍼펙트,그레이트,굿,오케이,미스,운동전심박(BPM),운동후심박(BPM),심박강도판정,성실수행여부,종합점수,획득포인트,구분(과제명/자율),운동후심박측정지연(초),등급,채점난이도";
+  const rows=records.map(r=>[r.date,r.sid||"",r.name,r.cls,(r.noCam?"없이":"사용"),r.seq,r.rounds,r.acc,`"${r.reps}"`,r.time,r.int,r.jP||0,r.jG||0,r.jGd||0,r.jO||0,r.jB||0,r.hrPre||"",r.hr,r.zone,(r.hr?(isDiligent(r)?"성실수행":"미달"):""),r.score,r.pts,`"${r.task||""}"`,r.hrGap||"",r.grade||"",(SPICE[r.spice]?SPICE[r.spice].name:"")].join(","));
   const blob=new Blob(["\uFEFF"+head+"\n"+rows.join("\n")],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
   a.download=`타바타기록_${($("stuClass").value||"전체")}_${new Date().toISOString().slice(0,10)}.csv`;
@@ -4135,7 +4187,13 @@ function practiceScore(name,cls){
 
   const n=rs.length;
   const dil=rs.filter(isDiligent).length;
-  const avgAcc=n?Math.round(rs.reduce((a,r)=>a+(+r.acc||0),0)/n):0;
+  /* 카메라 없이 한 운동은 자세를 잴 방법이 없어 정확도·점수가 0으로 남는다.
+     이걸 그대로 평균에 넣으면, 폰 카메라가 고장 난 학생이 성실히 참여할수록 손해를 본다.
+     그래서 '질'을 보는 계산(정확도 가산·향상률)에서만 빼고,
+     '했는지'를 보는 계산(공통과제 이수·심박 성실·자율 실천)에는 그대로 넣는다. */
+  const qs=rs.filter(r=>!r.noCam);        // 자세를 잴 수 있었던 세션만
+  const noCamN=rs.length-qs.length;
+  const avgAcc=qs.length?Math.round(qs.reduce((a,r)=>a+(+r.acc||0),0)/qs.length):0;
   /* 몸이 안 좋아 못 한 차시는 분모에서 뺀다 — 본인이 어쩔 수 없는 이유로 이수율이 깎이지 않게.
      다만 정한 한도보다 많이 빠지면 빼지 않고 전체 차시로 계산한다. 참여한 횟수가 너무 적으면
      '몇 %'라는 숫자 자체가 성실도를 말해 주지 못하기 때문이다(선생님 결정).
@@ -4153,10 +4211,10 @@ function practiceScore(name,cls){
 
   // 항목5: 남은 향상 여지 대비 얼마나 채웠는지 (천장효과 완화). 처음부터 우수하면 유지도 인정.
   let gainPct=null, first=null, last=null;
-  if(n>=2){
-    const half=Math.max(1,Math.floor(n/2));
+  if(qs.length>=2){
+    const half=Math.max(1,Math.floor(qs.length/2));
     const avg=a=>Math.round(a.reduce((s,r)=>s+(+r.score||0),0)/a.length);
-    first=avg(rs.slice(0,half)); last=avg(rs.slice(-half));
+    first=avg(qs.slice(0,half)); last=avg(qs.slice(-half));
     const room=100-first;
     gainPct=room>0?Math.round((last-first)/room*100):(last>=first?100:0);
   }
@@ -4177,10 +4235,10 @@ function practiceScore(name,cls){
   const base=n===0&&assigned===0?0:PRACTICE_STEPS[met];
   // 가산점 — 평균 정확도가 높을수록 1~2점. 계획서의 20점 상한은 넘지 않는다.
   const b2=+rubric.accB2||92, b1=+rubric.accB1||85;
-  const accBonus=(n>0&&base>0)?(avgAcc>=b2?2:avgAcc>=b1?1:0):0;
+  const accBonus=(qs.length>0&&base>0)?(avgAcc>=b2?2:avgAcc>=b1?1:0):0;
   const score=Math.min(20,base+accBonus);
   return {n,assigned,done,onTime,late,dil,acc:avgAcc,rate,selfGood,
-    excusedN,exUsed,exLimit,exOver,allExcused,denom,
+    excusedN,exUsed,exLimit,exOver,allExcused,denom, noCamN, accN:qs.length,
     gain:gainPct,first,last,items,met,score,base,accBonus,accB1:b1,accB2:b2,
     nAll:all.length, skippedFirst:!!firstRec, firstRec};
 }
@@ -4624,7 +4682,7 @@ function showStuDetail(cls,name){
     +`<div class="sd-ox">`+["과제 제출","심박 달성","자율 실천","향상·유지"]
       .map((t,i)=>`<span style="color:${g.items[i]?"var(--good)":"var(--bad)"}">${g.items[i]?"○":"×"} ${t}</span>`).join("")
     +`<span style="color:${g.accBonus?"var(--gold)":"var(--muted)"}">${g.accBonus?"★":"☆"} 정확도 가산 ${g.accBonus?`+${g.accBonus}`:"없음"}</span></div>`
-    +`<div class="hint">세션 ${g.n}회 · 심박달성 ${g.dil}회 · 평균 정확도 ${g.n?g.acc+"%":"–"}`
+    +`<div class="hint">세션 ${g.n}회 · 심박달성 ${g.dil}회 · 평균 정확도 ${g.accN?g.acc+"%":"–"}${g.noCamN?` <span style="color:var(--gold)">(카메라 없이 ${g.noCamN}회 — 자세 계산에서 제외)</span>`:""}`
     +`${stat?` · 최고 ${stat.best}점`:""}${g.first!=null?` · 초기 ${g.first} → 최근 ${g.last}`:""}</div>`
     /* 한도를 넘어 제외가 취소된 학생은 반드시 눈에 띄게 알린다 —
        한 번 더 아팠다는 이유로 이수율이 크게 떨어지는 구간이라, 선생님이 직접 보고 판단해야 한다. */
@@ -6351,7 +6409,7 @@ function finish(){
   if(!currentTask&&!currentBattle){ s.bonus=Math.round(s.pts*0.2); s.pts+=s.bonus; }
   renderGrade(s);            // 등급을 맨 위에 크게 (숫자보다 먼저 눈에 들어오게)
   $("rScore").textContent=s.score;
-  $("rAcc").textContent=s.avgAcc+"%";
+  $("rAcc").textContent=noCamMode?"–":(s.avgAcc+"%");
   $("rReps").textContent=s.totalReps+(s.totalHold?` +${s.totalHold}s`:"");
   $("rTime").textContent=s.workTime+"초";
   $("rInt").textContent=s.intensity;
@@ -6390,6 +6448,9 @@ function finish(){
 async function start(opts){
   // 배틀 동시 시작처럼 이미 확인을 마친 자동 시작은 확인창을 건너뛴다(그래야 양쪽이 같은 순간에 출발한다)
   const auto=!!(opts&&opts.auto===true);
+  /* 카메라 없이 할지는 시작할 때 정한다. 그냥 [시작]을 누르면 늘 카메라부터 다시 시도하고
+     (그 사이 권한을 고쳤을 수 있다), 실패 화면의 [카메라 없이 운동하기]로 온 경우만 켠다. */
+  noCamMode=!!(opts&&opts.noCam===true);
   if(!seq.length){alert("운동 구성이 비어 있습니다. 운동 설계에서 추가해 주세요.");goPage("pgSetup");return;}
   // 반 전체 '다같이 시작' 대기 중에 스스로 [시작]을 누른 경우 — 계속 기다릴지, 혼자 먼저
   // 갈지 확인한다. 자동(auto) 시작은 이미 게이트를 통과해 온 것이므로 여기서 걸리지 않는다.
@@ -7424,7 +7485,7 @@ function parseFbCfg(text){
   return (cfg.apiKey&&cfg.databaseURL)?cfg:null;
 }
 function normalizeRec(r){
-  return {id:r.id||"",date:String(r.date||""),name:r.name,cls:String(r.cls||""),sid:r.sid||"",
+  return {id:r.id||"",date:String(r.date||""),name:r.name,cls:String(r.cls||""),sid:r.sid||"",noCam:!!r.noCam,
     seq:r.seq||"",rounds:+r.rounds||0,acc:+r.acc||0,reps:String(r.reps||""),time:+r.time||0,int:+r.int||0,
     jP:+r.jP||0,jG:+r.jG||0,jGd:+r.jGd||0,jO:+r.jO||0,jB:+r.jB||0,hrPre:r.hrPre||"",hr:r.hr||"",zone:r.zone||"",
     hrGap:+r.hrGap||0,   // 운동 후 심박을 몇 초 만에 쟀는지 (늦게 잰 값은 낮게 나온다)
