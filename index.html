@@ -1049,7 +1049,8 @@
     <div style="overflow-x:auto"><table id="lessonGrid"><tbody><tr><td class="empty">과제를 등록하면 표시됩니다.</td></tr></tbody></table></div>
 
     <h3 style="margin-top:18px" id="taskRowsHead">✅ 학급별 과제 현황 — 누가 냈나</h3>
-    <div class="hint" style="margin-bottom:8px">반을 고르면 <b>그 반에 낸 과제</b>가 차시 순으로 모두 나오고, 과제마다 <b>제출한 학생 / 아직 안 한 학생</b>이 이름으로 보입니다.</div>
+    <div class="hint" style="margin-bottom:8px">반을 고르면 <b>그 반에 낸 과제</b>가 차시 순으로 모두 나오고(<b>오늘 낸 과제는 맨 위</b>), 과제마다 <b>제출한 학생 / 아직 안 한 학생</b>이 이름으로 보입니다.<br>
+      몸이 안 좋아 못 한 학생은 <b>아직 안 함 명단에서 이름을 누르면</b> 건강 사유로 옮겨지고, 이수율 계산에서 빠집니다.</div>
     <div id="tsClassPick" class="task-class-pick"></div>
     <div id="tsBoard" style="margin-top:10px"><div class="hint">반을 고르세요.</div></div>
 
@@ -2160,8 +2161,13 @@ function renderTaskBoard(){
   const box=$("tsBoard"); if(!box)return;
   if(!tsCls||!rosters[tsCls]){ box.innerHTML='<div class="hint">반을 고르세요.</div>'; return; }
   const roster=rosters[tsCls], total=roster.length;
-  const mine=classLessons(tsCls);
-  if(!mine.length){ box.innerHTML=`<div class="hint"><b>${shortCls(tsCls)}반</b>에 낸 공통과제가 없습니다.</div>`; return; }
+  const all=classLessons(tsCls);
+  if(!all.length){ box.innerHTML=`<div class="hint"><b>${shortCls(tsCls)}반</b>에 낸 공통과제가 없습니다.</div>`; return; }
+  /* 차시가 쌓이면 오늘 낸 과제가 맨 아래로 밀려, 수업 중에 아픈 학생을 체크하려면
+     매번 끝까지 내려야 했다. 오늘 낸 것만 맨 위로 올리고 나머지는 차시 순 그대로 둔다. */
+  const today=todayStr();
+  const isToday=x=>taskGivenAt(x.a,tsCls)===today;
+  const mine=[...all.filter(isToday), ...all.filter(x=>!isToday(x))];
   let h="";
   mine.forEach(x=>{
     const given=(x.a.classes&&typeof x.a.classes[tsCls]==="string")?x.a.classes[tsCls]:(x.a.created||"");
@@ -2192,7 +2198,7 @@ function renderTaskBoard(){
       : "<span style='opacity:.6'>없음</span>";
     h+=`<div class="step-box" style="margin:0 0 8px;padding:10px 12px">
       <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
-        <b style="cursor:pointer;text-decoration:underline dotted" data-ts="${x.id}" title="자세한 기록 보기">${x.no}차시 · ${escHtml(taskLabel(x.a))}</b>
+        ${isToday(x)?'<span class="ord num" style="background:var(--work);color:#fff">오늘</span> ':""}<b style="cursor:pointer;text-decoration:underline dotted" data-ts="${x.id}" title="자세한 기록 보기">${x.no}차시 · ${escHtml(taskLabel(x.a))}</b>
         <span class="hint">${given?"낸 날 "+given:""}</span>
         <b class="num" style="margin-left:auto;color:${col};font-size:17px">${done}/${total}</b>
       </div>
