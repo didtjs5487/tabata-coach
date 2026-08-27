@@ -1020,11 +1020,10 @@
     </div>
 
     <div class="row" style="margin-top:8px">
-      <div class="field"><label>차시</label><input type="number" id="taskLesson" min="1" max="60" style="width:80px"></div>
-      <div class="field" style="flex:1;min-width:180px"><label>과제 제목</label><input type="text" id="taskTitle" placeholder="예: 공통 타바타" style="width:100%"></div>
+      <div class="field" style="flex:1;min-width:180px"><label>과제 이름</label><input type="text" id="taskTitle" placeholder="예: 하체 집중 타바타" style="width:100%"></div>
     </div>
     <div style="margin-top:6px">
-      <div class="hint" style="margin-bottom:4px">오늘 이 차시를 수업한 반만 고르세요 (안 고르면 전체 반). 다른 반은 그 반 차례가 왔을 때 아래 <b>[반]</b>으로 추가하면 됩니다.</div>
+      <div class="hint" style="margin-bottom:4px"><b>차시는 적지 않아도 됩니다</b> — 그 반에 낸 순서대로 앱이 1차시, 2차시…로 붙입니다. 이름에는 <b>운동 내용</b>을 적어 주세요.<br>오늘 수업한 반만 고르세요 (안 고르면 전체 반). 다른 반은 그 반 차례가 왔을 때 아래 <b>[반]</b>으로 추가하면 됩니다.</div>
       <div id="taskClassPick" class="task-class-pick"></div>
     </div>
     <div class="row" style="margin-top:8px">
@@ -1548,8 +1547,15 @@ function initParq(){
 }
 function anyParqChecked(){ return [...document.querySelectorAll(".parq-chk")].some(c=>c.checked); }
 $("parqOk").addEventListener("click",()=>{
+  ensureAudio();   // 운동 직전 단계 — 여기서 열어 두면 이후 신호음이 확실히 난다
   if(anyParqChecked()){
-    $("parqMsg").innerHTML='<span class="err">해당 항목이 있어요. 오늘은 무리하지 말고 선생님께 알리세요.</span>';
+    /* 몸이 안 좋아 체크한 학생과, 그냥 안 한 학생은 다르다.
+       예전에는 이 화면에서 막고 끝이라 교사 쪽에는 아무 흔적도 남지 않아
+       둘이 똑같이 '미제출'로 보였다. 이제 누가 무엇 때문인지 남긴다. */
+    const items=[...document.querySelectorAll(".parq-chk")].map((c,i)=>c.checked?i:-1).filter(i=>i>=0);
+    const sent=sendHealthNote(items);
+    $("parqMsg").innerHTML='<span class="err">해당 항목이 있어요. 오늘은 무리하지 말고 선생님께 알리세요.</span>'
+      +(sent?'<br><span class="hint">선생님 화면에 <b>건강 사유</b>로 표시했습니다 — 그냥 안 한 것과 구분됩니다.</span>':"");
     return;
   }
   parqPassed=true;
@@ -1805,17 +1811,33 @@ function taskClassLabel(a){
   const ks=a&&a.classes?Object.keys(a.classes).filter(k=>a.classes[k]):[];
   return ks.length?ks.map(shortCls).join(", ")+"반":"전체 반";
 }
-/* ---------- 차시 진도 ---------- */
-// 다음 차시 번호 = 지금까지 낸 과제 중 가장 큰 차시 + 1
-function nextLessonNo(){
-  const ns=Object.values(assignments).map(a=>+a.lesson||0);
-  return (ns.length?Math.max(...ns):0)+1;
+/* ---------- 차시 진도 ----------
+   차시 번호는 저장하지 않는다. 반마다 수업 시수가 달라, 과제를 낼 때마다 교사가
+   "이 반은 저번에 몇 차시까지 했더라"를 기억해 적어야 했고 번호가 제각각이 되었다.
+   이제 그 반에 낸 날짜 순서대로 앱이 1차시, 2차시…를 붙인다.
+   예전 자료에 남아 있는 lesson 값은 쓰지 않는다(지우지도 않는다 — 그냥 무시). */
+function taskGivenAt(a,cls){
+  return (a&&a.classes&&typeof a.classes[cls]==="string")?a.classes[cls]:((a&&a.created)||"");
 }
-// 차시 순으로 정렬된 과제 목록 (차시가 없는 예전 과제는 등록순으로 뒤에)
-function lessonList(){
+// 한 반이 받은 과제를 낸 순서대로 세우고 1부터 차시 번호를 붙인다
+function classLessons(cls){
   return Object.entries(assignments)
-    .map(([id,a])=>({id,a,no:+a.lesson||0}))
-    .sort((x,y)=>(x.no-y.no)||String(x.a.created||"").localeCompare(String(y.a.created||"")));
+    .filter(([id,a])=>taskHasClass(a,cls))
+    .map(([id,a])=>({id,a,when:taskGivenAt(a,cls)}))
+    .sort((x,y)=>String(x.when).localeCompare(String(y.when))
+              || String(x.a.created||"").localeCompare(String(y.a.created||""))
+              || String(x.id).localeCompare(String(y.id)))
+    .map((x,i)=>({id:x.id,a:x.a,when:x.when,no:i+1}));
+}
+/* 과제를 부르는 이름. 제목에 '3차시'처럼 차시만 적어 둔 과제가 많은데, 차시는 앱이
+   앞에 따로 붙이므로 그대로 두면 "3차시 · 3차시"가 된다. 그럴 때는 제목 대신
+   그 과제에 담긴 운동 이름을 보여 준다 — 교사가 실제로 구분하는 기준이 그쪽이다. */
+function taskLabel(a){
+  const t=String((a&&a.title)||"").trim();
+  if(t&&!/^[0-9]+[ ]*차시$/.test(t)&&!/^차시[ ]*[0-9]+$/.test(t))return t;
+  const names=[...new Set((a&&a.seq||[]).map(k=>EXNAME[k]||k))];
+  if(!names.length)return t||"공통과제";
+  return names.slice(0,3).join("·")+(names.length>3?` 외 ${names.length-3}`:"");
 }
 // 어떤 반이 그 과제를 몇 명 마쳤는지
 function taskDoneCount(id,cls){
@@ -1824,33 +1846,40 @@ function taskDoneCount(id,cls){
 }
 // 한 반이 지금 몇 차시까지 배정받았고 오늘 것을 몇 명이 끝냈는지
 function classProgress(c){
-  const mine=lessonList().filter(x=>taskHasClass(x.a,c));
+  const mine=classLessons(c);
   if(!mine.length)return null;
   const cur=mine[mine.length-1];
   const total=(rosters[c]||[]).length;
-  return {no:cur.no||mine.length, title:cur.a.title, done:taskDoneCount(cur.id,c), total, count:mine.length};
+  return {no:cur.no, title:taskLabel(cur.a), done:taskDoneCount(cur.id,c), total, count:mine.length};
 }
 function renderLessonGrid(){
   const tb=$("lessonGrid"); if(!tb)return;
-  const cs=classNames(), ls=lessonList();
-  if(!cs.length||!ls.length){
+  const cs=classNames();
+  /* 예전에는 열이 '과제 하나'였는데, 반마다 진도가 달라 1반의 3차시와 2반의 3차시가
+     다른 과제일 수 있다. 이제 열은 '차시 자리'이고, 칸에 그 반이 그 자리에서 한 과제를 적는다. */
+  const per={}; let maxN=0;
+  cs.forEach(c=>{ per[c]=classLessons(c); if(per[c].length>maxN)maxN=per[c].length; });
+  if(!cs.length||!maxN){
     tb.innerHTML='<tbody><tr><td class="empty">명렬표와 과제를 등록하면 표시됩니다.</td></tr></tbody>';return;
   }
   let h='<thead><tr><th>반</th>';
-  ls.forEach(x=>h+=`<th style="white-space:nowrap">${x.no?x.no+"차시":"–"}<br><span class="hint" style="font-weight:400">${x.a.title}</span></th>`);
+  for(let i=1;i<=maxN;i++) h+=`<th style="white-space:nowrap">${i}차시</th>`;
   h+='</tr></thead><tbody>';
   cs.forEach(c=>{
     const total=(rosters[c]||[]).length;
     h+=`<tr><td><b>${shortCls(c)}반</b></td>`;
-    ls.forEach(x=>{
-      if(!taskHasClass(x.a,c)){ h+='<td class="num" style="color:var(--line)">–</td>'; return; }
+    for(let i=0;i<maxN;i++){
+      const x=per[c][i];
+      if(!x){ h+='<td class="num" style="color:var(--line)">–</td>'; continue; }
       const d=taskDoneCount(x.id,c);
       const col=d===0?"var(--bad)":(d>=total?"var(--good)":"var(--work)");
-      /* 숫자만 보여주면 "누가 했는지"는 알 수 없어 교사가 매번 아래 목록에서 과제를 다시 골라야 했다.
+      /* 숫자만으로는 "누가 했는지"를 알 수 없어 교사가 매번 아래에서 과제를 다시 골라야 했다.
          칸 자체를 눌러 그 반·그 과제의 명단으로 곧장 가게 한다. */
       h+=`<td class="num lg-cell" data-task="${x.id}" data-cls="${c}" title="누르면 명단 보기"
-            style="color:${col};font-weight:700;cursor:pointer;text-decoration:underline dotted">${d}/${total}</td>`;
-    });
+            style="cursor:pointer">
+            <span style="color:${col};font-weight:700;text-decoration:underline dotted">${d}/${total}</span>
+            <br><span class="hint" style="font-weight:400;white-space:nowrap">${escHtml(taskLabel(x.a))}</span></td>`;
+    }
     h+='</tr>';
   });
   tb.innerHTML=h+'</tbody>';
@@ -2015,14 +2044,17 @@ function renderTasks(){
   /* 반별로 시간마다 과제를 내면 목록이 금방 길어진다 — 고른 반의 것만 보여준다.
      완료현황 select는 자체 반 필터가 따로 있으므로 여기서는 칩 목록만 거른다. */
   renderTaskFilter();
-  /* 만들어진 차례가 아니라 차시 순서로 세운다 — 수업 진행 순서와 같아 찾기 쉽다.
-     차시를 안 적은 과제는 맨 뒤로 보내고, 같은 차시면 나중에 만든 것을 뒤에 둔다. */
-  const byLesson=(x,y)=>{
-    const ax=+assignments[x].lesson||9999, ay=+assignments[y].lesson||9999;
-    if(ax!==ay)return ax-ay;
-    return String(assignments[x].created||"").localeCompare(String(assignments[y].created||""));
-  };
-  const shown=ids.filter(id=>!taskFilterCls||taskHasClass(assignments[id],taskFilterCls)).sort(byLesson);
+  /* 낸 순서대로 세운다 — 수업 진행 순서와 같아 찾기 쉽다.
+     반을 골랐으면 그 반에 낸 날짜 순, 전체면 만든 순이다. */
+  const lessonNo={};
+  if(taskFilterCls) classLessons(taskFilterCls).forEach(x=>lessonNo[x.id]=x.no);
+  const orderKey=id=>taskFilterCls
+    ? String(taskGivenAt(assignments[id],taskFilterCls))
+    : String(assignments[id].created||"");
+  const shown=ids.filter(id=>!taskFilterCls||taskHasClass(assignments[id],taskFilterCls))
+    .sort((x,y)=>orderKey(x).localeCompare(orderKey(y))
+              || String(assignments[x].created||"").localeCompare(String(assignments[y].created||""))
+              || String(x).localeCompare(String(y)));
   const fc=$("taskFilterCount");
   if(fc)fc.innerHTML=taskFilterCls
     ? `<b style="color:var(--primary)">${shortCls(taskFilterCls)}반 ${shown.length}개</b> · 전체 ${ids.length}개`
@@ -2036,7 +2068,7 @@ function renderTasks(){
     const a=assignments[id];
     const doneSet=new Set(records.filter(r=>r.taskId===id).map(r=>r.name+"|"+r.cls));
     const chip=document.createElement("div"); chip.className="chip";
-    chip.innerHTML=`<span class="ord num">${a.lesson?a.lesson+"차시":"📋"}</span>${a.title}<span class="task-cls-tag">${taskClassLabel(a)}</span>
+    chip.innerHTML=`<span class="ord num">${lessonNo[id]?lessonNo[id]+"차시":"📋"}</span>${escHtml(taskLabel(a))}<span class="task-cls-tag">${taskClassLabel(a)}</span>
       <span class="hint">완료 ${doneSet.size}명</span>`;
     const edit=document.createElement("button"); edit.textContent="반"; edit.title="이 과제를 낼 반 바꾸기";
     edit.addEventListener("click",()=>openTaskClassEditor(id));
@@ -2074,7 +2106,6 @@ function renderTasks(){
   });
   renderTsClassPick(); renderTaskBoard(); renderTaskRows();
   renderLessonGrid();
-  if($("taskLesson")&&!$("taskLesson").value)$("taskLesson").placeholder=String(nextLessonNo());
   if($("boardTaskSelect"))refreshBoardTaskSelect(); // 과제가 바뀌면 현황판 선택칸도 갱신
 }
 let taskClassEditId=null;
@@ -2125,7 +2156,7 @@ function renderTaskBoard(){
   const box=$("tsBoard"); if(!box)return;
   if(!tsCls||!rosters[tsCls]){ box.innerHTML='<div class="hint">반을 고르세요.</div>'; return; }
   const roster=rosters[tsCls], total=roster.length;
-  const mine=lessonList().filter(x=>taskHasClass(x.a,tsCls));
+  const mine=classLessons(tsCls);
   if(!mine.length){ box.innerHTML=`<div class="hint"><b>${shortCls(tsCls)}반</b>에 낸 공통과제가 없습니다.</div>`; return; }
   let h="";
   mine.forEach(x=>{
@@ -2136,7 +2167,11 @@ function renderTaskBoard(){
       .sort((a,b)=>String(a.date).localeCompare(String(b.date)))
       .forEach(r=>{ if(!first[r.name])first[r.name]=r; });
     const doneList=roster.filter(st=>first[st.name]);
-    const todoList=roster.filter(st=>!first[st.name]);
+    /* 안 한 학생을 둘로 가른다 — 몸이 안 좋아 자가진단에 체크한 학생과, 아무것도 안 한 학생.
+       기준은 '그 반에 이 과제를 낸 날'에 체크가 있었는지다. */
+    const rest=roster.filter(st=>!first[st.name]);
+    const sickList=rest.filter(st=>given&&healthNoteOn(tsCls,st.name,given));
+    const todoList=rest.filter(st=>!(given&&healthNoteOn(tsCls,st.name,given)));
     const done=doneList.length;
     const pct=total?Math.round(done/total*100):0;
     const col=done===0?"var(--bad)":(done>=total?"var(--good)":"var(--work)");
@@ -2145,7 +2180,7 @@ function renderTaskBoard(){
       : "<span style='opacity:.6'>없음</span>";
     h+=`<div class="step-box" style="margin:0 0 8px;padding:10px 12px">
       <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
-        <b style="cursor:pointer;text-decoration:underline dotted" data-ts="${x.id}" title="자세한 기록 보기">${x.no?x.no+"차시 · ":""}${escHtml(x.a.title)}</b>
+        <b style="cursor:pointer;text-decoration:underline dotted" data-ts="${x.id}" title="자세한 기록 보기">${x.no}차시 · ${escHtml(taskLabel(x.a))}</b>
         <span class="hint">${given?"낸 날 "+given:""}</span>
         <b class="num" style="margin-left:auto;color:${col};font-size:17px">${done}/${total}</b>
       </div>
@@ -2153,6 +2188,7 @@ function renderTaskBoard(){
         <div style="height:100%;width:${pct}%;background:${col}"></div>
       </div>
       <div style="font-size:13px;line-height:1.7"><b style="color:var(--bad)">아직 안 함 ${todoList.length}명</b> — ${nameStr(todoList)}</div>
+      ${sickList.length?`<div style="font-size:13px;line-height:1.7;margin-top:4px"><b style="color:var(--gold)">건강 사유 ${sickList.length}명</b> — ${nameStr(sickList)}<span class="hint"> (자가진단에 체크해 운동하지 않음)</span></div>`:""}
       <div style="font-size:13px;line-height:1.7;margin-top:4px;color:var(--muted)"><b style="color:var(--good)">제출 ${done}명</b> — ${nameStr(doneList)}</div>
     </div>`;
   });
@@ -2191,14 +2227,17 @@ function renderTaskRows(){
     rosters[cls].forEach(s=>{
       const r=done[s.name];
       const tr=document.createElement("tr");
+      const sick=!r&&givenFor(cls)&&healthNoteOn(cls,s.name,givenFor(cls));
       tr.innerHTML=r
         ?`<td class="num">${s.no}</td><td>${s.name}</td><td>${shortCls(cls)}</td>${cell(r)}`
-        :`<td class="num">${s.no}</td><td>${s.name}</td><td>${shortCls(cls)}</td><td colspan="5" style="color:var(--muted)">미완료</td>`;
+        :`<td class="num">${s.no}</td><td>${s.name}</td><td>${shortCls(cls)}</td><td colspan="5" style="color:${sick?"var(--gold)":"var(--muted)"}">${sick?"건강 사유 — 자가진단 체크(운동 안 함)":"미완료"}</td>`;
       if(tb)tb.appendChild(tr);
     });
     const list=Object.values(done);
     const on=list.filter(r=>String(r.date).slice(0,10)===givenFor(cls)).length;
-    if(cnt)cnt.textContent=`${shortCls(cls)}반 — ${list.length}/${rosters[cls].length}명 완료 (당일 ${on} · 보충 ${list.length-on})`;
+    const sickN=rosters[cls].filter(st=>!done[st.name]&&givenFor(cls)&&healthNoteOn(cls,st.name,givenFor(cls))).length;
+    if(cnt)cnt.textContent=`${shortCls(cls)}반 — ${list.length}/${rosters[cls].length}명 완료 (당일 ${on} · 보충 ${list.length-on})`
+      +(sickN?` · 건강 사유 ${sickN}명`:"");
     return;
   }
   const rs=records.filter(r=>r.taskId===id);
@@ -2220,14 +2259,17 @@ $("taskAdd").addEventListener("click",()=>{
   const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   // 반마다 낸 날짜가 다르므로 true 대신 부여한 날짜를 넣는다 (예전 자료의 true도 그대로 인식됨)
   const classes={}; Object.keys(newTaskClasses).forEach(c=>{ if(rosters[c])classes[c]=todayStr(); });
-  const lesson=+$("taskLesson").value||nextLessonNo();
-  const a={title,lesson,...cfg,classes,created:todayStr()};
-  assignments[id]=a; $("taskTitle").value=""; $("taskLesson").value="";
+  const a={title,...cfg,classes,created:todayStr()};   // 차시는 저장하지 않는다 — 낸 순서로 계산한다
+  assignments[id]=a; $("taskTitle").value="";
   Object.keys(newTaskClasses).forEach(c=>delete newTaskClasses[c]);
   renderTaskClassPick();
   renderTasks(); saveAll();
   if(fdb)fmod.set(fmod.ref(fdb,"assignments/"+id),a).catch(()=>{});
-  alert(`${lesson}차시 '${title}' 과제가 ${taskClassLabel(a)}에 등록되었습니다. 해당 반 학생 앱에 즉시 표시됩니다.`);
+  const nos=Object.keys(classes).length
+    ? Object.keys(classes).map(c=>{ const m=classLessons(c).find(x=>x.id===id); return `${shortCls(c)}반 ${m?m.no:"?"}차시`; }).join(" · ")
+    : "전체 반";
+  alert(`'${taskLabel(a)}' 과제가 등록되었습니다 — ${nos}.
+해당 반 학생 앱에 즉시 표시됩니다.`);
 });
 ["workSec","restSec","rounds","difficulty"].forEach(id=>$(id).addEventListener("change",()=>{
   if($("bCfgHint"))updateBCfgHint(); // 대결은 이 구성을 그대로 쓰므로 요약도 같이 갱신
@@ -3031,9 +3073,23 @@ function setBgmVol(v){
   if(masterGain)masterGain.gain.value=BGM_VOL;
   try{localStorage.setItem("tabataVol",String(BGM_VOL));}catch(e){}
 }
-// 사용자의 첫 조작에서 오디오를 깨운다 (브라우저 자동재생 정책)
-["pointerdown","touchstart","keydown"].forEach(ev=>
-  document.addEventListener(ev,()=>ensureAudio(),{passive:true}));
+/* 예전에는 화면 아무 곳이나 터치하면 오디오를 열었고, 소리를 내지 않는 동안에도
+   숨은 <audio>(bgmEl)를 계속 재생 상태로 두었다. 폰은 이것을 '지금 재생 중인 미디어'로
+   보기 때문에, 학생이 보고 있던 유튜브가 앱을 만지는 순간 멈춰 버렸다.
+   이제 소리를 실제로 낼 때만 열고, 잠잠해지면 곧 놓아 준다. */
+let audioIdleTimer=null;
+function releaseAudio(){
+  audioIdleTimer=null;
+  try{ if(bgmEl&&!bgmEl.paused)bgmEl.pause(); }catch(e){}
+  try{ if(audio&&audio.state==="running")audio.suspend(); }catch(e){}
+}
+// 소리를 낸 뒤 부르면, 운동·맥박이 끝난 상태일 때 잠시 후 소리 권한을 놓는다
+function audioIdle(){
+  if(audioIdleTimer)clearTimeout(audioIdleTimer);
+  audioIdleTimer=setTimeout(()=>{
+    if(!running && !bgmTimer && !pulseTimer) releaseAudio();
+  },2500);
+}
 
 /* 앱이 화면에 보이지 않을 때는 어떤 소리도 내지 않는다.
    학생이 운동을 켜 둔 채 다른 앱으로 나가거나 앱을 여러 탭으로 열어 두면,
@@ -3048,6 +3104,7 @@ function beep(f=880,d=.12,v=.2){try{
   g.gain.setValueAtTime(v,audio.currentTime);
   g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);
   o.start();o.stop(audio.currentTime+d);
+  audioIdle();
 }catch(e){}}
 
 /* ---------- BGM 엔진 (Web Audio, 저작권 free) ---------- */
@@ -3135,7 +3192,7 @@ function startBgm(mode){
   const bpm = mode==="work"?(140+Math.floor(Math.random()*25)) : mode==="rest"?90 : 120;
   bgmTimer=setInterval(bgmTick, 60000/bpm/2); // 8분음표 간격
 }
-function stopBgm(){ if(bgmTimer){clearInterval(bgmTimer);bgmTimer=null;} bgmMode=null; }
+function stopBgm(){ if(bgmTimer){clearInterval(bgmTimer);bgmTimer=null;} bgmMode=null; audioIdle(); }
 const video=$("video"),overlay=$("overlay"),ctx=overlay.getContext("2d");
 let landmarker=null,draw=null,running=false,rafId=null,lastVid=-1;
 function stopWorkoutCam(){
@@ -3994,7 +4051,7 @@ const PRACTICE_STEPS={4:20,3:16,2:12,1:8,0:4};
 function practiceScore(name,cls){
   const all=records.filter(r=>r.name===name&&String(r.cls)===String(cls))
     .sort((a,b)=>String(a.date).localeCompare(String(b.date)));
-  const mine=lessonList().filter(x=>taskHasClass(x.a,cls)); // 이 반에 배정된 차시들
+  const mine=classLessons(cls); // 이 반에 배정된 차시들 (낸 순서대로 1,2,3…)
   const assigned=mine.length;
   let done=0,onTime=0,late=0;
   mine.forEach(x=>{
@@ -6319,6 +6376,7 @@ function stopAll(){
   exitFullscreen();
   ctx.clearRect(0,0,overlay.width,overlay.height); phase="idle";
   stopBgm();
+  releaseAudio();   // 운동이 끝나면 소리 권한을 놓아, 학생이 보던 영상이 멈추지 않게 한다
   stopWorkoutCam(); // 카메라 해제 → 이후 심박 측정 카메라가 열릴 수 있게
   // 운동이 끝나도 학생은 여전히 접속 중이므로 신호는 계속 보낸다(운동 후 심박·완료 단계 표시용)
 }
@@ -6433,6 +6491,45 @@ function bindUndo(){
     toast("되돌렸습니다","good","↩︎");
   });
 }
+/* ---------- 건강 자가진단 기록 ----------
+   학생이 자가진단에 체크하면 그 날짜로 남긴다. 교사 화면에서 '건강 사유'와
+   '아직 안 함'을 갈라 보기 위한 것이고, 성적을 깎는 데 쓰지 않는다. */
+const HEALTH_KEY="tabataHealth";
+let healthNotes={};    // {반}{학번}{날짜} = {name,items,ts}
+function loadHealthLocal(){
+  try{ healthNotes=JSON.parse(localStorage.getItem(HEALTH_KEY)||"{}")||{}; }catch(e){ healthNotes={}; }
+}
+function healthNoteOn(cls,name,date){
+  const byId=healthNotes[cls]||{};
+  for(const raw in byId){
+    const n=byId[raw]&&byId[raw][date];
+    if(n&&n.name===name)return n;
+  }
+  return null;
+}
+function sendHealthNote(items){
+  const raw=($("stuId").value||"").replace(/[^0-9]/g,"");
+  const cls=($("stuClass").value||"").trim();
+  const name=($("stuName").value||"").trim();
+  if(raw.length<5||!cls||!name)return false;
+  const date=todayStr();
+  const note={name,items,ts:Date.now()};
+  if(!healthNotes[cls])healthNotes[cls]={};
+  if(!healthNotes[cls][raw])healthNotes[cls][raw]={};
+  healthNotes[cls][raw][date]=note;
+  try{ localStorage.setItem(HEALTH_KEY,JSON.stringify(healthNotes)); }catch(e){}
+  if(fdb)fmod.set(fmod.ref(fdb,`health/${cls}/${raw}/${date}`),note).catch(()=>{});
+  return true;
+}
+function attachHealth(){
+  if(!fdb||!isTeacher())return;
+  fmod.onValue(fmod.ref(fdb,"health"),snap=>{
+    healthNotes=snap.val()||{};
+    renderTaskBoard();
+    renderTaskRows();
+  },()=>{ /* 권한이 없으면 기기에 남은 것만 쓴다 */ });
+}
+loadHealthLocal();
 function attachReports(){
   if(!fdb||!isTeacher())return;
   fmod.onValue(fmod.ref(fdb,"reports"),snap=>{
@@ -6444,8 +6541,9 @@ function attachReports(){
 if($("rpReload"))$("rpReload").addEventListener("click",attachReports);
 applyCamMirror();   // 저장해 둔 값을 화면에 먼저 반영해 둔다
 renderCamGuides();  // 심박 측정 그림 안내를 STEP 1·3 두 곳에 그려 둔다
-$("startBtn").addEventListener("click",start);
+$("startBtn").addEventListener("click",()=>{ ensureAudio(); start(); });
 $("musicBtn").addEventListener("click",()=>{
+  if(!bgmOn)ensureAudio();   // 켜는 쪽이면 소리 장치를 연다
   bgmOn=!bgmOn;
   $("musicBtn").textContent=bgmOn?"🎵 음악 ON":"🔇 음악 OFF";
   $("musicBtn").classList.toggle("btn-go",bgmOn);
@@ -6500,10 +6598,15 @@ $("bgmVolTxt").textContent=VOL_TXT(BGM_VOL);
 document.addEventListener("fullscreenchange",()=>{
   // 시스템 뒤로가기/ESC로 네이티브 전체화면을 빠져나온 경우 CSS도 정리
   if(!document.fullscreenElement && running) resizeOverlay();
-  ensureAudio(); // 전체화면 전환에서 오디오가 멈추는 기기가 있어 다시 깨운다
+  if(running)ensureAudio(); // 전체화면 전환에서 오디오가 멈추는 기기가 있어 다시 깨운다
 });
-// 화면을 껐다 켜거나 앱을 다녀오면 컨텍스트가 멈출 수 있다
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden)ensureAudio(); });
+/* 화면을 껐다 켜거나 앱을 다녀오면 컨텍스트가 멈출 수 있다.
+   다만 '돌아왔다'는 이유만으로 켜면, 유튜브를 보다 앱을 열기만 해도 영상이 멈춘다.
+   지금 실제로 소리를 쓰는 중(운동·배경음·맥박 세기)일 때만 다시 깨운다. */
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden)return;
+  if(running||bgmTimer||pulseTimer)ensureAudio();
+});
 
 /* ---------- heart rate: camera PPG ---------- */
 // 성실 수행 판정: 운동 후 심박이 절대값 기준 이상이거나, 안정 시(운동 전) 대비 충분히 올랐으면 인정.
@@ -6709,7 +6812,7 @@ function finishPulse(){
   $("pulseBpm").textContent=pulseTaps*4;
   $("pulseResult").style.display="flex"; beep(1046,.15,.15);
 }
-$("pulseStart").addEventListener("click",startPulse);
+$("pulseStart").addEventListener("click",()=>{ ensureAudio(); startPulse(); });
 $("pulseTap").addEventListener("pointerdown",(e)=>{
   e.preventDefault();
   if(pulseState!=="counting")return; // [시작]을 누르기 전·측정 종료 후에는 탭이 반응하지 않는다
@@ -7018,6 +7121,7 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
   }
 }
 $("hrStart").addEventListener("click",()=>{
+  ensureAudio();
   $("hrLive").style.display="block"; $("hrResult").style.display="none";
   measurePPG($("hrWave"),$("hrMsg"),$("hrStart"),bpm=>{
     showHr(bpm);
@@ -7279,7 +7383,7 @@ async function ensureAuth(app){
       Object.keys(reflections).forEach(k=>delete reflections[k]);
       Object.keys(reports).forEach(k=>delete reports[k]); renderReports();
     }
-    if(fmod&&fdb){ attachProtected(fmod.onValue,fmod.ref); attachReports(); attachPresenceListener(); }
+    if(fmod&&fdb){ attachProtected(fmod.onValue,fmod.ref); attachReports(); attachHealth(); attachPresenceListener(); }
     renderAuth();
     if(u)toast("교사 로그인됨 — 성찰·계획서를 볼 수 있습니다","good","🔐");
   });
@@ -7456,6 +7560,7 @@ function attachFbListeners(){
   });
   attachProtected(onValue,ref);
   attachReports();   // 학생이 알린 앱 문제 (교사만 읽힌다)
+  attachHealth();    // 건강 자가진단 체크 (교사만 읽힌다)
   // 채점 기준은 서버 값을 따른다 — 교사 기기마다 학생 점수가 달라지지 않게
   onValue(ref(fdb,"rubric"),snap=>{
     const v=snap.val(); if(!v)return;
