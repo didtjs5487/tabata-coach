@@ -1045,8 +1045,8 @@
     <details class="collapsible">
     <summary>✅ 과제 현황 — 누가 냈나</summary>
     <h3 style="margin-top:8px">📈 반별 차시 진도</h3>
-    <div class="hint" style="margin-bottom:6px">반마다 수업 시수가 달라도 어디까지 나갔는지 한눈에 보입니다. 칸의 숫자는 <b>완료 인원 / 전체</b>이고, 아직 안 낸 차시는 <b>–</b>입니다.<br><b>칸을 누르면</b> 그 반이 그 과제를 <b>누가 했고 누가 안 했는지</b> 아래에 이름으로 펼쳐집니다.</div>
-    <div style="overflow-x:auto"><table id="lessonGrid"><tbody><tr><td class="empty">과제를 등록하면 표시됩니다.</td></tr></tbody></table></div>
+    <div class="hint" style="margin-bottom:6px">반마다 수업 시수가 달라도 <b>어디까지 나갔는지</b> 한눈에 보입니다. <b>반을 누르면</b> 아래에 그 반 과제와 제출 현황이 펼쳐집니다.</div>
+    <div id="lessonGrid" class="task-class-pick"></div>
 
     <h3 style="margin-top:18px" id="taskRowsHead">✅ 학급별 과제 현황 — 누가 냈나</h3>
     <div class="hint" style="margin-bottom:8px">반을 고르면 <b>그 반에 낸 과제</b>가 차시 순으로 모두 나오고(<b>오늘 낸 과제는 맨 위</b>), 과제마다 <b>제출한 학생 / 아직 안 한 학생</b>이 이름으로 보입니다.<br>
@@ -1858,39 +1858,31 @@ function classProgress(c){
   return {no:cur.no, title:taskLabel(cur.a), done:taskDoneCount(cur.id,c), total, count:mine.length};
 }
 function renderLessonGrid(){
-  const tb=$("lessonGrid"); if(!tb)return;
+  const box=$("lessonGrid"); if(!box)return;
+  /* 예전에는 반 × 차시 전체를 칸칸이 보여줬는데, 차시가 쌓이면 표가 옆으로 길어져
+     가로로 밀어 봐야 했다. 여기서 알고 싶은 건 '이 반은 몇 차시까지 나갔나' 하나뿐이라
+     반마다 나간 차시 수만 한 줄로 보여 준다. 자세한 것은 바로 아래 현황판이 맡는다. */
+  box.innerHTML="";
   const cs=classNames();
-  /* 예전에는 열이 '과제 하나'였는데, 반마다 진도가 달라 1반의 3차시와 2반의 3차시가
-     다른 과제일 수 있다. 이제 열은 '차시 자리'이고, 칸에 그 반이 그 자리에서 한 과제를 적는다. */
-  const per={}; let maxN=0;
-  cs.forEach(c=>{ per[c]=classLessons(c); if(per[c].length>maxN)maxN=per[c].length; });
-  if(!cs.length||!maxN){
-    tb.innerHTML='<tbody><tr><td class="empty">명렬표와 과제를 등록하면 표시됩니다.</td></tr></tbody>';return;
-  }
-  let h='<thead><tr><th>반</th>';
-  for(let i=1;i<=maxN;i++) h+=`<th style="white-space:nowrap">${i}차시</th>`;
-  h+='</tr></thead><tbody>';
+  if(!cs.length){ box.innerHTML='<span class="hint">명렬표를 등록하면 표시됩니다.</span>'; return; }
+  let any=false;
   cs.forEach(c=>{
-    const total=(rosters[c]||[]).length;
-    h+=`<tr><td><b>${shortCls(c)}반</b></td>`;
-    for(let i=0;i<maxN;i++){
-      const x=per[c][i];
-      if(!x){ h+='<td class="num" style="color:var(--line)">–</td>'; continue; }
-      const d=taskDoneCount(x.id,c);
-      const col=d===0?"var(--bad)":(d>=total?"var(--good)":"var(--work)");
-      /* 숫자만으로는 "누가 했는지"를 알 수 없어 교사가 매번 아래에서 과제를 다시 골라야 했다.
-         칸 자체를 눌러 그 반·그 과제의 명단으로 곧장 가게 한다. */
-      h+=`<td class="num lg-cell" data-task="${x.id}" data-cls="${c}" title="누르면 명단 보기"
-            style="cursor:pointer">
-            <span style="color:${col};font-weight:700;text-decoration:underline dotted">${d}/${total}</span>
-            <br><span class="hint" style="font-weight:400;white-space:nowrap">${escHtml(taskLabel(x.a))}</span></td>`;
-    }
-    h+='</tr>';
+    const n=classLessons(c).length;
+    if(n)any=true;
+    const b=document.createElement("button");
+    b.className=(tsCls===c)?"on":"";
+    b.innerHTML=`${shortCls(c)}반 <b style="font-size:15px">${n}</b>차시`;
+    if(!n)b.style.opacity=".5";
+    b.title=n?"누르면 이 반의 과제 현황을 봅니다":"아직 낸 과제가 없습니다";
+    b.addEventListener("click",()=>{
+      tsCls=c; tsTask="";
+      renderTsClassPick(); renderTaskBoard(); renderTaskRows(); renderLessonGrid();
+      const head=$("taskRowsHead");
+      if(head)head.scrollIntoView({behavior:"smooth",block:"start"});
+    });
+    box.appendChild(b);
   });
-  tb.innerHTML=h+'</tbody>';
-  tb.querySelectorAll("td.lg-cell").forEach(td=>td.addEventListener("click",()=>{
-    showTaskRoster(td.dataset.task, td.dataset.cls);
-  }));
+  if(!any){ box.innerHTML='<span class="hint">과제를 등록하면 표시됩니다.</span>'; }
 }
 /* 진도표 칸에서 넘어왔을 때: 그 반 현황판을 펼치고 그 과제의 자세한 기록까지 연다 */
 function showTaskRoster(taskId,cls){
