@@ -3590,6 +3590,9 @@ function addRecord(s){
     id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),
     date:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`,
     name:$("stuName").value||"이름없음", cls:$("stuClass").value||"-",
+    /* 학번을 함께 남긴다. 이름만으로 가르면 동명이인이 섞이고, 한 폰을 두 학생이
+       나눠 쓸 때 엑셀에서 누구 기록인지 확실히 구분할 방법이 없다. */
+    sid:($("stuId").value||"").replace(/[^0-9]/g,""),
     seq:seq.map(k=>EXNAME[k]).join("·"), rounds:totalRounds,
     acc:s.avgAcc, reps:s.totalReps+(s.totalHold?`+${s.totalHold}초`:""), time:s.workTime,
     int:s.intensity, jP:s.jP, jG:s.jG, jGd:s.jGd, jO:s.jO, jB:s.jB, hrPre:pendingPreHr||"", hr:"", zone:"",
@@ -3612,8 +3615,8 @@ function addRecord(s){
 }
 $("csvBtn").addEventListener("click",()=>{
   if(!records.length){alert("저장할 기록이 없습니다.");return;}
-  const head="일시,이름,학반,운동구성,라운드,평균정확도(%),총반복수,수행시간(초),강도점수,퍼펙트,그레이트,굿,오케이,미스,운동전심박(BPM),운동후심박(BPM),심박강도판정,성실수행여부,종합점수,획득포인트,구분(과제명/자율),운동후심박측정지연(초),등급,채점난이도";
-  const rows=records.map(r=>[r.date,r.name,r.cls,r.seq,r.rounds,r.acc,`"${r.reps}"`,r.time,r.int,r.jP||0,r.jG||0,r.jGd||0,r.jO||0,r.jB||0,r.hrPre||"",r.hr,r.zone,(r.hr?(isDiligent(r)?"성실수행":"미달"):""),r.score,r.pts,`"${r.task||""}"`,r.hrGap||"",r.grade||"",(SPICE[r.spice]?SPICE[r.spice].name:"")].join(","));
+  const head="일시,학번,이름,학반,운동구성,라운드,평균정확도(%),총반복수,수행시간(초),강도점수,퍼펙트,그레이트,굿,오케이,미스,운동전심박(BPM),운동후심박(BPM),심박강도판정,성실수행여부,종합점수,획득포인트,구분(과제명/자율),운동후심박측정지연(초),등급,채점난이도";
+  const rows=records.map(r=>[r.date,r.sid||"",r.name,r.cls,r.seq,r.rounds,r.acc,`"${r.reps}"`,r.time,r.int,r.jP||0,r.jG||0,r.jGd||0,r.jO||0,r.jB||0,r.hrPre||"",r.hr,r.zone,(r.hr?(isDiligent(r)?"성실수행":"미달"):""),r.score,r.pts,`"${r.task||""}"`,r.hrGap||"",r.grade||"",(SPICE[r.spice]?SPICE[r.spice].name:"")].join(","));
   const blob=new Blob(["\uFEFF"+head+"\n"+rows.join("\n")],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
   a.download=`타바타기록_${($("stuClass").value||"전체")}_${new Date().toISOString().slice(0,10)}.csv`;
@@ -3813,6 +3816,53 @@ const MYID_KEY="tabataMyId"; // 이 기기에서 마지막으로 쓴 학번·이
    "지금 입력한 학번이 이 기기가 원래 쓰던 학번과 다른지"를 알려면 타이핑에 영향받지 않는
    이 스냅샷과 비교해야 한다 — 안 그러면 비교 시점엔 이미 새 값으로 덮어써져 있어 항상 같아진다. */
 let deviceOwnerId=null, deviceOwnerName=null;
+
+/* ---------- 한 기기를 두 학생이 나눠 쓸 때 ----------
+   폰이 고장 난 학생이 친구 폰을 빌려 학번만 바꿔 쓰는 일이 실제로 있다.
+   그런데 이 기기에 남는 개인 자료(내가 만든 운동, 성찰 일지, 마무리 성찰)는
+   학번과 묶여 있지 않아서, 나중에 서버로 올릴 때 '지금 로그인한 사람'의 것으로
+   통째로 올라갔다 — 빌려준 학생 이름으로 남의 계획서·성찰이 제출되는 사고다.
+   그래서 개인 자료는 학번별 칸에 따로 담고, 학번이 바뀌면 통째로 갈아 끼운다. */
+const MINE_PREFIX="tabataMine:";
+let mineOwner=null;                       // 지금 메모리에 올라와 있는 개인 자료의 주인(학번)
+/* 학번별로 나누기 전에 쓰던 자료 — 이 기기를 원래 쓰던 학생 것이므로,
+   그 학생 칸이 아직 비어 있으면 그대로 물려준다(한 번만). */
+let legacyMine=null;
+function minePack(){ return {myPlans, myLogs:myLogsLocal, myFinal:myFinalLocal, mySpice}; }
+function savePersonal(raw){
+  const who=raw||mineOwner;
+  if(!storageOK||!who)return;
+  try{ localStorage.setItem(MINE_PREFIX+who, JSON.stringify(minePack())); }catch(e){}
+}
+function loadPersonal(raw){
+  myPlans=[]; myLogsLocal={}; myFinalLocal=null;
+  mineOwner=raw||null;
+  if(!storageOK||!raw)return;
+  try{
+    let d=JSON.parse(localStorage.getItem(MINE_PREFIX+raw)||"null");
+    if(!d&&legacyMine){ d=legacyMine; legacyMine=null; }   // 예전 자료를 이 학생 것으로 넘겨받는다
+    if(d){
+      if(Array.isArray(d.myPlans))myPlans=d.myPlans;
+      if(d.myLogs)myLogsLocal=d.myLogs;
+      if(d.myFinal)myFinalLocal=d.myFinal;
+      if(d.mySpice)setSpice(d.mySpice);
+      savePersonal(raw);
+    }
+  }catch(e){}
+}
+/* 학번이 바뀌는 순간 — 쓰던 사람 것을 그 사람 칸에 넣고, 새 사람 것을 꺼내 온다.
+   운동 전 심박·진행 중이던 과제·결투처럼 '그 사람에게만 해당하는 지금 상태'도 함께 비운다
+   (안 그러면 친구가 잰 운동 전 심박이 다음 사람 기록에 그대로 붙는다). */
+function switchPersonal(raw){
+  if(mineOwner===raw)return;
+  if(mineOwner)savePersonal(mineOwner);
+  loadPersonal(raw);
+  try{ clearPreHr(); }catch(e){}
+  try{ if(typeof clearTask==="function")clearTask(); }catch(e){}
+  currentBattle=null;
+  try{ updateModeBadge(); }catch(e){}
+  try{ renderTasks(); renderMine(); }catch(e){}
+}
 function syncStuId(){
   const raw=($("stuId").value||"").replace(/\D/g,"");
   // 학반은 학번 숫자 자체(학년+반)에서 바로 계산되므로, 명단에 없는 학생이라도 따로 입력받을 필요가 없다.
@@ -3837,6 +3887,7 @@ function syncStuId(){
   }
   syncMyInfoFields();
   saveMyId();
+  if(raw.length>=5) switchPersonal(raw);      // 다른 학생이면 그 학생 자료로 갈아 끼운다
   renderTasks(); // 반이 정해지면 그 반에 배정된 과제 카드만 다시 그린다
 }
 function saveMyId(){
@@ -7243,6 +7294,7 @@ function saveAll(){
     const recs=records.map(({_row,...r})=>r);
     localStorage.setItem(STORE_KEY,JSON.stringify({rosters,records:recs,totalPts,fbCfg:$("fbCfg").value,adminPw,assignments,seenBattles,myPlans,rubric,mySpice,myLogs:myLogsLocal,myFinal:myFinalLocal}));
   }catch(e){}
+  savePersonal();     // 개인 자료는 학번별 칸에도 따로 남긴다(기기를 나눠 쓸 때 섞이지 않게)
 }
 // 기기 저장 여부 + Firebase 연결 여부를 한 줄로 합쳐 보여준다(이전엔 3곳에 흩어져 있어 헷갈렸음)
 function updateSaveStatus(){
@@ -7271,11 +7323,12 @@ function loadAll(){
       if(d.adminPw)adminPw=d.adminPw;
       if(d.assignments)Object.assign(assignments,d.assignments);
       if(Array.isArray(d.seenBattles))seenBattles=d.seenBattles;
-      if(Array.isArray(d.myPlans))myPlans=d.myPlans;
       if(d.rubric)rubric={...RUBRIC_DEFAULT,...d.rubric};
+      /* 개인 자료(내가 만든 운동·성찰·마무리 성찰)는 여기서 바로 쓰지 않고 따로 담아 둔다.
+         학번이 정해지는 순간 그 학생 칸으로 옮겨진다 — 기기를 나눠 써도 섞이지 않게. */
+      legacyMine={ myPlans:Array.isArray(d.myPlans)?d.myPlans:[], myLogs:d.myLogs||{},
+                   myFinal:d.myFinal||null, mySpice:d.mySpice };
       if(d.mySpice)mySpice=d.mySpice;
-      if(d.myLogs)myLogsLocal=d.myLogs;
-      if(d.myFinal)myFinalLocal=d.myFinal;
     }
   }catch(e){}
   renderRubric();
@@ -7371,7 +7424,7 @@ function parseFbCfg(text){
   return (cfg.apiKey&&cfg.databaseURL)?cfg:null;
 }
 function normalizeRec(r){
-  return {id:r.id||"",date:String(r.date||""),name:r.name,cls:String(r.cls||""),
+  return {id:r.id||"",date:String(r.date||""),name:r.name,cls:String(r.cls||""),sid:r.sid||"",
     seq:r.seq||"",rounds:+r.rounds||0,acc:+r.acc||0,reps:String(r.reps||""),time:+r.time||0,int:+r.int||0,
     jP:+r.jP||0,jG:+r.jG||0,jGd:+r.jGd||0,jO:+r.jO||0,jB:+r.jB||0,hrPre:r.hrPre||"",hr:r.hr||"",zone:r.zone||"",
     hrGap:+r.hrGap||0,   // 운동 후 심박을 몇 초 만에 쟀는지 (늦게 잰 값은 낮게 나온다)
