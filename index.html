@@ -970,7 +970,7 @@
     <details class="collapsible" id="rpAdminBox">
     <summary>🛠 학생이 알린 앱 문제 <span id="rpCount" style="color:var(--bad);font-weight:800"></span></summary>
     <div class="hint" style="margin:10px 0 8px">학생이 <b>내 과제</b> 탭에서 보낸 것입니다. 어떤 기기에서 생긴 일인지 함께 표시됩니다.
-      고친 뒤에는 <b>[확인함]</b>으로 정리하세요.</div>
+      확인한 것은 <b>[확인함]</b>을 누르면 목록에서 사라집니다(잘못 눌렀으면 바로 되돌릴 수 있습니다).</div>
     <div class="row" style="margin:0 0 8px">
       <button class="btn btn-stop btn-sm" id="rpReload">🔄 다시 불러오기</button>
       <span class="hint" id="rpAdminMsg"></span>
@@ -1041,17 +1041,24 @@
     </div>
     <div class="seqlist" id="taskChips"></div>
 
-    <h3 style="margin-top:18px">📈 반별 차시 진도</h3>
-    <div class="hint" style="margin-bottom:6px">반마다 수업 시수가 달라도 어디까지 나갔는지 한눈에 보입니다. 칸의 숫자는 <b>완료 인원 / 전체</b>이고, 아직 안 낸 차시는 <b>–</b>입니다.</div>
+    </details>
+
+    <details class="collapsible">
+    <summary>✅ 과제 현황 — 누가 냈나</summary>
+    <h3 style="margin-top:8px">📈 반별 차시 진도</h3>
+    <div class="hint" style="margin-bottom:6px">반마다 수업 시수가 달라도 어디까지 나갔는지 한눈에 보입니다. 칸의 숫자는 <b>완료 인원 / 전체</b>이고, 아직 안 낸 차시는 <b>–</b>입니다.<br><b>칸을 누르면</b> 그 반이 그 과제를 <b>누가 했고 누가 안 했는지</b> 아래에 이름으로 펼쳐집니다.</div>
     <div style="overflow-x:auto"><table id="lessonGrid"><tbody><tr><td class="empty">과제를 등록하면 표시됩니다.</td></tr></tbody></table></div>
 
-    <div class="row" style="margin-top:16px">
-      <div class="field"><label>완료 현황 볼 과제</label><select id="taskView"><option value="">과제를 등록하세요</option></select></div>
-      <div class="field"><label>반</label><select id="taskViewClass"><option value="">전체</option></select></div>
-      <span class="hint" id="taskDoneCount"></span>
-    </div>
-    <table><thead><tr><th>번호</th><th>이름</th><th>반</th><th>일시</th><th>구분</th><th>정확도</th><th>심박(전→후)</th><th>종합</th></tr></thead>
-      <tbody id="taskRows"><tr><td colspan="8" class="empty">과제를 선택하면 완료한 학생이 표시됩니다.</td></tr></tbody></table>
+    <h3 style="margin-top:18px" id="taskRowsHead">✅ 학급별 과제 현황 — 누가 냈나</h3>
+    <div class="hint" style="margin-bottom:8px">반을 고르면 <b>그 반에 낸 과제</b>가 차시 순으로 모두 나오고, 과제마다 <b>제출한 학생 / 아직 안 한 학생</b>이 이름으로 보입니다.</div>
+    <div id="tsClassPick" class="task-class-pick"></div>
+    <div id="tsBoard" style="margin-top:10px"><div class="hint">반을 고르세요.</div></div>
+
+    <details style="margin-top:10px"><summary class="hint" style="cursor:pointer">한 과제의 자세한 기록 보기 (정확도·심박·종합)</summary>
+      <div class="hint" id="taskDoneCount" style="margin:6px 0"></div>
+      <table><thead><tr><th>번호</th><th>이름</th><th>반</th><th>일시</th><th>구분</th><th>정확도</th><th>심박(전→후)</th><th>종합</th></tr></thead>
+        <tbody id="taskRows"><tr><td colspan="8" class="empty">위에서 과제 제목을 누르면 자세한 기록이 표시됩니다.</td></tr></tbody></table>
+    </details>
     </details>
     <details class="collapsible">
     <summary>📊 학생별 종합 현황</summary>
@@ -1489,6 +1496,15 @@ const $=id=>document.getElementById(id);
 /* ---------- nav ---------- */
 let adminUnlocked=false, adminPw="1234";
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>{
+  /* 운동이 돌아가는 중에 다른 탭을 누르면, 화면은 가려지는데 타이머와 배경음은 계속 돌았다.
+     학생 눈에는 '앱에서 비프음이 계속 나는' 것으로만 보이고, 운동 화면이 숨어 있어 멈출 방법도 없었다.
+     그래서 나가기 전에 한 번 묻고, 나가겠다고 하면 이번 운동을 여기서 끝낸다. */
+  const curPage=(document.querySelector("nav button.on")||{dataset:{}}).dataset.page;
+  if(running && curPage==="pgWork" && b.dataset.page!=="pgWork"){
+    if(!confirm("운동이 진행 중입니다.\n\n다른 탭으로 나가면 이번 운동은 여기서 끝납니다. 나갈까요?"))return;
+    stopAll();
+    toast("운동을 끝냈습니다","task","⏹");
+  }
   if(b.dataset.page==="pgAdmin"&&!adminUnlocked){
     const pw=prompt("관리자(교사) 비밀번호를 입력하세요");
     if(pw===null)return;
@@ -1830,11 +1846,28 @@ function renderLessonGrid(){
       if(!taskHasClass(x.a,c)){ h+='<td class="num" style="color:var(--line)">–</td>'; return; }
       const d=taskDoneCount(x.id,c);
       const col=d===0?"var(--bad)":(d>=total?"var(--good)":"var(--work)");
-      h+=`<td class="num" style="color:${col};font-weight:700">${d}/${total}</td>`;
+      /* 숫자만 보여주면 "누가 했는지"는 알 수 없어 교사가 매번 아래 목록에서 과제를 다시 골라야 했다.
+         칸 자체를 눌러 그 반·그 과제의 명단으로 곧장 가게 한다. */
+      h+=`<td class="num lg-cell" data-task="${x.id}" data-cls="${c}" title="누르면 명단 보기"
+            style="color:${col};font-weight:700;cursor:pointer;text-decoration:underline dotted">${d}/${total}</td>`;
     });
     h+='</tr>';
   });
   tb.innerHTML=h+'</tbody>';
+  tb.querySelectorAll("td.lg-cell").forEach(td=>td.addEventListener("click",()=>{
+    showTaskRoster(td.dataset.task, td.dataset.cls);
+  }));
+}
+/* 진도표 칸에서 넘어왔을 때: 그 반 현황판을 펼치고 그 과제의 자세한 기록까지 연다 */
+function showTaskRoster(taskId,cls){
+  tsCls=cls; tsTask=taskId;
+  renderTsClassPick(); renderTaskBoard(); renderTaskRows();
+  const head=$("taskRowsHead");
+  if(head){
+    head.scrollIntoView({behavior:"smooth",block:"start"});
+    head.style.transition="background .3s"; head.style.background="var(--gold)";
+    setTimeout(()=>{head.style.background="";},900);
+  }
 }
 /* 학습센터에서 과제 목록을 어느 반 기준으로 볼지 — ""이면 전체 */
 let taskFilterCls="";
@@ -1978,8 +2011,7 @@ function renderTasks(){
   });
   // 교사: 과제 목록 칩 + 완료현황 select
   const chips=$("taskChips"); chips.innerHTML="";
-  const tv=$("taskView"); const keep=tv.value;
-  tv.innerHTML=ids.length?"":'<option value="">과제를 등록하세요</option>';
+
   /* 반별로 시간마다 과제를 내면 목록이 금방 길어진다 — 고른 반의 것만 보여준다.
      완료현황 select는 자체 반 필터가 따로 있으므로 여기서는 칩 목록만 거른다. */
   renderTaskFilter();
@@ -1995,12 +2027,6 @@ function renderTasks(){
   if(fc)fc.innerHTML=taskFilterCls
     ? `<b style="color:var(--primary)">${shortCls(taskFilterCls)}반 ${shown.length}개</b> · 전체 ${ids.length}개`
     : (ids.length?`전체 <b>${ids.length}개</b>`:"");
-  // 완료현황 고르는 칸은 반 필터와 무관하게 전체를 담되, 순서는 똑같이 차시순으로
-  [...ids].sort(byLesson).forEach(id=>{
-    const a=assignments[id];
-    const lv=a.lesson?`${a.lesson}차시 · `:"";
-    tv.insertAdjacentHTML("beforeend",`<option value="${id}">${lv}${a.title} (${taskClassLabel(a)})</option>`);
-  });
   if(!shown.length&&ids.length){
     const none=document.createElement("div"); none.className="hint";
     none.innerHTML=`<b>${shortCls(taskFilterCls)}반</b>에 낸 과제가 없습니다. 위에서 <b>전체</b>를 누르면 모두 볼 수 있어요.`;
@@ -2046,15 +2072,7 @@ function renderTasks(){
       chips.appendChild(row);
     }
   });
-  if(ids.includes(keep))tv.value=keep;
-  const tvc=$("taskViewClass");
-  if(tvc){
-    const keepC=tvc.value;
-    tvc.innerHTML='<option value="">전체</option>';
-    classNames().forEach(c=>tvc.insertAdjacentHTML("beforeend",`<option value="${c}">${c}</option>`));
-    if(classNames().includes(keepC))tvc.value=keepC;
-  }
-  renderTaskRows();
+  renderTsClassPick(); renderTaskBoard(); renderTaskRows();
   renderLessonGrid();
   if($("taskLesson")&&!$("taskLesson").value)$("taskLesson").placeholder=String(nextLessonNo());
   if($("boardTaskSelect"))refreshBoardTaskSelect(); // 과제가 바뀌면 현황판 선택칸도 갱신
@@ -2082,12 +2100,75 @@ function renderTaskClassPick(){
   });
   if(!cs.length)box.innerHTML='<span class="hint">명렬표를 먼저 등록하세요.</span>';
 }
+/* ── 학급별 과제 현황 ──
+   예전에는 '과제 고르기' + '반 고르기' 드롭다운 두 개를 맞춰야 명단이 나왔다.
+   시간마다 반별로 과제를 내면 목록이 수십 개가 되어 매번 찾아 고르는 일이 번거로웠다.
+   이제 반 하나만 고르면 그 반에 낸 과제가 차시순으로 모두 펼쳐지고,
+   과제마다 누가 냈고 누가 아직 안 했는지 이름으로 바로 보인다. */
+let tsCls="", tsTask="";
+function renderTsClassPick(){
+  const box=$("tsClassPick"); if(!box)return;
+  box.innerHTML="";
+  const cs=classNames();
+  if(!cs.length){ box.innerHTML='<span class="hint">명렬표를 등록하면 반이 표시됩니다.</span>'; return; }
+  if(!cs.includes(tsCls)) tsCls=cs[0];      // 처음 열면 첫 반을 보여 준다
+  cs.forEach(c=>{
+    const n=Object.keys(assignments).filter(id=>taskHasClass(assignments[id],c)).length;
+    const b=document.createElement("button");
+    b.className=(tsCls===c)?"on":"";
+    b.innerHTML=`${shortCls(c)}반 <span style="opacity:.7">${n}</span>`;
+    b.addEventListener("click",()=>{ tsCls=c; tsTask=""; renderTsClassPick(); renderTaskBoard(); renderTaskRows(); });
+    box.appendChild(b);
+  });
+}
+function renderTaskBoard(){
+  const box=$("tsBoard"); if(!box)return;
+  if(!tsCls||!rosters[tsCls]){ box.innerHTML='<div class="hint">반을 고르세요.</div>'; return; }
+  const roster=rosters[tsCls], total=roster.length;
+  const mine=lessonList().filter(x=>taskHasClass(x.a,tsCls));
+  if(!mine.length){ box.innerHTML=`<div class="hint"><b>${shortCls(tsCls)}반</b>에 낸 공통과제가 없습니다.</div>`; return; }
+  let h="";
+  mine.forEach(x=>{
+    const given=(x.a.classes&&typeof x.a.classes[tsCls]==="string")?x.a.classes[tsCls]:(x.a.created||"");
+    // 한 학생이 여러 번 해도 한 번만 센다(첫 수행 기준)
+    const first={};
+    records.filter(r=>r.taskId===x.id&&r.cls===tsCls)
+      .sort((a,b)=>String(a.date).localeCompare(String(b.date)))
+      .forEach(r=>{ if(!first[r.name])first[r.name]=r; });
+    const doneList=roster.filter(st=>first[st.name]);
+    const todoList=roster.filter(st=>!first[st.name]);
+    const done=doneList.length;
+    const pct=total?Math.round(done/total*100):0;
+    const col=done===0?"var(--bad)":(done>=total?"var(--good)":"var(--work)");
+    const nameStr=list=>list.length
+      ? list.map(st=>`<span style="white-space:nowrap">${st.no}&nbsp;${escHtml(st.name)}</span>`).join(" · ")
+      : "<span style='opacity:.6'>없음</span>";
+    h+=`<div class="step-box" style="margin:0 0 8px;padding:10px 12px">
+      <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
+        <b style="cursor:pointer;text-decoration:underline dotted" data-ts="${x.id}" title="자세한 기록 보기">${x.no?x.no+"차시 · ":""}${escHtml(x.a.title)}</b>
+        <span class="hint">${given?"낸 날 "+given:""}</span>
+        <b class="num" style="margin-left:auto;color:${col};font-size:17px">${done}/${total}</b>
+      </div>
+      <div style="height:6px;border-radius:4px;background:var(--line);margin:7px 0 8px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${col}"></div>
+      </div>
+      <div style="font-size:13px;line-height:1.7"><b style="color:var(--bad)">아직 안 함 ${todoList.length}명</b> — ${nameStr(todoList)}</div>
+      <div style="font-size:13px;line-height:1.7;margin-top:4px;color:var(--muted)"><b style="color:var(--good)">제출 ${done}명</b> — ${nameStr(doneList)}</div>
+    </div>`;
+  });
+  box.innerHTML=h;
+  box.querySelectorAll("b[data-ts]").forEach(b=>b.addEventListener("click",()=>{
+    tsTask=b.dataset.ts; renderTaskRows();
+    const tb=$("taskRows");
+    if(tb&&tb.closest("details")){ tb.closest("details").open=true; tb.closest("details").scrollIntoView({behavior:"smooth",block:"start"}); }
+  }));
+}
 function renderTaskRows(){
-  const id=$("taskView").value, tb=$("taskRows"), cnt=$("taskDoneCount");
+  const id=tsTask, tb=$("taskRows"), cnt=$("taskDoneCount");
   if(cnt)cnt.textContent="";
-  if(!id||!assignments[id]){tb.innerHTML='<tr><td colspan="8" class="empty">과제를 선택하면 완료한 학생이 표시됩니다.</td></tr>';return;}
+  if(!id||!assignments[id]){tb.innerHTML='<tr><td colspan="8" class="empty">위에서 과제 제목을 누르면 자세한 기록이 표시됩니다.</td></tr>';return;}
   const a=assignments[id];
-  const cls=$("taskViewClass")?$("taskViewClass").value:"";
+  const cls=tsCls;
   // 그 반에 과제를 낸 날과 수행일을 비교해 당일/보충을 가른다
   const givenFor=c=>(a.classes&&typeof a.classes[c]==="string")?a.classes[c]:(a.created||"");
   const whenTag=r=>{
@@ -2130,8 +2211,7 @@ function renderTaskRows(){
   });
   if(cnt)cnt.textContent=`전체 ${rs.length}건 — 반을 고르면 미완료 학생까지 보입니다`;
 }
-$("taskView").addEventListener("change",renderTaskRows);
-$("taskViewClass")&&$("taskViewClass").addEventListener("change",renderTaskRows);
+/* 과제·반을 드롭다운으로 고르던 방식은 없앴다 — 위 학급 현황판이 그 자리를 대신한다 */
 $("taskAdd").addEventListener("click",()=>{
   const title=$("taskTitle").value.trim();
   if(!title){alert("과제 제목을 입력하세요.");return;}
@@ -2955,7 +3035,13 @@ function setBgmVol(v){
 ["pointerdown","touchstart","keydown"].forEach(ev=>
   document.addEventListener(ev,()=>ensureAudio(),{passive:true}));
 
+/* 앱이 화면에 보이지 않을 때는 어떤 소리도 내지 않는다.
+   학생이 운동을 켜 둔 채 다른 앱으로 나가거나 앱을 여러 탭으로 열어 두면,
+   보이지 않는 쪽에서 타이머와 배경음이 계속 돌며 "앱을 켜면 비프음이 계속 난다"는
+   현상이 생겼다. 소리를 내는 길목을 한 곳에서 막는다. */
+function soundOK(){ return !document.hidden; }
 function beep(f=880,d=.12,v=.2){try{
+  if(!soundOK())return;
   ensureAudio(); if(!audio)return;
   const o=audio.createOscillator(),g=audio.createGain();
   o.frequency.value=f;o.connect(g);g.connect(audioOut());
@@ -3017,7 +3103,7 @@ function note(freq,dur,vol,type){
   o.start(); o.stop(audio.currentTime+dur);
 }
 function bgmTick(){
-  if(!bgmOn||!audio)return;
+  if(!bgmOn||!audio||!soundOK())return;
   if(bgmMode==="work"){
     const s=BGM_WORK[bgmStep%BGM_WORK.length]+bgmKey;
     note(midi(s+12),.14,.12,bgmTone[0]);                  // 멜로디
@@ -6302,31 +6388,50 @@ renderMyReports();
 
 /* 교사 화면 — 학생이 알린 문제 목록. 읽기는 교사만 하도록 규칙으로 막혀 있어야 한다. */
 const reports={};
+/* [확인함]을 누르면 목록에서 바로 사라진다(서버에서도 지운다).
+   수업 중 잘못 눌러 학생 의견을 잃지 않도록, 방금 지운 것 하나는 되돌릴 수 있게 남겨 둔다. */
+let lastRemovedReport=null;
 function renderReports(){
   const box=$("rpList"); if(!box)return;
   const ks=Object.keys(reports).sort((a,b)=>String(reports[b].date).localeCompare(String(reports[a].date)));
-  const open=ks.filter(k=>!reports[k].done);
-  const cnt=$("rpCount"); if(cnt)cnt.textContent=open.length?`· 새 ${open.length}건`:"";
-  if(!ks.length){ box.innerHTML='<div class="hint">아직 알려온 것이 없습니다.</div>'; return; }
-  box.innerHTML=ks.map(k=>{
+  const cnt=$("rpCount"); if(cnt)cnt.textContent=ks.length?`· ${ks.length}건`:"";
+  const undo=lastRemovedReport
+    ? `<div class="row" style="margin:0 0 8px"><button class="btn btn-stop btn-sm" id="rpUndo">↩︎ 방금 확인한 것 되돌리기</button>
+        <span class="hint">${escHtml(lastRemovedReport.r.name||"")} — ${escHtml(String(lastRemovedReport.r.text||"").slice(0,24))}…</span></div>`
+    : "";
+  if(!ks.length){ box.innerHTML=undo+'<div class="hint">확인할 것이 없습니다. 학생이 보내면 여기에 뜹니다.</div>'; bindUndo(); return; }
+  box.innerHTML=undo+ks.map(k=>{
     const r=reports[k];
-    return `<div class="step-box" style="margin:0 0 8px;${r.done?"opacity:.55":""}">
+    return `<div class="step-box" style="margin:0 0 8px">
       <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
         <b>${escHtml(r.cls||"")}반 ${escHtml(r.name||"")}</b>
         <span class="hint">${escHtml(String(r.date||"").slice(0,16))}</span>
         <span class="hint">· ${escHtml(r.os||"")} ${escHtml(r.br||"")} ${escHtml(r.scr||"")}</span>
         ${r.where?`<span class="hint">· ${escHtml(r.where)}에서</span>`:""}
-        ${r.done?'<span class="hint" style="color:var(--good)">✔ 확인함</span>':""}
       </div>
       <div style="margin-top:6px;white-space:pre-wrap">${escHtml(r.text||"")}</div>
-      ${r.done?"":`<div class="row" style="margin:8px 0 0"><button class="btn btn-teal btn-sm" data-rp="${k}">확인함</button></div>`}
+      <div class="row" style="margin:8px 0 0"><button class="btn btn-teal btn-sm" data-rp="${k}">✔ 확인함 (목록에서 지우기)</button></div>
     </div>`;
   }).join("");
   box.querySelectorAll("button[data-rp]").forEach(b=>b.addEventListener("click",()=>{
-    const k=b.dataset.rp;
-    if(!fdb){reports[k].done=true;renderReports();return;}
-    fmod.update(fmod.ref(fdb,"reports/"+k),{done:true}).catch(()=>{});
+    const k=b.dataset.rp, r=reports[k];
+    if(!r)return;
+    lastRemovedReport={key:k, r:{...r}};      // 되돌릴 수 있게 하나만 들고 있는다
+    delete reports[k]; renderReports();
+    if(fdb)fmod.remove(fmod.ref(fdb,"reports/"+k)).catch(()=>{});
+    toast("확인 처리했습니다 — 잘못 눌렀으면 [되돌리기]","good","✔");
   }));
+  bindUndo();
+}
+function bindUndo(){
+  const u=$("rpUndo"); if(!u)return;
+  u.addEventListener("click",()=>{
+    const it=lastRemovedReport; if(!it)return;
+    lastRemovedReport=null;
+    reports[it.key]=it.r; renderReports();
+    if(fdb)fmod.set(fmod.ref(fdb,"reports/"+it.key),it.r).catch(()=>{});
+    toast("되돌렸습니다","good","↩︎");
+  });
 }
 function attachReports(){
   if(!fdb||!isTeacher())return;
