@@ -1044,8 +1044,8 @@
     </div>
     <!-- 시간마다 반별로 과제를 내면 목록이 금방 길어진다. 평소엔 접어 두고, 반을 골라 그 반 것만 본다. -->
     <details id="taskListBox" style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line)">
-      <summary style="cursor:pointer;font-weight:800;font-size:15px">등록된 공통과제 <span class="hint" id="taskFilterCount" style="font-weight:400"></span></summary>
-      <div class="hint" style="margin:8px 0 6px">고치거나 지울 때만 펼치면 됩니다. 반을 누르면 그 반에 낸 과제만 보입니다.</div>
+      <summary style="cursor:pointer;font-weight:800;font-size:15px">등록된 공통과제 <span class="hint" id="taskFilterCount" style="font-weight:400"></span> <span class="hint" style="font-weight:400">— 지우거나 다른 반에 추가할 때만</span></summary>
+      <div class="hint" style="margin:8px 0 6px">평소에는 펼치지 않아도 됩니다. 과제를 <b>지우려면 ✕</b>, <b>다른 반에도 내려면 [반]</b>을 누르세요. 누가 했는지는 <b>✅ 과제 현황</b>에서 봅니다.</div>
       <div id="taskFilterPick" class="task-class-pick"></div>
       <div class="seqlist" id="taskChips"></div>
     </details>
@@ -1054,11 +1054,7 @@
 
     <details class="collapsible">
     <summary>✅ 과제 현황 — 누가 냈나</summary>
-    <h3 style="margin-top:8px">📈 반별 차시 진도</h3>
-    <div class="hint" style="margin-bottom:6px">반마다 수업 시수가 달라도 <b>어디까지 나갔는지</b> 한눈에 보입니다. <b>반을 누르면</b> 아래에 그 반 과제와 제출 현황이 펼쳐집니다.</div>
-    <div id="lessonGrid" class="task-class-pick"></div>
-
-    <h3 style="margin-top:18px" id="taskRowsHead">✅ 학급별 과제 현황 — 누가 냈나</h3>
+    <h3 style="margin-top:8px" id="taskRowsHead">✅ 학급별 과제 현황 — 누가 냈나</h3>
     <div class="hint" style="margin-bottom:8px">반을 고르면 <b>그 반에 낸 과제</b>가 차시 순으로 모두 나오고(<b>오늘 낸 과제는 맨 위</b>), 과제마다 <b>제출한 학생 / 아직 안 한 학생</b>이 이름으로 보입니다.<br>
       몸이 안 좋아 못 한 학생은 <b>아직 안 함 명단에서 이름을 누르면</b> 건강 사유로 옮겨지고, 이수율 계산에서 빠집니다.</div>
     <div id="tsClassPick" class="task-class-pick"></div>
@@ -1882,44 +1878,6 @@ function classProgress(c){
   const total=(rosters[c]||[]).length;
   return {no:cur.no, title:taskLabel(cur.a), done:taskDoneCount(cur.id,c), total, count:mine.length};
 }
-function renderLessonGrid(){
-  const box=$("lessonGrid"); if(!box)return;
-  /* 예전에는 반 × 차시 전체를 칸칸이 보여줬는데, 차시가 쌓이면 표가 옆으로 길어져
-     가로로 밀어 봐야 했다. 여기서 알고 싶은 건 '이 반은 몇 차시까지 나갔나' 하나뿐이라
-     반마다 나간 차시 수만 한 줄로 보여 준다. 자세한 것은 바로 아래 현황판이 맡는다. */
-  box.innerHTML="";
-  const cs=classNames();
-  if(!cs.length){ box.innerHTML='<span class="hint">명렬표를 등록하면 표시됩니다.</span>'; return; }
-  let any=false;
-  cs.forEach(c=>{
-    const n=classLessons(c).length;
-    if(n)any=true;
-    const b=document.createElement("button");
-    b.className=(tsCls===c)?"on":"";
-    b.innerHTML=`${shortCls(c)}반 <b style="font-size:15px">${n}</b>차시`;
-    if(!n)b.style.opacity=".5";
-    b.title=n?"누르면 이 반의 과제 현황을 봅니다":"아직 낸 과제가 없습니다";
-    b.addEventListener("click",()=>{
-      tsCls=c; tsTask="";
-      renderTsClassPick(); renderTaskBoard(); renderTaskRows(); renderLessonGrid();
-      const head=$("taskRowsHead");
-      if(head)head.scrollIntoView({behavior:"smooth",block:"start"});
-    });
-    box.appendChild(b);
-  });
-  if(!any){ box.innerHTML='<span class="hint">과제를 등록하면 표시됩니다.</span>'; }
-}
-/* 진도표 칸에서 넘어왔을 때: 그 반 현황판을 펼치고 그 과제의 자세한 기록까지 연다 */
-function showTaskRoster(taskId,cls){
-  tsCls=cls; tsTask=taskId;
-  renderTsClassPick(); renderTaskBoard(); renderTaskRows();
-  const head=$("taskRowsHead");
-  if(head){
-    head.scrollIntoView({behavior:"smooth",block:"start"});
-    head.style.transition="background .3s"; head.style.background="var(--gold)";
-    setTimeout(()=>{head.style.background="";},900);
-  }
-}
 /* 학습센터에서 과제 목록을 어느 반 기준으로 볼지 — ""이면 전체 */
 let taskFilterCls="";
 function renderTaskFilter(){
@@ -2127,7 +2085,6 @@ function renderTasks(){
     }
   });
   renderTsClassPick(); renderTaskBoard(); renderTaskRows();
-  renderLessonGrid();
   if($("boardTaskSelect"))refreshBoardTaskSelect(); // 과제가 바뀌면 현황판 선택칸도 갱신
 }
 let taskClassEditId=null;
@@ -2165,11 +2122,16 @@ function renderTsClassPick(){
   const cs=classNames();
   if(!cs.length){ box.innerHTML='<span class="hint">명렬표를 등록하면 반이 표시됩니다.</span>'; return; }
   if(!cs.includes(tsCls)) tsCls=cs[0];      // 처음 열면 첫 반을 보여 준다
+  /* 예전에는 위에 '반별 차시 진도'가 따로 있었는데, 반을 골라 그 반 현황을 여는
+     똑같은 일을 해서 두 줄이 겹쳤다. 진도표를 없애고 그 정보(몇 차시까지 나갔는지)를
+     이 버튼에 합쳤다. */
   cs.forEach(c=>{
-    const n=Object.keys(assignments).filter(id=>taskHasClass(assignments[id],c)).length;
+    const n=classLessons(c).length;
     const b=document.createElement("button");
     b.className=(tsCls===c)?"on":"";
-    b.innerHTML=`${shortCls(c)}반 <span style="opacity:.7">${n}</span>`;
+    b.innerHTML=`${shortCls(c)}반 <b style="font-size:15px">${n}</b>차시`;
+    if(!n)b.style.opacity=".5";
+    b.title=n?"누르면 이 반의 과제 현황을 봅니다":"아직 낸 과제가 없습니다";
     b.addEventListener("click",()=>{ tsCls=c; tsTask=""; renderTsClassPick(); renderTaskBoard(); renderTaskRows(); });
     box.appendChild(b);
   });
