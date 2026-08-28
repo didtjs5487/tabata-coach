@@ -958,8 +958,12 @@
     <button class="btn btn-teal" id="allExport" style="padding:15px 24px;width:100%">📥 평가용 통합 엑셀 내려받기</button>
     <div class="hint" style="margin:8px 0 16px">㉮ 운동계획 · ㉯ 운동실천 · ㉰ 자기성찰을 <b>학생 한 명당 한 줄</b>로 합칩니다. 첫 시트는 전 학급 요약, 그다음은 반별 시트, 마지막은 수시 성찰 원문입니다.</div>
 
-    <button class="btn btn-go" id="boardBig" style="padding:15px 24px;width:100%">🖥️ 학생용 화면 크게 보기</button>
-    <div class="hint" style="margin:8px 0 16px">프로젝터용 큰 화면입니다. 반 고르기(여러 반 동시 가능), 실시간 신호등, 다같이 시작·정지가 모두 그 안에 있습니다.</div>
+    <details style="margin:0 0 16px">
+      <summary class="hint" style="cursor:pointer">🖥️ 프로젝터용 큰 화면 (다같이 시작·정지)</summary>
+      <button class="btn btn-go" id="boardBig" style="padding:15px 24px;width:100%;margin-top:8px">🖥️ 학생용 화면 크게 보기</button>
+      <div class="hint" style="margin:8px 0 0">반 고르기(여러 반 동시 가능), 실시간 신호등, 다같이 시작·정지가 그 안에 있습니다.
+        짝을 지어 번갈아 쓰면 접속 신호가 제각각이 되므로 참고용으로만 보세요.</div>
+    </details>
 
     <details class="collapsible">
     <summary>📱 학생 접속 QR</summary>
@@ -1037,16 +1041,13 @@
     <div class="row" style="margin-top:8px">
       <button class="btn btn-teal btn-sm" id="taskAdd">이 설계로 과제 등록</button>
     </div>
-    <!-- 시간마다 반별로 과제를 내면 목록이 금방 길어진다. 반을 골라 그 반 것만 보게 한다. -->
-    <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line)">
-      <div class="row" style="margin:0 0 6px;align-items:center">
-        <b style="font-size:15px">등록된 공통과제</b>
-        <span class="hint" id="taskFilterCount" style="margin-left:auto"></span>
-      </div>
-      <div class="hint" style="margin-bottom:6px">반을 누르면 그 반에 낸 과제만 보입니다.</div>
+    <!-- 시간마다 반별로 과제를 내면 목록이 금방 길어진다. 평소엔 접어 두고, 반을 골라 그 반 것만 본다. -->
+    <details id="taskListBox" style="margin-top:14px;padding-top:10px;border-top:1px solid var(--line)">
+      <summary style="cursor:pointer;font-weight:800;font-size:15px">등록된 공통과제 <span class="hint" id="taskFilterCount" style="font-weight:400"></span></summary>
+      <div class="hint" style="margin:8px 0 6px">고치거나 지울 때만 펼치면 됩니다. 반을 누르면 그 반에 낸 과제만 보입니다.</div>
       <div id="taskFilterPick" class="task-class-pick"></div>
-    </div>
-    <div class="seqlist" id="taskChips"></div>
+      <div class="seqlist" id="taskChips"></div>
+    </details>
 
     </details>
 
@@ -1312,8 +1313,19 @@
   <div id="pulseCountdown" class="num" style="color:#FF9F1C;font-family:'Barlow Condensed';font-weight:700;font-size:clamp(40px,10vw,72px);line-height:1;display:none">15</div>
   <button id="pulseTap" disabled style="width:min(56vw,220px);height:min(56vw,220px);border-radius:50%;border:0;background:var(--line);color:#fff;font-family:'Barlow Condensed';font-weight:700;font-size:clamp(18px,4.5vw,24px);cursor:not-allowed;box-shadow:0 10px 40px rgba(0,0,0,.25);touch-action:manipulation;user-select:none;transition:background .15s">먼저<br>[시작]을 누르세요</button>
   <div id="pulseTapCount" style="color:#fff;font-size:16px;font-weight:600;min-height:22px"></div>
+  <!-- 세는 도중 잘못 눌렀을 때 바로 물릴 수 있게 -->
+  <button class="btn btn-sm" id="pulseUndo" style="display:none;background:transparent;color:#C9C6EE;box-shadow:inset 0 0 0 1px #6C63C8">↩︎ 한 번 취소</button>
   <div id="pulseResult" style="display:none;flex-direction:column;gap:12px;align-items:center">
     <div style="color:#fff;font-size:clamp(18px,4vw,24px);font-weight:700"><span id="pulseBpm" class="num" style="color:#FF9F1C;font-size:1.4em"></span> BPM</div>
+    <!-- 15초 동안 몇 번 세었는지 여기서 고칠 수 있다. 잘못 눌러도 처음부터 다시 하지 않게. -->
+    <div class="row" style="margin:0;justify-content:center;align-items:center;gap:8px">
+      <span style="color:#C9C6EE;font-size:14px">15초 동안</span>
+      <button class="btn btn-stop btn-sm" id="pulseMinus" style="min-width:44px">−</button>
+      <span id="pulseTapEdit" class="num" style="color:#fff;font-size:22px;font-weight:700;min-width:46px;text-align:center">0</span>
+      <button class="btn btn-go btn-sm" id="pulsePlus" style="min-width:44px">+</button>
+      <span style="color:#C9C6EE;font-size:14px">번</span>
+    </div>
+    <div class="hint" style="color:#9A96CE">잘못 세었으면 −·+로 고치세요 (BPM은 자동으로 다시 계산됩니다)</div>
     <div class="row" style="margin:0;justify-content:center">
       <button class="btn btn-go btn-sm" id="pulseUse">이 값 사용</button>
       <button class="btn btn-stop btn-sm" id="pulseRetry" style="background:#6C63C8;color:#fff">다시 세기</button>
@@ -1568,10 +1580,14 @@ $("parqOk").addEventListener("click",()=>{
     const items=[...document.querySelectorAll(".parq-chk")].map((c,i)=>c.checked?i:-1).filter(i=>i>=0);
     const sent=sendHealthNote(items);
     $("parqMsg").innerHTML='<span class="err">해당 항목이 있어요. 오늘은 무리하지 말고 선생님께 알리세요.</span>'
-      +(sent?'<br><span class="hint">선생님 화면에 <b>건강 사유</b>로 표시했습니다 — 그냥 안 한 것과 구분됩니다.</span>':"");
+      +(sent?'<br><span class="hint">선생님 화면에 <b>건강 사유</b>로 표시했습니다 — 그냥 안 한 것과 구분됩니다.</span>':"")
+      +'<br><span class="hint"><b>잘못 눌렀나요?</b> 체크를 모두 풀고 [확인]을 다시 누르면 취소됩니다.</span>';
     return;
   }
   parqPassed=true;
+  /* 실수로 체크했다가 푸는 학생이 있다. 그대로 두면 선생님 화면에 '오늘 몸이 안 좋다'는
+     표시가 남아 있으므로, 통과한 순간 오늘 남긴 기록을 거둔다. */
+  clearHealthNote();
   $("healthGate").style.display="none";
   $("workBody").style.display="block";
   updatePresence(1);
@@ -2196,18 +2212,25 @@ function renderTaskBoard(){
             title="${on?"건강 사유 해제":"질병 등으로 못 한 학생이면 누르세요"}"
             style="white-space:nowrap;cursor:pointer;border:1px solid var(--line);border-radius:6px;padding:1px 6px;display:inline-block;margin:1px 0">${st.no}&nbsp;${escHtml(st.name)}${(!on&&given&&healthNoteOn(tsCls,st.name,given))?" 🩹":""}${on?" ✓":""}</span>`).join(" ")
       : "<span style='opacity:.6'>없음</span>";
+    const head=`${isToday(x)?'<span class="ord num" style="background:var(--work);color:#fff">오늘</span> ':""}<b style="cursor:pointer;text-decoration:underline dotted" data-ts="${x.id}" title="자세한 기록 보기">${x.no}차시 · ${escHtml(taskLabel(x.a))}</b>
+        <span class="hint">${given?given:""}</span>
+        <b class="num" style="margin-left:auto;color:${col};font-size:17px">${done}/${total}</b>`;
+    // 챙길 학생이 없는 과제는 한 줄로 줄인다 — 목록이 늘어지지 않게
+    if(!todoList.length&&!sickList.length){
+      h+=`<div class="step-box" style="margin:0 0 6px;padding:8px 12px;opacity:.75">
+        <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">${head}
+          <span class="hint" style="flex-basis:100%">✅ 전원 완료</span></div></div>`;
+      return;
+    }
     h+=`<div class="step-box" style="margin:0 0 8px;padding:10px 12px">
-      <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
-        ${isToday(x)?'<span class="ord num" style="background:var(--work);color:#fff">오늘</span> ':""}<b style="cursor:pointer;text-decoration:underline dotted" data-ts="${x.id}" title="자세한 기록 보기">${x.no}차시 · ${escHtml(taskLabel(x.a))}</b>
-        <span class="hint">${given?"낸 날 "+given:""}</span>
-        <b class="num" style="margin-left:auto;color:${col};font-size:17px">${done}/${total}</b>
-      </div>
+      <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">${head}</div>
       <div style="height:6px;border-radius:4px;background:var(--line);margin:7px 0 8px;overflow:hidden">
         <div style="height:100%;width:${pct}%;background:${col}"></div>
       </div>
-      <div style="font-size:13px;line-height:1.9"><b style="color:var(--bad)">아직 안 함 ${todoList.length}명</b> <span class="hint">(이름을 누르면 건강 사유로 옮깁니다 · 🩹는 학생이 자가진단에 체크한 표시)</span><br>${pickStr(todoList,false)}</div>
+      ${todoList.length?`<div style="font-size:13px;line-height:1.9"><b style="color:var(--bad)">아직 안 함 ${todoList.length}명</b> <span class="hint">(이름을 누르면 건강 사유로 · 🩹는 학생이 체크한 표시)</span><br>${pickStr(todoList,false)}</div>`:""}
       ${sickList.length?`<div style="font-size:13px;line-height:1.9;margin-top:5px"><b style="color:var(--gold)">건강 사유 ${sickList.length}명</b> <span class="hint">(다시 누르면 해제)</span><br>${pickStr(sickList,true)}</div>`:""}
-      <div style="font-size:13px;line-height:1.7;margin-top:4px;color:var(--muted)"><b style="color:var(--good)">제출 ${done}명</b> — ${nameStr(doneList)}</div>
+      <details style="margin-top:6px"><summary class="hint" style="cursor:pointer">제출 ${done}명 보기</summary>
+        <div style="font-size:13px;line-height:1.7;margin-top:4px;color:var(--muted)">${nameStr(doneList)}</div></details>
     </div>`;
   });
   box.innerHTML=h;
@@ -3396,20 +3419,48 @@ async function setup(){
     throw e;
   }
   if(landmarker){ draw=draw||new DrawingUtils(ctx); return; }
-  try{
+  /* 자세 인식 파일은 9MB쯤 된다. 예전에는 이걸 다 받을 때까지 [시작]을 눌러도 화면이
+     멈춰 있었고, 두 학급이 같은 와이파이로 동시에 받으면 아예 운동으로 넘어가지 못했다
+     ("버퍼링이 되면서 운동으로 넘어가지 않는다").
+     이제 기다리지 않는다 — 운동은 바로 시작하고, 파일이 준비되면 그때부터 채점이 붙는다.
+     어차피 첫 라운드는 '다음 동작 안내(휴식)'로 시작하므로 그 사이에 대부분 준비된다. */
+  draw=draw||new DrawingUtils(ctx);
+  startModelLoad();
+  return;
+}
+let modelLoading=false, modelFailed=false;
+function startModelLoad(){
+  if(landmarker||modelLoading)return;
+  modelLoading=true; modelFailed=false;
+  const LITE="https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
+  const FULL="https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task";
+  /* full 모델이 엎드린 자세(푸쉬업·플랭크)에서 확실히 낫지만, 느린 망에서는 그걸 기다리다
+     한 차시를 통째로 날린다. 15초 안에 못 받으면 가벼운 모델로라도 채점을 시작한다. */
+  let settled=false;
+  const build=async(url)=>{
     const vision=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.12/wasm");
-    landmarker=await PoseLandmarker.createFromOptions(vision,{
-      // lite 모델은 서 있는 동작은 빠르고 무난하지만 푸쉬업·플랭크처럼 엎드린 자세에서
-      // 관절 신뢰도가 크게 떨어져 카운트 누락이 잦았다. full 모델로 정확도를 우선한다.
-      baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",delegate:"GPU"},
-      runningMode:"VIDEO",numPoses:1});
-  }catch(e){$("intro").innerHTML='<h2>모델 로드 실패</h2><p class="err">인터넷 연결이 필요합니다. 확인 후 새로고침해 주세요.</p>';throw e;}
-  draw=new DrawingUtils(ctx);
+    return await PoseLandmarker.createFromOptions(vision,{
+      baseOptions:{modelAssetPath:url,delegate:"GPU"}, runningMode:"VIDEO", numPoses:1});
+  };
+  const done=(lm,which)=>{
+    if(settled||!lm)return; settled=true; modelLoading=false;
+    landmarker=lm; draw=draw||new DrawingUtils(ctx);
+    toast(which==="lite"?"자세 인식 준비 완료 (가벼운 모드)":"자세 인식 준비 완료","good","🤖");
+  };
+  build(FULL).then(lm=>done(lm,"full")).catch(()=>{});
+  setTimeout(()=>{ if(!settled) build(LITE).then(lm=>done(lm,"lite")).catch(()=>{}); },15000);
+  setTimeout(()=>{ if(!settled){ modelLoading=false; modelFailed=true; } },60000);
 }
 function loop(){
   if(!running)return;
   if(noCamMode){    // 볼 영상도 판정할 관절도 없다 — 타이머(tick)만 돌아간다
     $("fb").textContent="📵 카메라 없이 진행 중 — 화면의 시간에 맞춰 운동하세요";
+    rafId=requestAnimationFrame(loop); return;
+  }
+  if(!landmarker){  // 자세 인식 파일을 아직 받는 중 — 운동은 이미 돌아가고 있다
+    $("fb").textContent=modelFailed
+      ? "자세 인식을 준비하지 못했어요 — 운동은 그대로 하세요 (횟수는 세어지지 않습니다)"
+      : "🤖 자세 인식 준비 중… 먼저 화면의 시간에 맞춰 운동을 시작하세요";
     rafId=requestAnimationFrame(loop); return;
   }
   if(video.currentTime!==lastVid){
@@ -6774,6 +6825,19 @@ function attachExcused(){
     renderTaskBoard(); renderTaskRows(); renderStats();
   },()=>{ /* 권한이 없으면 이 기기에 표시한 것만 쓴다 */ });
 }
+/* 오늘 남긴 자가진단 기록을 거둔다 (잘못 체크한 경우) */
+function clearHealthNote(){
+  const raw=($("stuId").value||"").replace(/[^0-9]/g,"");
+  const cls=($("stuClass").value||"").trim();
+  if(raw.length<5||!cls)return false;
+  const date=todayStr();
+  if(!(healthNotes[cls]&&healthNotes[cls][raw]&&healthNotes[cls][raw][date]))return false;
+  delete healthNotes[cls][raw][date];
+  try{ localStorage.setItem(HEALTH_KEY,JSON.stringify(healthNotes)); }catch(e){}
+  if(fdb)fmod.remove(fmod.ref(fdb,`health/${cls}/${raw}/${date}`)).catch(()=>{});
+  toast("몸 상태 표시를 취소했습니다","good","✔");
+  return true;
+}
 function attachHealth(){
   if(!fdb||!isTeacher())return;
   fmod.onValue(fmod.ref(fdb,"health"),snap=>{
@@ -7010,6 +7074,7 @@ function resetPulse(){
   if(pulseTimer){clearInterval(pulseTimer);pulseTimer=null;}
   $("pulseStart").style.display="inline-block";
   setPulseTapActive(false); // 도우미(탭) 버튼은 [시작]을 누르기 전엔 항상 비활성 — 실수로 미리 시작되는 것을 막는다
+  $("pulseUndo").style.display="none";
   $("pulseTap").style.display="inline-block";   // finishPulse()가 숨겼던 걸 되돌린다 — 안 하면 두 번째 측정부터 탭버튼이 영영 안 보임
   $("pulseCountdown").style.display="none";
   $("pulseTapCount").textContent="";
@@ -7043,7 +7108,7 @@ function startPulse(){
   $("pulseStart").style.display="none";
   $("pulseCountdown").style.display="block"; $("pulseCountdown").textContent="15";
   setPulseTapActive(true);
-  $("pulseTapCount").textContent="0번"; beep(880,.08,.12);
+  $("pulseTapCount").textContent="0번"; $("pulseUndo").style.display="none"; beep(880,.08,.12);
   pulseTimer=setInterval(()=>{
     const remainMs=DUR-(performance.now()-t0), remainSec=Math.ceil(remainMs/1000);
     $("pulseCountdown").textContent=Math.max(remainSec,0);
@@ -7060,17 +7125,43 @@ document.addEventListener("visibilitychange",()=>{
     toast("화면이 꺼져 있는 동안엔 측정할 수 없어요 — 다시 세어주세요","task","⚠️");
   }
 });
+function pulseShowBpm(){
+  $("pulseTapEdit").textContent=pulseTaps;
+  $("pulseBpm").textContent=pulseTaps*4;     // 15초 × 4 = 1분
+}
 function finishPulse(){
   pulseState="done";
   setPulseTapActive(false); $("pulseTap").style.display="none"; $("pulseCountdown").style.display="none";
-  $("pulseBpm").textContent=pulseTaps*4;
+  $("pulseUndo").style.display="none";
+  pulseShowBpm();
   $("pulseResult").style.display="flex"; beep(1046,.15,.15);
 }
+/* 다 세고 나서도 고칠 수 있게 — 한두 번 잘못 눌렀다고 15초를 다시 세게 하지 않는다 */
+$("pulseMinus").addEventListener("click",()=>{ if(pulseTaps>0){pulseTaps--; pulseShowBpm();} });
+$("pulsePlus").addEventListener("click",()=>{ if(pulseTaps<80){pulseTaps++; pulseShowBpm();} });
 $("pulseStart").addEventListener("click",()=>{ ensureAudio(); startPulse(); });
-$("pulseTap").addEventListener("pointerdown",(e)=>{
-  e.preventDefault();
-  if(pulseState!=="counting")return; // [시작]을 누르기 전·측정 종료 후에는 탭이 반응하지 않는다
-  pulseTaps++; $("pulseTapCount").textContent=pulseTaps+"번";
+/* 맥박에 맞춰 원 하나만 노려 누르기가 실제로는 꽤 어렵다("탭이 잘 안 눌린다").
+   세는 동안에는 화면 어디를 눌러도 세어지게 하고, 눌린 것을 눈·손끝으로 바로 알려 준다.
+   [되돌리기]·[닫기] 같은 버튼 위는 빼야 그 버튼들이 계속 동작한다. */
+function pulseHit(){
+  if(pulseState!=="counting")return;
+  pulseTaps++;
+  $("pulseTapCount").textContent=pulseTaps+"번";
+  const b=$("pulseTap");
+  if(b){ b.style.background="var(--good)"; setTimeout(()=>{ if(pulseState==="counting")b.style.background="var(--work)"; },90); }
+  try{ navigator.vibrate&&navigator.vibrate(12); }catch(e){}
+  const u=$("pulseUndo"); if(u)u.style.display="inline-block";
+}
+$("pulseTap").addEventListener("pointerdown",(e)=>{ e.preventDefault(); pulseHit(); });
+$("pulseOverlay").addEventListener("pointerdown",(e)=>{
+  if(pulseState!=="counting")return;
+  if(e.target.closest("button"))return;      // 버튼 위는 그 버튼이 맡는다
+  e.preventDefault(); pulseHit();
+});
+$("pulseUndo").addEventListener("click",(e)=>{
+  e.stopPropagation();
+  if(pulseTaps>0)pulseTaps--;
+  $("pulseTapCount").textContent=pulseTaps+"번";
 });
 $("pulseUse").addEventListener("click",()=>{
   const bpm=pulseTaps*4;
@@ -7765,16 +7856,28 @@ function attachFbListeners(){
       if(running)stopAll();
     }
   });
+  /* onChildAdded는 '앞으로 들어올 기록'만이 아니라 서버에 이미 있는 기록 전부에 대해
+     한 번씩 불린다. 기록이 수백 건 쌓인 뒤로는 앱을 열 때마다 그만큼 소리가 연달아 났고
+     ("접속하면 비프음이 계속 울린다"), 건마다 통계를 다시 그리고 저장까지 해서 화면도 멎었다.
+     처음 쏟아지는 몫은 조용히 받고, 통계·저장은 한 번만 몰아서 한다. */
+  let feedReady=false, statsPend=null;
+  setTimeout(()=>{feedReady=true;},4000);      // 처음 쏟아지는 backfill이 지나간 뒤부터 알린다
+  const flushStats=()=>{ if(statsPend)return; statsPend=setTimeout(()=>{statsPend=null;renderStats();saveAll();},400); };
+  let lastFeedBeep=0;
   onChildAdded(ref(fdb,"records"),snap=>{
     const r=snap.val(); if(!r||!r.name)return;
     if(r.id&&records.some(x=>x.id===r.id)){ // 내 기록의 서버 반영 확인
       const loc=records.find(x=>x.id===r.id);
-      if(loc&&loc.synced!==true){loc.synced=true;saveAll();}
+      if(loc&&loc.synced!==true){loc.synced=true;flushStats();}
       return;
     }
     const rec=normalizeRec(r);
     records.push(rec); renderRecRow(rec); addLiveFeed(rec);
-    renderStats(); saveAll(); beep(1200,.1,.12);
+    flushStats();
+    // 방금 들어온 기록일 때만, 그리고 너무 잦지 않게 알린다
+    const fresh=Date.now()-Date.parse(String(rec.date||"").replace(" ","T"))<5*60*1000;
+    const now=Date.now();
+    if(feedReady&&fresh&&now-lastFeedBeep>1500){ lastFeedBeep=now; beep(1200,.1,.12); }
   });
   onChildChanged(ref(fdb,"records"),snap=>{
     const r=snap.val(); if(!r||!r.id)return;
