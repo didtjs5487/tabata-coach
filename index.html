@@ -760,6 +760,7 @@
       <!-- 혼자 하면 셀카, 친구가 들고 찍어주면 뒤 카메라 -->
       <button class="btn btn-stop" id="camFlip" title="앞/뒤 카메라 바꾸기">🤳 셀카</button>
       <button class="btn btn-stop" id="musicBtn">🎵 음악 ON</button>
+      <button class="btn btn-stop" id="voiceBtn" title="다음 동작·남은 시간을 말로 알려 줍니다">🗣 음성 안내 ON</button>
       <button class="btn btn-stop" id="soundTest" title="폰 스피커에서 소리가 나는지 확인">🔊 소리 확인</button>
     </div>
     <div class="hint" style="margin:6px 0 0">🤳 <b>셀카</b>는 내 모습을 보며 혼자 할 때,
@@ -1572,7 +1573,7 @@ function initParq(){
 }
 function anyParqChecked(){ return [...document.querySelectorAll(".parq-chk")].some(c=>c.checked); }
 $("parqOk").addEventListener("click",()=>{
-  ensureAudio();   // 운동 직전 단계 — 여기서 열어 두면 이후 신호음이 확실히 난다
+  ensureAudio(); primeVoice();   // 운동 직전 단계 — 여기서 열어 두면 이후 소리·음성이 확실히 난다
   if(anyParqChecked()){
     /* 몸이 안 좋아 체크한 학생과, 그냥 안 한 학생은 다르다.
        예전에는 이 화면에서 막고 끝이라 교사 쪽에는 아무 흔적도 남지 않아
@@ -3151,6 +3152,44 @@ function beep(f=880,d=.12,v=.2){try{
   audioIdle();
 }catch(e){}}
 
+/* ---------- 음성 안내 ----------
+   체육관에서는 화면을 계속 보고 있을 수 없다. 다음 동작과 남은 시간을 말로 알려 주면
+   학생이 고개를 들지 않고도 따라올 수 있다. 브라우저에 들어 있는 음성을 쓰므로
+   내려받는 파일이 늘지 않는다(느린 와이파이에 부담을 주지 않는다). */
+let voiceOn=true, voiceReady=false, koVoice=null;
+try{ voiceOn=localStorage.getItem("tabataVoice")!=="0"; }catch(e){}
+function pickKoVoice(){
+  if(!("speechSynthesis" in window))return null;
+  const vs=speechSynthesis.getVoices()||[];
+  return vs.find(v=>/^ko/i.test(v.lang))||null;
+}
+if("speechSynthesis" in window){
+  koVoice=pickKoVoice();                                  // 이미 준비돼 있으면 지금 잡는다
+  speechSynthesis.onvoiceschanged=()=>{ koVoice=pickKoVoice(); };   // 늦게 오면 그때 잡는다
+}
+/* iOS는 사용자가 화면을 누른 순간에 한 번 말을 시켜 둬야 그 뒤로 말할 수 있다 */
+function primeVoice(){
+  if(voiceReady||!("speechSynthesis" in window))return;
+  try{
+    const u=new SpeechSynthesisUtterance(" ");
+    u.volume=0; speechSynthesis.speak(u);
+    voiceReady=true; koVoice=koVoice||pickKoVoice();
+  }catch(e){}
+}
+function speak(text,{cut=false}={}){
+  if(!voiceOn||!text||!soundOK())return;
+  if(!("speechSynthesis" in window))return;
+  try{
+    if(cut)speechSynthesis.cancel();     // 앞말이 남아 있으면 끊고 새로 말한다
+    if(!koVoice)koVoice=pickKoVoice();   // 아직 못 잡았으면 말할 때 한 번 더 찾아본다
+    const u=new SpeechSynthesisUtterance(text);
+    if(koVoice)u.voice=koVoice;
+    u.lang="ko-KR"; u.rate=1.15; u.pitch=1; u.volume=1;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+function stopSpeak(){ try{ speechSynthesis.cancel(); }catch(e){} }
+
 /* ---------- BGM 엔진 (Web Audio, 저작권 free) ---------- */
 let bgmOn=true, bgmTimer=null, bgmStep=0, bgmMode=null;
 // 음계(펜타토닉) — 모드마다 여러 리프를 만들어두고, 라운드가 바뀔 때마다 그중 하나를 무작위로 골라
@@ -3524,6 +3563,7 @@ function startWork(){
   $("nextPreview").style.display="none";
   $("repN").textContent="0"; $("accN").textContent="–";
   $("fb").textContent=EXNAME[curEx]+" 시작!"; setUI(); beep(1046,.15);
+  speak("시작",{cut:true});
   hideSideTip();             // 운동이 시작되면 안내를 치운다
   startBgm("work");
 }
@@ -3531,6 +3571,7 @@ function startRest(){
   const next=seq[(roundIdx)%seq.length];
   phase="rest"; timeLeft=restSec;
   $("fb").textContent="다음: "+EXNAME[next]; setUI(); beep(660,.15);
+  speak(`다음 동작은 ${EXNAME[next]}입니다`);
   $("npArt").innerHTML=exerciseArt(next);
   $("npName").textContent=EXNAME[next];
   $("npTip").textContent=(SIDE_VIEW[next]?"📐 몸을 옆으로 돌려 주세요 — ":"")+(EXTIP[next]||"");
@@ -3547,10 +3588,16 @@ function endRound(){
 function tick(){
   timeLeft--; $("timerBig").textContent=Math.max(timeLeft,0);
   if(timeLeft<=3&&timeLeft>0)beep(phase==="work"?900:600,.08,.15);
+  /* 남은 시간을 말로 알려 준다. 그 구간이 충분히 길 때만 말한다 —
+     휴식이 10초인데 시작하자마자 "10초"라고 하면 앞말과 겹친다. */
+  const span=(phase==="work")?workSec:restSec;
+  if(timeLeft===10&&span>=14)speak("10초");
+  else if(timeLeft===5&&span>=8)speak("5초");
   if(timeLeft<=0){
     if(phase==="work"){
       endRound(); roundIdx++;
-      if(roundIdx>=totalRounds){finish();return;}
+      if(roundIdx>=totalRounds){ speak("운동 끝. 수고했습니다",{cut:true}); finish(); return; }
+      speak("운동 종료",{cut:true});
       startRest();
     } else startWork();
     $("timerBig").textContent=timeLeft;
@@ -6643,6 +6690,7 @@ function stopAll(){
   exitFullscreen();
   ctx.clearRect(0,0,overlay.width,overlay.height); phase="idle";
   stopBgm();
+  stopSpeak();      // 남은 안내 말이 운동이 끝난 뒤에도 이어지지 않게
   releaseAudio();   // 운동이 끝나면 소리 권한을 놓아, 학생이 보던 영상이 멈추지 않게 한다
   stopWorkoutCam(); // 카메라 해제 → 이후 심박 측정 카메라가 열릴 수 있게
   // 운동이 끝나도 학생은 여전히 접속 중이므로 신호는 계속 보낸다(운동 후 심박·완료 단계 표시용)
@@ -6858,7 +6906,22 @@ function attachReports(){
 if($("rpReload"))$("rpReload").addEventListener("click",attachReports);
 applyCamMirror();   // 저장해 둔 값을 화면에 먼저 반영해 둔다
 renderCamGuides();  // 심박 측정 그림 안내를 STEP 1·3 두 곳에 그려 둔다
-$("startBtn").addEventListener("click",()=>{ ensureAudio(); start(); });
+$("startBtn").addEventListener("click",()=>{ ensureAudio(); primeVoice(); start(); });
+$("voiceBtn")&&$("voiceBtn").addEventListener("click",()=>{
+  voiceOn=!voiceOn;
+  $("voiceBtn").textContent=voiceOn?"🗣 음성 안내 ON":"🔇 음성 안내 OFF";
+  $("voiceBtn").classList.toggle("btn-go",voiceOn);
+  $("voiceBtn").classList.toggle("btn-stop",!voiceOn);
+  try{localStorage.setItem("tabataVoice",voiceOn?"1":"0");}catch(e){}
+  if(voiceOn){ primeVoice(); speak("음성 안내를 켰습니다",{cut:true}); }
+  else stopSpeak();
+});
+/* 저장해 둔 설정을 화면에 되살린다 */
+if($("voiceBtn")){
+  $("voiceBtn").textContent=voiceOn?"🗣 음성 안내 ON":"🔇 음성 안내 OFF";
+  $("voiceBtn").classList.add(voiceOn?"btn-go":"btn-stop");
+  $("voiceBtn").classList.remove(voiceOn?"btn-stop":"btn-go");
+}
 $("musicBtn").addEventListener("click",()=>{
   if(!bgmOn)ensureAudio();   // 켜는 쪽이면 소리 장치를 연다
   bgmOn=!bgmOn;
