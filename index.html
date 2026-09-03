@@ -1330,6 +1330,17 @@
   </div>
   <button class="btn btn-stop btn-sm" id="pulseClose" style="background:transparent;color:#C9C6EE;box-shadow:inset 0 0 0 1px #6C63C8">닫기</button>
 </div>
+<!-- 측정 결과를 크게 보여주고 쓸지 묻는 화면 -->
+<div id="hrConfirmOverlay" style="display:none;position:fixed;inset:0;z-index:10008;background:rgba(20,22,48,.96);flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center">
+  <div id="hrConfirmWhat" style="color:#C9C6EE;font-size:16px;font-weight:700">운동 후 심박수</div>
+  <div id="hrConfirmBpm" class="num" style="color:#FF9F1C;font-family:'Barlow Condensed';font-weight:700;font-size:clamp(90px,30vw,220px);line-height:.95">0</div>
+  <div style="color:#fff;font-size:clamp(18px,5vw,26px);font-weight:700;margin-top:-8px">BPM</div>
+  <div id="hrConfirmNote" style="color:#C9C6EE;font-size:15px;max-width:460px;line-height:1.6"></div>
+  <div class="row" style="margin:6px 0 0;justify-content:center">
+    <button class="btn btn-go" id="hrConfirmUse" style="padding:12px 28px;font-size:17px">✔ 이 값으로 기록</button>
+    <button class="btn btn-stop" id="hrConfirmRetry" style="background:#6C63C8;color:#fff;padding:12px 22px;font-size:17px">↻ 다시 측정</button>
+  </div>
+</div>
 <div id="qrOverlay" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(43,49,96,.92);flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:24px;cursor:pointer">
   <canvas id="qrBigCanvas" width="440" height="440" style="width:min(74vmin,440px);height:min(74vmin,440px);background:#fff;border-radius:20px;image-rendering:pixelated"></canvas>
   <div id="qrBigUrl" style="color:#fff;font-family:'Barlow Condensed';font-weight:700;font-size:clamp(20px,4vw,34px);letter-spacing:.5px;word-break:break-all;text-align:center"></div>
@@ -1662,7 +1673,11 @@ const EX={
     down:130,up:150,perfect:105,          // adaptive를 못 쓸 때(기준을 못 잡았을 때)의 예비값
     pose:"floor",travelPt:"shoulder",travelMin:0.02,
     good:"복부 수축 좋아요!",shallow:"상체를 더 말아올리기"},
-  legraise:{type:"rep",joints:[[12,24,26],[11,23,25]],down:100,up:150,perfect:90,minVis:0.28,
+  /* 어깨-골반-무릎 각도로 다리를 얼마나 들었는지 본다. 누워서 다리를 바닥에서 θ만큼 들면
+     이 각도는 대략 180-θ가 된다. 그런데 down을 100으로 두면 θ가 80도를 넘어야 —
+     다리가 거의 수직이 되어야만 — 한 번으로 세어졌다. 모의 실험에서 45도 133 · 60도 118 ·
+     75도 103으로, 제대로 든 레그레이즈가 전부 걸러졌다. 55도쯤부터 인정하도록 낮춘다. */
+  legraise:{type:"rep",joints:[[12,24,26],[11,23,25]],down:125,up:150,perfect:95,minVis:0.28,
     pose:"flat",travelPt:"ankle",travelMin:0.05,
     good:"다리 잘 올렸어요!",shallow:"다리를 더 높이"},
   sidelunge:{type:"rep",joints:[[24,26,28],[23,25,27]],down:120,up:168,perfect:105,
@@ -2828,7 +2843,7 @@ let repDownT=0, yLo=0, yHi=0;   // 한 번 하는 동안의 시작 시각과 기
 /* 운동 중에는 "옆으로 돌아 주세요"라고 하지 않는다 — 이미 엎드린 뒤라 돌 수가 없고,
    옆으로 서라는 안내는 휴식 시간에 미리 하기 때문이다. */
 function sightMsg(){ $("fb").textContent="카메라에 몸이 다 보이게 해주세요"; }
-function resetRound(){repState="up";minAng=180;jackState="closed";jackQ=0;burpeePhase="stand";roundReps=0;roundAccSum=0;roundAccN=0;holdMs=0;holdJudgeMs=0;badMs=0;roundJ={p:0,g:0,gd:0,o:0,b:0};lastT=performance.now();lastRepT=0;repDownT=0;yLo=yHi=0;adaptRest=0;updateJCount();}
+function resetRound(){repState="up";minAng=180;jackState="closed";jackQ=0;kneeUp={l:false,r:false};kneeQ={l:0,r:0};burpeePhase="stand";roundReps=0;roundAccSum=0;roundAccN=0;holdMs=0;holdJudgeMs=0;badMs=0;roundJ={p:0,g:0,gd:0,o:0,b:0};lastT=performance.now();lastRepT=0;repDownT=0;yLo=yHi=0;adaptRest=0;updateJCount();}
 function updateJCount(){
   const el=$("jCount"); el.style.display="block";
   el.innerHTML=`<span class="jp">P ${roundJ.p}</span>·<span class="jg">G ${roundJ.g}</span>·<span class="jgd">GD ${roundJ.gd}</span>·<span class="jo">OK ${roundJ.o}</span>·<span class="jb">M ${roundJ.b}</span>`;
@@ -2945,6 +2960,7 @@ function procJack(lm){
     }
   } else if(!armsUp&&legsApart){ $("fb").textContent=EX.jack.shallow; }
 }
+let kneeUp={l:false,r:false}, kneeQ={l:0,r:0};   // 마운틴클라이머는 다리마다 따로 센다
 // 무릎 올리기 계열 (하이니·마운틴클라이머): 좌우 무릎이 번갈아 골반 높이까지 올라오는 횟수
 function procKnee(lm,def){
   // 하이니는 서서, 마운틴클라이머는 엎드려서 하는 동작이라 몸통 방향이 맞아야 인정한다
@@ -2968,6 +2984,31 @@ function procKnee(lm,def){
     const hipY=(lh.y+rh.y)/2;
     lUp=lk.y<hipY+0.02; rUp=rk.y<hipY+0.02; // 무릎이 골반 근처까지
     lHigh=lk.y<hipY-0.04; rHigh=rk.y<hipY-0.04;
+  }
+  /* 마운틴클라이머는 두 다리가 번갈아 움직인다 — 한쪽이 앞으로 나와 있으면 다른 쪽은 뒤에 있어서
+     '양쪽이 동시에 내려온 순간'이 아예 없다. 그런데 예전 코드는 그 순간에만 한 번을 셌기 때문에
+     아무리 열심히 해도 0회였다(모의 실험에서 10회 동작에 0회). 이제 다리마다 따로 세어,
+     한쪽 무릎이 당겨졌다 돌아갈 때마다 한 번으로 인정한다. */
+  if(def.pose==="flat"){
+    const now=performance.now();
+    const one=(side,up,high)=>{
+      if(!kneeUp[side]&&up){ kneeUp[side]=true; kneeQ[side]=high?100:80; return; }
+      if(kneeUp[side]){
+        if(high)kneeQ[side]=100;
+        if(!up){
+          kneeUp[side]=false;
+          if(now-lastRepT<REP_DEBOUNCE_MS){kneeQ[side]=0;return;}
+          lastRepT=now; roundReps++;
+          const acc=kneeQ[side]||80; roundAccSum+=acc; roundAccN++; kneeQ[side]=0;
+          $("repN").textContent=roundReps;
+          $("accN").textContent=Math.round(roundAccSum/roundAccN)+"%";
+          $("fb").textContent=acc>=95?def.good:def.shallow;
+          judge(acc);
+        }
+      }
+    };
+    one("l",lUp,lHigh); one("r",rUp,rHigh);
+    return;
   }
   const anyUp=lUp||rUp, anyHigh=lHigh||rHigh;
   if(jackState==="closed"&&anyUp){jackState="open"; jackQ=anyHigh?100:72;}
@@ -2995,8 +3036,13 @@ function procBurpee(lm,def){
   // 오른쪽 다리만 보던 것을 다른 자세들처럼 양쪽 중 더 잘 보이는 다리로 판정(측면 각도에 따라 한쪽이 가려질 수 있음)
   const {ang:kneeAng,vis}=bestSide(lm,[[24,26,28],[23,25,27]]);
   if(vis<(def.minVis??0.35)||kneeAng==null){sightMsg();return;}
-  const standing=kneeAng>150&&shY<hipY-0.15; // 곧게 서 있고 어깨가 골반보다 위
-  const down=shY>hipY-0.05;                   // 어깨가 골반 높이까지 내려옴(엎드림/플랭크)
+  /* 예전에는 '어깨가 골반보다 화면 높이의 0.15만큼 위'를 서 있는 조건으로 썼다.
+     버피는 누울 자리가 필요해 학생이 폰에서 멀리 떨어지는데, 그러면 몸이 화면에서 작아져
+     그 차이가 0.15에 못 미친다 — 모의 실험에서 몸이 화면의 38%만 차지하면 0회였다.
+     이제 다른 동작들과 같이 '몸통이 세로냐 가로냐'로 본다(거리·화면 비율과 무관). */
+  const t=torsoDir(lm);
+  const standing=kneeAng>150&&t.upright;      // 곧게 서 있고 몸통이 세로
+  const down=t.flat;                          // 몸통이 가로 — 엎드림/플랭크
   if(burpeePhase==="stand"&&down){burpeePhase="down";}
   else if(burpeePhase==="down"&&standing){
     const now=performance.now();
@@ -5153,6 +5199,14 @@ function openReflectDoc(entry,forRec){
   $("rfDocMsg").innerHTML=locked
     ?'<b style="color:var(--good)">제출한 일지입니다 — 읽기만 가능합니다</b>'
     :(sameDayOK()?"":'<span class="err">운동한 날이 지나 <b>미제출</b>로 기록됩니다. 그래도 남겨두면 선생님이 참고합니다.</span>');
+  /* 성찰 시트(.sheet)는 z-index 10005라, 결투 카운트다운(10006)이나 포트폴리오(10007)가
+     떠 있으면 그 뒤에서 열려 학생 눈에는 "성찰일지가 안 뜬다"로 보인다.
+     열 때 그런 화면들을 닫고, 이 시트를 맨 앞으로 올린다. */
+  ["pulseOverlay","battleCdOverlay","hrConfirmOverlay","battlePickOverlay","qrOverlay"].forEach(id=>{
+    const el=$(id); if(el&&el.style.display!=="none")el.style.display="none";
+  });
+  document.body.classList.remove("fs-lock");
+  $("rfDocOverlay").style.zIndex="10009";
   $("rfDocOverlay").style.display="flex";
 }
 $("rfOpenBtn").addEventListener("click",()=>openReflectDoc(null));
@@ -7192,8 +7246,14 @@ $("pulseUse").addEventListener("click",()=>{
   const bpm=pulseTaps*4;
   if(bpm<40){ toast("맥박 수가 너무 적어요 — [다시 세기]로 다시 측정하세요","task","⚠️"); return; }
   $("pulseOverlay").style.display="none";
-  if(pulseTarget==="preManual"){ $("preManual").value=bpm; $("preSave").click(); }
-  else if(pulseTarget==="hrManual"){ hrManualIsTapped=true; $("hrManual").value=bpm; $("hrSave").click(); }
+  const isPost=(pulseTarget==="hrManual");
+  const pre=isPost?((lastRec&&lastRec.hrPre)?+lastRec.hrPre:(pendingPreHr!=null?+pendingPreHr:null)):null;
+  askHr(bpm,{what:isPost?"운동 후 심박수 (맥박 세기)":"운동 전 심박수 (맥박 세기)", pre,
+    onUse:()=>{
+      if(pulseTarget==="preManual"){ $("preManual").value=bpm; $("preSave").click(); }
+      else if(isPost){ hrManualIsTapped=true; $("hrManual").value=bpm; $("hrSave").click(); }
+    },
+    onRetry:()=>{ $("pulseOverlay").style.display="flex"; resetPulse(); }});
 });
 $("pulseRetry").addEventListener("click",resetPulse);
 $("pulseClose").addEventListener("click",()=>{ if(pulseTimer)clearInterval(pulseTimer); $("pulseOverlay").style.display="none"; });
@@ -7490,12 +7550,54 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
     return {ok:true,bpm:peakBpm?Math.round((acBpm+peakBpm)/2):acBpm};
   }
 }
+/* ---------- 측정 결과를 크게 보여주고 쓸지 묻기 ----------
+   작은 숫자로만 떠서 "몇이 나왔는지 찾기 어렵다"는 말이 있었다. 화면 가득 띄우고,
+   이 값을 기록에 쓸지 바로 묻는다. 카메라 측정은 틀릴 때가 있어서, 이상한 값이면
+   여기서 그 이유를 함께 알려 주고 다시 재도록 권한다. */
+let hrConfirmOn=null;
+function askHr(bpm,{what="운동 후 심박수",pre=null,onUse,onRetry}={}){
+  const ov=$("hrConfirmOverlay");
+  if(!ov){ onUse&&onUse(bpm); return; }
+  $("hrConfirmWhat").textContent=what;
+  $("hrConfirmBpm").textContent=bpm;
+  let note="", odd=false;
+  if(pre!=null&&bpm<pre){
+    odd=true;
+    note=`⚠️ <b style="color:#FF9F1C">운동 전(${pre})보다 낮게 나왔어요.</b> 손가락이 렌즈에서 떨어졌거나 흔들렸을 수 있어요.<br>다시 재는 것을 권합니다.`;
+  } else if(bpm<45||bpm>210){
+    odd=true;
+    note='⚠️ <b style="color:#FF9F1C">사람 맥박 범위를 벗어났어요.</b> 다시 재 주세요.';
+  } else {
+    note="맞으면 [이 값으로 기록]을 누르세요.";
+  }
+  $("hrConfirmNote").innerHTML=note;
+  $("hrConfirmBpm").style.color=odd?"#F45B69":"#FF9F1C";
+  hrConfirmOn={onUse,onRetry};
+  ov.style.display="flex";
+  document.body.classList.add("fs-lock");
+  beep(odd?440:1046,.15,.15);
+  speak(odd?"다시 재 주세요":`${bpm}`,{cut:true});
+}
+function closeHrConfirm(){
+  const ov=$("hrConfirmOverlay"); if(ov)ov.style.display="none";
+  document.body.classList.remove("fs-lock");
+}
+$("hrConfirmUse")&&$("hrConfirmUse").addEventListener("click",()=>{
+  const h=hrConfirmOn; hrConfirmOn=null; closeHrConfirm();
+  h&&h.onUse&&h.onUse();
+});
+$("hrConfirmRetry")&&$("hrConfirmRetry").addEventListener("click",()=>{
+  const h=hrConfirmOn; hrConfirmOn=null; closeHrConfirm();
+  h&&h.onRetry&&h.onRetry();
+});
 $("hrStart").addEventListener("click",()=>{
-  ensureAudio();
+  ensureAudio(); primeVoice();
   $("hrLive").style.display="block"; $("hrResult").style.display="none";
   measurePPG($("hrWave"),$("hrMsg"),$("hrStart"),bpm=>{
-    showHr(bpm);
-    $("hrMsg").textContent="측정 완료! [기록에 저장]을 누르면 세션·CSV에 연결됩니다.";
+    const pre=(lastRec&&lastRec.hrPre)?+lastRec.hrPre:(pendingPreHr!=null?+pendingPreHr:null);
+    askHr(bpm,{what:"운동 후 심박수",pre,
+      onUse:()=>{ showHr(bpm); $("hrMsg").textContent="측정 완료! [기록에 저장]을 누르면 세션·CSV에 연결됩니다."; },
+      onRetry:()=>{ $("hrStart").click(); }});
   },$("hrCam"),"hrManual");   // 카메라가 실패하면 맥박 세기로 이어받는다
 });
 
@@ -7521,10 +7623,12 @@ function setPreHr(bpm){
   updatePresence(2);
 }
 $("preStart").addEventListener("click",()=>{
+  ensureAudio(); primeVoice();
   $("preLive").style.display="block";
   measurePPG($("preWave"),$("preMsg"),$("preStart"),bpm=>{
-    setPreHr(bpm);
-    $("preMsg").textContent="측정 완료!";
+    askHr(bpm,{what:"운동 전 심박수 (안정 시)",
+      onUse:()=>{ setPreHr(bpm); $("preMsg").textContent="측정 완료!"; },
+      onRetry:()=>{ $("preStart").click(); }});
   },$("preCam"),"preManual");   // 카메라가 실패하면 맥박 세기로 이어받는다
 });
 $("preSave").addEventListener("click",()=>{
