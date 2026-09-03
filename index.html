@@ -259,9 +259,10 @@
   .sd-in.sd-miss{color:var(--bad);}
   .sd-none{background:var(--panel); border:1px dashed var(--bad); border-radius:8px;
     padding:9px 11px; margin-top:6px; color:var(--bad); font-size:13.5px; font-weight:700;}
-  .pv-stats{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:7px;}
-  .pv-stat{background:var(--panel); border:1px solid var(--line); border-radius:10px;
-    padding:8px 10px; cursor:pointer; text-align:left; font-family:inherit; color:var(--ink);}
+  .pv-stats{display:flex; flex-wrap:wrap; gap:6px;}
+  .pv-stat{background:var(--panel); border:1px solid var(--line); border-radius:9px;
+    padding:6px 10px; cursor:pointer; text-align:center; font-family:inherit; color:var(--ink);
+    font-size:13.5px; line-height:1.25; min-width:58px;}
   .pv-stat.on{border-color:var(--primary); background:rgba(124,108,255,.28);
     box-shadow:0 0 0 2px var(--primary) inset;}
   .pv-stat .t{display:flex; justify-content:space-between; align-items:baseline; font-size:13.5px; font-weight:700;}
@@ -659,6 +660,8 @@
   <!-- ================= WORKOUT ================= -->
   <!-- ================= MY TASKS ================= -->
   <section class="page" id="pgTasks">
+    <!-- 선생님이 보낸 알림 — 학생이 제일 먼저 보도록 맨 위에 둔다 -->
+    <div id="msgBox" style="display:none"></div>
     <h3>내 과제</h3>
     <div class="hint" style="margin-bottom:10px">할 것을 고르면 <b>운동하기</b>로 넘어갑니다.
       선생님이 낸 <b>공통과제</b>와 내가 만든 <b>자율 실천과제</b>가 모두 여기 모입니다.</div>
@@ -784,6 +787,7 @@
         <button class="btn btn-stop btn-sm" id="hrCountBtn">🖐 맥박 세기</button>
         <input type="number" id="hrManual" placeholder="직접 입력">
         <button class="btn btn-go btn-sm" id="hrSave">확인</button>
+        <button class="btn btn-stop btn-sm" id="hrTrace" style="display:none">📈 이상해요, 신호 보내기</button>
       </div>
       <div class="hint hr-note"><b style="color:var(--good)">120 이상</b> 또는 <b style="color:var(--good)">안정 시보다 +40</b>이면 성실 수행</div>
       <div id="hrLive" style="display:none;flex-basis:100%">
@@ -1070,8 +1074,29 @@
     <summary>📊 학생별 종합 현황</summary>
     <div class="hint" style="margin:10px 0 8px">한 학생당 한 줄입니다. <b>이름을 누르면</b> 성적·계획서·성찰이 모두 펼쳐집니다.</div>
 
-    <div class="hint" style="margin:12px 0 5px"><b>반별 제출 현황</b> — 볼 반을 누르세요</div>
+    <div class="hint" style="margin:12px 0 5px"><b>반</b>을 누르면 그 반 학생별 현황이 나옵니다</div>
     <div id="pvClassStats" class="pv-stats"></div>
+
+    <!-- 계획서를 안 낸 학생에게 바로 알릴 수 있게, 현황 옆에 메시지 보내는 자리를 둔다 -->
+    <details style="margin-top:12px">
+      <summary style="cursor:pointer;font-weight:800;font-size:15px">📢 학생에게 알림 보내기</summary>
+      <div class="hint" style="margin:8px 0 6px">학생 <b>내 과제</b> 화면 맨 위에 뜹니다. 최근 것 하나만 보입니다.</div>
+      <div class="row" style="margin:0 0 6px">
+        <input type="text" id="msgText" placeholder="예: 운동계획서 빨리 제출해주세요" style="flex:1;min-width:200px">
+      </div>
+      <div class="row" style="margin:0 0 6px;align-items:center">
+        <span class="hint">받는 사람</span>
+        <button class="btn btn-teal btn-sm" id="msgToAll">전체 학생</button>
+        <button class="btn btn-teal btn-sm" id="msgToClass">이 반 전체</button>
+        <button class="btn btn-go btn-sm" id="msgToUndone">이 반 미제출자만</button>
+      </div>
+      <div class="hint" id="msgAdminInfo" style="margin:0 0 6px"></div>
+      <div class="row" style="margin:0">
+        <button class="btn btn-stop btn-sm" id="msgClear">보낸 알림 모두 지우기</button>
+        <span class="hint" id="msgAdminMsg"></span>
+      </div>
+      <div id="msgList" style="margin-top:8px"></div>
+    </details>
 
     <div class="row" style="align-items:center;margin-top:12px">
       <div id="pvNow" style="font-weight:800;font-size:16px"></div>
@@ -1546,6 +1571,7 @@ document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()
   document.querySelectorAll("nav button").forEach(x=>x.classList.remove("on"));
   document.querySelectorAll(".page").forEach(x=>x.classList.remove("on"));
   b.classList.add("on"); $(b.dataset.page).classList.add("on");
+  if(b.dataset.page==="pgTasks")renderNotice();
   if(b.dataset.page==="pgMine")renderMine();
   if(b.dataset.page==="pgSetup")refreshBattleUI();
   if(b.dataset.page==="pgWork" && !parqPassed){ $("healthGate").style.display="block"; $("workBody").style.display="none"; initParq(); }
@@ -4105,7 +4131,7 @@ function syncStuId(){
     switchPersonal(raw);                       // 다른 학생이면 그 학생 자료로 갈아 끼운다
     rememberDevUser(raw,($("stuName").value||"").trim(),$("stuClass").value||"");
   }
-  renderPairPick(); renderWhoBadge();
+  renderPairPick(); renderWhoBadge(); renderNotice();
   renderTasks(); // 반이 정해지면 그 반에 배정된 과제 카드만 다시 그린다
 }
 function saveMyId(){
@@ -4737,9 +4763,10 @@ function renderPlanStats(){
     const col=st.rate>=90?"var(--good)":st.rate>=60?"var(--gold)":"var(--bad)";
     const b=document.createElement("button");
     b.className="pv-stat"+(c===cur?" on":"");
-    b.innerHTML=`<div class="t"><b>${shortCls(c)}반</b><span style="color:${col}">${st.done}/${st.total} · ${st.rate}%</span></div>
-      <div class="bar"><i style="width:${st.rate}%;background:${col}"></i></div>`;
-    b.addEventListener("click",()=>{ $("pvClass").value=c; pvOpen=""; renderPlanAdmin(); });
+    // 반 이름과 제출률만 — 누르면 그 반 학생별 현황이 아래에 나온다
+    b.innerHTML=`<b style="font-size:15px">${shortCls(c)}</b>반<br><span style="color:${col};font-weight:700">${st.rate}%</span>`;
+    b.title=`${shortCls(c)}반 — 계획서 ${st.done}/${st.total}명 제출`;
+    b.addEventListener("click",()=>{ $("pvClass").value=c; pvOpen=""; renderPlanAdmin(); renderNoticeAdmin(); });
     box.appendChild(b);
   });
 }
@@ -6902,6 +6929,109 @@ function clearHealthNote(){
   toast("몸 상태 표시를 취소했습니다","good","✔");
   return true;
 }
+/* ---------- 선생님 알림 ----------
+   "운동계획서 빨리 제출해주세요" 같은 말을 수업 중에 전할 데가 없었다.
+   학생 '내 과제' 화면 맨 위에 최근 알림 하나를 띄운다.
+   받는 사람은 전체 / 이 반 전체 / 이 반에서 계획서를 안 낸 학생만 셋 중에 고른다.
+   학생 화면에서 읽기만 하므로 공개로 두고(누구에게 보낸 것인지 이름이 들어가므로
+   같은 반 안에서만 뜻이 있다), 쓰는 것은 교사만 하도록 규칙에서 막는다. */
+const MSG_KEY="tabataMsgSeen";
+let notices={};                 // {id: {text,to,cls,names,date,ts}}
+function noticeFor(me){
+  /* 나에게 온 것 중 가장 최근 하나 */
+  const mine=Object.entries(notices).map(([id,n])=>({id,...n})).filter(n=>{
+    if(!n||!n.text)return false;
+    if(n.to==="all")return true;
+    if(String(n.cls||"")!==String(me.cls||""))return false;
+    if(n.to==="class")return true;
+    if(n.to==="pick")return Array.isArray(n.names)&&n.names.indexOf(me.name)>=0;
+    return false;
+  });
+  mine.sort((a,b)=>(+b.ts||0)-(+a.ts||0));
+  return mine[0]||null;
+}
+function renderNotice(){
+  const box=$("msgBox"); if(!box)return;
+  const me=myKey();
+  const n=me.name?noticeFor(me):null;
+  if(!n){ box.style.display="none"; box.innerHTML=""; return; }
+  let seen=""; try{ seen=localStorage.getItem(MSG_KEY)||""; }catch(e){}
+  const isNew=(seen!==n.id);
+  box.style.display="block";
+  box.innerHTML=`<div class="step-box" style="margin:0 0 12px;border-color:var(--primary);background:rgba(124,108,255,.10)">
+      <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
+        <b style="color:var(--primary)">📢 선생님 알림</b>
+        ${isNew?'<span class="ord num" style="background:var(--bad);color:#fff">새 알림</span>':""}
+        <span class="hint" style="margin-left:auto">${escHtml(n.date||"")}</span>
+      </div>
+      <div style="margin-top:6px;font-size:15px;font-weight:700;white-space:pre-wrap">${escHtml(n.text)}</div>
+      <div class="row" style="margin:8px 0 0"><button class="btn btn-teal btn-sm" id="msgSeen">확인했어요</button></div>
+    </div>`;
+  const b=$("msgSeen");
+  if(b)b.addEventListener("click",()=>{
+    try{ localStorage.setItem(MSG_KEY,n.id); }catch(e){}
+    box.style.display="none";
+  });
+}
+function attachNotices(){
+  if(!fdb)return;
+  fmod.onValue(fmod.ref(fdb,"notices"),snap=>{
+    notices=snap.val()||{};
+    renderNotice(); renderNoticeAdmin();
+  },()=>{});
+}
+function sendNotice(to){
+  const text=($("msgText").value||"").trim();
+  if(!text){ $("msgAdminMsg").innerHTML='<span class="err">보낼 말을 적어 주세요.</span>'; return; }
+  const cls=$("pvClass")?$("pvClass").value:"";
+  if(to!=="all"&&!cls){ $("msgAdminMsg").innerHTML='<span class="err">먼저 반을 고르세요.</span>'; return; }
+  let names=null;
+  if(to==="pick"){
+    names=(classPlanStat(cls).missing||[]);
+    if(!names.length){ $("msgAdminMsg").innerHTML='<span class="err">이 반은 모두 제출했습니다.</span>'; return; }
+  }
+  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  const n={text,to,cls:to==="all"?"":cls,date:nowStamp(),ts:Date.now()};
+  if(names)n.names=names;
+  notices[id]=n;
+  if(fdb)fmod.set(fmod.ref(fdb,"notices/"+id),n)
+    .then(()=>{ $("msgAdminMsg").innerHTML='<b style="color:var(--good)">보냈습니다</b>'; })
+    .catch(()=>{ $("msgAdminMsg").innerHTML='<span class="err">보내지 못했습니다 — 규칙에 notices를 추가해 주세요.</span>'; });
+  else $("msgAdminMsg").innerHTML='<span class="err">서버 연결이 필요합니다.</span>';
+  $("msgText").value="";
+  renderNoticeAdmin();
+}
+function renderNoticeAdmin(){
+  const box=$("msgList"); if(!box)return;
+  const info=$("msgAdminInfo");
+  const cls=$("pvClass")?$("pvClass").value:"";
+  if(info&&cls){
+    const st=classPlanStat(cls);
+    info.innerHTML=`지금 고른 반: <b>${shortCls(cls)}반</b> · 계획서 미제출 <b style="color:var(--bad)">${(st.missing||[]).length}명</b>`;
+  }
+  const ks=Object.keys(notices).sort((a,b)=>(+notices[b].ts||0)-(+notices[a].ts||0)).slice(0,5);
+  if(!ks.length){ box.innerHTML='<div class="hint">보낸 알림이 없습니다.</div>'; return; }
+  box.innerHTML=ks.map(k=>{
+    const n=notices[k];
+    const who=n.to==="all"?"전체 학생":(n.to==="class"?`${shortCls(n.cls)}반 전체`:`${shortCls(n.cls)}반 ${(n.names||[]).length}명`);
+    return `<div class="hint" style="padding:4px 0;border-bottom:1px solid var(--line)">
+      <b>${escHtml(who)}</b> · ${escHtml(n.date||"")}<br>${escHtml(n.text)}
+      <button class="btn btn-stop btn-sm" data-msg="${k}" style="margin-left:6px">지우기</button></div>`;
+  }).join("");
+  box.querySelectorAll("button[data-msg]").forEach(b=>b.addEventListener("click",()=>{
+    const k=b.dataset.msg; delete notices[k];
+    if(fdb)fmod.remove(fmod.ref(fdb,"notices/"+k)).catch(()=>{});
+    renderNoticeAdmin(); renderNotice();
+  }));
+}
+$("msgToAll")&&$("msgToAll").addEventListener("click",()=>sendNotice("all"));
+$("msgToClass")&&$("msgToClass").addEventListener("click",()=>sendNotice("class"));
+$("msgToUndone")&&$("msgToUndone").addEventListener("click",()=>sendNotice("pick"));
+$("msgClear")&&$("msgClear").addEventListener("click",()=>{
+  if(!confirm("보낸 알림을 모두 지울까요? 학생 화면에서도 사라집니다."))return;
+  Object.keys(notices).forEach(k=>{ if(fdb)fmod.remove(fmod.ref(fdb,"notices/"+k)).catch(()=>{}); });
+  notices={}; renderNoticeAdmin(); renderNotice();
+});
 function attachHealth(){
   if(!fdb||!isTeacher())return;
   fmod.onValue(fmod.ref(fdb,"health"),snap=>{
@@ -7261,6 +7391,26 @@ $("preCountBtn").addEventListener("click",()=>openPulse("preManual"));
 $("hrCountBtn").addEventListener("click",()=>openPulse("hrManual"));
 
 let ppgStream=null, lastHrDeviceId=null;
+/* 방금 잰 심박 신호 — 학생이 [이상해요]를 누르면 이대로 선생님께 간다.
+   카메라 심박이 왜 틀리는지는 실제 기기의 신호를 봐야 알 수 있다. */
+let lastTrace=null;
+if($("hrTrace"))$("hrTrace").addEventListener("click",()=>{
+  if(!lastTrace){ toast("보낼 신호가 없습니다 — 먼저 카메라로 측정해 주세요","task","📈"); return; }
+  const me=myKey();
+  if(!me.name){ toast("운동 설계 탭에서 학번을 먼저 입력하세요","task","⚠️"); return; }
+  if(!fdb){ toast("인터넷이 연결되어야 보낼 수 있어요","task","📡"); return; }
+  const r=lastTrace.result||{};
+  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const d=deviceInfo();
+  fmod.set(fmod.ref(fdb,"reports/"+id),{
+    name:me.name, cls:me.cls, date:nowStamp(),
+    text:`[심박 측정 신호] ${r.ok?("나온 값 "+r.bpm+" BPM"):("실패 — "+(r.why||"이유 없음"))}`
+      +` · ${lastTrace.secs}초 ${lastTrace.n}프레임 · 플래시 ${lastTrace.torch?"켜짐":"없음"} · ${lastTrace.facing||"카메라 미상"}`,
+    os:d.os, br:d.br, scr:d.scr, ua:d.ua, where:"심박 측정",
+    trace:JSON.stringify(lastTrace),
+  }).then(()=>{ toast("측정 신호를 선생님께 보냈습니다 — 고치는 데 씁니다","good","📈"); $("hrTrace").style.display="none"; })
+   .catch(()=>{ toast("보내지 못했습니다 — 인터넷을 확인하세요","task","⚠️"); });
+});
 // 예전엔 이 기기가 원래 골랐던 카메라(deviceId)를 메모리에만 담아둬서, 새로고침·다시
 // 켜기마다 잊어버리고 후면 카메라 중 아무 렌즈나(광각 등) 다시 골랐다 — 그래서 "매번
 // 다른 카메라로 바뀐다"는 문제가 있었다. 이제 이 기기에 저장해 앱을 껐다 켜도 기억한다.
@@ -7369,7 +7519,10 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
       let r=0,g=0; for(let i=0;i<d.length;i+=4){ r+=d[i]; g+=d[i+1]; }
       const px=d.length/4;
       lastR=r/px; lastG=g/px;
-      sig.push({t:performance.now()-t0, v:lastR});
+      /* 초록도 함께 남긴다. 카메라가 스스로 밝기를 오르내리거나(자동 노출) 조명이 깜빡이면
+         빨강·초록이 '똑같이' 밝아졌다 어두워지는데, 혈액의 맥동은 두 색에 다르게 나타난다.
+         그래서 두 색의 공통 성분을 지우면 조명 흔들림만 사라지고 맥박은 남는다. */
+      sig.push({t:performance.now()-t0, v:lastR, g:lastG});
     }catch(e){}
   }
   /* 손가락이 렌즈를 제대로 덮었는지 실시간으로 알려 준다.
@@ -7444,8 +7597,8 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
     checking=true;
     const r=analyze(t);
     checking=false;
-    if(r.ok) finish(r.bpm);
-    else if(t>=MAX_DUR) giveUp();
+    if(r.ok){ keepTrace({ok:true,bpm:r.bpm}); finish(r.bpm); }
+    else if(t>=MAX_DUR){ keepTrace({ok:false,why:r.why||""}); giveUp(); }
   }
   // 측정이 끝나면 안내 문구를 원래대로 돌려 둔다(다음 측정 때 헷갈리지 않게)
   function resetHint(){
@@ -7471,6 +7624,25 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
     if(fallbackTarget){ setTimeout(()=>{ if($("pulseOverlay").style.display!=="flex")
       openPulse(fallbackTarget,"📷 <b>카메라로는 맥박이 잘 안 잡혔어요</b><br>대신 <b>짝과 함께 맥박을 세어</b> 측정할게요.<br><span style=\"font-weight:400;opacity:.85\">아래 [▶ 시작]을 누르고 15초 동안 심장이 뛸 때마다 큰 원을 탭하세요.</span>"); },600); }
   }
+  /* 방금 잰 신호를 그대로 담아 둔다.
+     카메라 심박이 왜 틀리는지는 실제 기기에서 나온 신호를 봐야 알 수 있다.
+     지금까지는 내가 가정한 모형으로만 고쳐 왔고, 그래서 자동노출 오류를 못 잡았다.
+     학생이 [이상해요]를 누르면 이 신호가 선생님 화면(학생이 알린 앱 문제)으로 간다. */
+  function keepTrace(result){
+    try{
+      const step=Math.max(1,Math.floor(sig.length/450));   // 450점 정도로 줄여 담는다
+      const pick=sig.filter((_,i)=>i%step===0);
+      lastTrace={
+        r:pick.map(p=>Math.round(p.v*10)/10),
+        g:pick.map(p=>p.g==null?null:Math.round(p.g*10)/10),
+        t:pick.map(p=>Math.round(p.t)),
+        n:sig.length, secs:Math.round((sig.length?sig[sig.length-1].t:0)/100)/10,
+        result:result||null, torch:hasTorch, facing:facing||"",
+        ua:(navigator.userAgent||"").slice(0,120),
+      };
+      const b=$("hrTrace"); if(b)b.style.display="inline-block";
+    }catch(e){}
+  }
   function medianOf(a){ const b=a.slice().sort((x,y)=>x-y); return b[Math.floor(b.length/2)]; }
   /* 한 구간의 주기와 뚜렷한 정도. 겹치는 표본 수로 나눠 lag 치우침을 없앤다. */
   function periodOf(x,FS,loBpm,hiBpm){
@@ -7488,6 +7660,19 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
     }
     return {bpm:bestLag>0?60*FS/bestLag:0, corr:best, rms:Math.sqrt(e0), cent:c};
   }
+  /* 두 색을 같은 간격으로 다시 늘어놓는다 */
+  function resample(pts,key,m,t0,stepMs){
+    const out=new Array(m); let j=0;
+    for(let i=0;i<m;i++){
+      const tt=t0+i*stepMs;
+      while(j<pts.length-2&&pts[j+1].t<tt) j++;
+      const a=pts[j], b=pts[Math.min(j+1,pts.length-1)];
+      const span=(b.t-a.t)||1, k=Math.max(0,Math.min(1,(tt-a.t)/span));
+      const av=a[key], bv=b[key];
+      out[i]=(av==null?0:av)+((bv==null?av:bv)-(av==null?0:av))*k;
+    }
+    return out;
+  }
   function analyze(elapsed){
     const from=Math.max(0,elapsed-15000);
     const pts=sig.filter(p=>p.t>=from);
@@ -7495,14 +7680,15 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
     const FS=30, stepMs=1000/FS;
     const t0=pts[0].t, total=pts[pts.length-1].t-t0;
     const m=Math.max(1,Math.floor(total/stepMs));
-    const rs=new Array(m); let j=0;
-    for(let i=0;i<m;i++){
-      const tt=t0+i*stepMs;
-      while(j<pts.length-2&&pts[j+1].t<tt) j++;
-      const a=pts[j], b=pts[Math.min(j+1,pts.length-1)];
-      const span=(b.t-a.t)||1, k=Math.max(0,Math.min(1,(tt-a.t)/span));
-      rs[i]=a.v+(b.v-a.v)*k;
-    }
+    const rs=resample(pts,"v",m,t0,stepMs);
+    /* 초록 채널로 조명 흔들림을 지워 보려 했지만 되돌렸다.
+       실제 기기에서 초록이 어떻게 움직이는지 모르는 채로 내가 만든 모형에 맞춰 고친 것이라,
+       모의 실험에서 자동노출 오류는 그대로였고(51/49/53/50/48) 깨끗한 신호는 오히려
+       70을 147로 읽었다. 실제 측정 신호를 받아 본 뒤에 다시 손대기로 한다.
+       (초록은 계속 기록해 둔다 — 아래 '측정 신호 보내기'로 선생님께 보내기 위함) */
+    return judgeSeries(rs,m,FS);
+  }
+  function judgeSeries(rs,m,FS){
     /* ① 손가락이 움직인 순간 메우기 — 갑자기 크게 튀는 프레임은 앞 값으로 잇는다.
        사람 맥박은 한 프레임 만에 그렇게 크게 변하지 않으므로, 그런 변화는 움직임이다. */
     const d=[]; for(let i=1;i<m;i++) d.push(Math.abs(rs[i]-rs[i-1]));
@@ -7860,7 +8046,7 @@ async function ensureAuth(app){
       Object.keys(reflections).forEach(k=>delete reflections[k]);
       Object.keys(reports).forEach(k=>delete reports[k]); renderReports();
     }
-    if(fmod&&fdb){ attachProtected(fmod.onValue,fmod.ref); attachReports(); attachHealth(); attachExcused(); attachPresenceListener(); }
+    if(fmod&&fdb){ attachProtected(fmod.onValue,fmod.ref); attachReports(); attachHealth(); attachExcused(); attachNotices(); attachPresenceListener(); }
     renderAuth();
     if(u)toast("교사 로그인됨 — 성찰·계획서를 볼 수 있습니다","good","🔐");
   });
@@ -8051,6 +8237,7 @@ function attachFbListeners(){
   attachReports();   // 학생이 알린 앱 문제 (교사만 읽힌다)
   attachHealth();    // 건강 자가진단 체크 (교사만 읽힌다)
   attachExcused();   // 교사가 표시한 건강 사유 제외
+  attachNotices();   // 선생님이 보낸 알림 (학생도 읽는다)
   // 채점 기준은 서버 값을 따른다 — 교사 기기마다 학생 점수가 달라지지 않게
   onValue(ref(fdb,"rubric"),snap=>{
     const v=snap.val(); if(!v)return;
