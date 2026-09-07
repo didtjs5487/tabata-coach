@@ -1060,7 +1060,8 @@
     <summary>✅ 과제 현황 — 누가 냈나</summary>
     <h3 style="margin-top:8px" id="taskRowsHead">✅ 학급별 과제 현황 — 누가 냈나</h3>
     <div class="hint" style="margin-bottom:8px">반을 고르면 <b>그 반에 낸 과제</b>가 차시 순으로 모두 나오고(<b>오늘 낸 과제는 맨 위</b>), 과제마다 <b>제출한 학생 / 아직 안 한 학생</b>이 이름으로 보입니다.<br>
-      몸이 안 좋아 못 한 학생은 <b>아직 안 함 명단에서 이름을 누르면</b> 건강 사유로 옮겨지고, 이수율 계산에서 빠집니다.</div>
+      몸이 안 좋아 못 한 학생은 <b>아직 안 함 명단에서 이름을 누르면</b> 건강 사유로 옮겨지고, 이수율 계산에서 빠집니다.<br>
+      지난 과제는 <b>계속 보충할 수 있습니다</b> — 학생 화면에 <b>[보충]</b>으로 표시되고, 하면 제출로 옮겨집니다. 마감일은 <b>채점 기준</b>에서 정합니다.</div>
     <div id="tsClassPick" class="task-class-pick"></div>
     <div id="tsBoard" style="margin-top:10px"><div class="hint">반을 고르세요.</div></div>
 
@@ -1165,6 +1166,7 @@
         <div class="field"><label>② 달성 비율(%)</label><input type="number" id="rbHrRate" min="0" max="100" style="width:90px"></div>
         <div class="field"><label>① 이수율(%)</label><input type="number" id="rbDone" min="0" max="100" style="width:90px"></div>
         <div class="field"><label>① 건강 제외 한도(회)</label><input type="number" id="rbExMax" min="0" max="60" style="width:110px"></div>
+        <div class="field"><label>보충 마감일</label><input type="date" id="rbDeadline" style="width:150px"></div>
         <div class="field"><label>★ 정확도 +1점(%)</label><input type="number" id="rbAccB1" min="0" max="100" style="width:90px"></div>
         <div class="field"><label>★ 정확도 +2점(%)</label><input type="number" id="rbAccB2" min="0" max="100" style="width:90px"></div>
       </div>
@@ -1184,6 +1186,7 @@
               운동이 한 번뿐인 학생은 뺄 것이 없어 그대로 계산합니다.</span></span></label>
       </div>
       <div class="hint" style="margin-top:10px">
+        <b>보충 마감일</b> — 학생 <b>내 과제</b> 화면에 "언제까지 보충할 수 있는지"로 표시됩니다. 비워 두면 마감 없이 계속 할 수 있습니다.<br>
         <b>① 건강 제외 한도</b> — 몸이 안 좋아 못 한 차시는 이수율 분모에서 뺍니다(교사가 <b>✅ 과제 현황</b>에서 이름을 눌러 표시한 것만).
         <b>한도보다 많이 빠지면 빼지 않고</b> 전체 차시로 계산합니다. 한도를 넘은 학생은 아래 학생별 화면에 따로 표시되니 직접 판단하세요.</div>
       <div class="hint" style="margin-top:10px">
@@ -1883,6 +1886,13 @@ function taskClassLabel(a){
    "이 반은 저번에 몇 차시까지 했더라"를 기억해 적어야 했고 번호가 제각각이 되었다.
    이제 그 반에 낸 날짜 순서대로 앱이 1차시, 2차시…를 붙인다.
    예전 자료에 남아 있는 lesson 값은 쓰지 않는다(지우지도 않는다 — 그냥 무시). */
+/* 성적 마감일 — 아파서 못 한 학생이 언제까지 보충할 수 있는지 알려 주기 위한 것.
+   비워 두면 마감 없이 계속 보충할 수 있다(지금까지의 동작 그대로). */
+function deadlineStr(){ return (rubric&&rubric.deadline)?String(rubric.deadline):""; }
+function pastDeadline(){
+  const d=deadlineStr();
+  return !!d && todayStr()>d;
+}
 function taskGivenAt(a,cls){
   return (a&&a.classes&&typeof a.classes[cls]==="string")?a.classes[cls]:((a&&a.created)||"");
 }
@@ -1967,15 +1977,38 @@ function renderTasks(){
 
   group("📋 공통과제 — 선생님이 낸 과제");
   if(mine.length){
-    mine.sort((a,b)=>String(assignments[b].created||"").localeCompare(String(assignments[a].created||"")));
-    mine.forEach(id=>{
+    /* 아직 안 한 과제를 먼저, 그중에서도 오늘 낸 것을 맨 위에 둔다.
+       몸이 아파 못 한 학생이 나중에 보충할 수 있어야 해서, 지난 과제도 계속 할 수 있게
+       그대로 남겨 둔다 — 다만 무엇을 보충해야 하는지 한눈에 보이도록 나눠 보여준다. */
+    const today=todayStr();
+    const info=id=>{
       const a=assignments[id];
+      const given=taskGivenAt(a,me.cls);
       const done=records.filter(r=>r.taskId===id&&r.name===me.name&&r.cls===me.cls)
         .sort((x,y)=>String(x.date).localeCompare(String(y.date)))[0];
-      const meta=`부여 ${a.created||"–"} · `+(done?`<b style="color:var(--good)">실행 ${String(done.date).slice(0,10)}</b>`
+      return {id,a,given,done,isToday:given===today,
+              sick:!done&&isExcused(me.cls,id,me.name)};
+    };
+    const all=mine.map(info);
+    const rank=x=>x.done?2:(x.isToday?0:1);      // 오늘 할 것 → 보충할 것 → 이미 한 것
+    all.sort((x,y)=>rank(x)-rank(y)||String(y.given).localeCompare(String(x.given)));
+    const todo=all.filter(x=>!x.done&&!x.isToday);
+    if(todo.length){
+      const n=document.createElement("div"); n.className="hint"; n.style.margin="0 0 6px 2px";
+      const sickN=todo.filter(x=>x.sick).length;
+      n.innerHTML=`<b style="color:var(--work)">보충할 과제 ${todo.length}개</b> — 지난 과제도 지금 하면 그대로 인정됩니다`
+        +(deadlineStr()?` (<b>${deadlineStr()}</b>까지)`:"")
+        +(sickN?`<br><span style="color:var(--gold)">몸이 안 좋아 못 한 과제 ${sickN}개가 있어요. 나으면 해도 됩니다.</span>`:"");
+      tc.appendChild(n);
+    }
+    all.forEach(({id,a,given,done,isToday,sick})=>{
+      const badge=done?"" : isToday?'<span class="ord num" style="background:var(--work);color:#fff">오늘</span> '
+                : sick?'<span class="ord num" style="background:var(--gold);color:#fff">보충 · 건강 사유</span> '
+                : '<span class="ord num" style="background:var(--bad);color:#fff">보충</span> ';
+      const meta=`부여 ${given||a.created||"–"} · `+(done?`<b style="color:var(--good)">실행 ${String(done.date).slice(0,10)}</b>`
         :`<b style="color:var(--bad)">아직 안 함</b>`);
-      const c=card("📋",a.title,meta,cfgLine(a.seq,a.work,a.rest,a.rounds));
-      c.add(done?"다시 하기":"이 과제 하기","btn-go",()=>applyAssignment(id));
+      const c=card("📋",badge+escHtml(taskLabel(a)),meta,cfgLine(a.seq,a.work,a.rest,a.rounds));
+      c.add(done?"다시 하기":(isToday?"이 과제 하기":"보충하기"),"btn-go",()=>applyAssignment(id));
     });
   } else {
     const none=document.createElement("div"); none.className="hint"; none.style.margin="0 0 4px 2px";
@@ -2232,7 +2265,7 @@ function renderTaskBoard(){
         <div style="height:100%;width:${pct}%;background:${col}"></div>
       </div>
       ${todoList.length?`<div style="font-size:13px;line-height:1.9"><b style="color:var(--bad)">아직 안 함 ${todoList.length}명</b> <span class="hint">(이름을 누르면 건강 사유로 · 🩹는 학생이 체크한 표시)</span><br>${pickStr(todoList,false)}</div>`:""}
-      ${sickList.length?`<div style="font-size:13px;line-height:1.9;margin-top:5px"><b style="color:var(--gold)">건강 사유 ${sickList.length}명</b> <span class="hint">(다시 누르면 해제)</span><br>${pickStr(sickList,true)}</div>`:""}
+      ${sickList.length?`<div style="font-size:13px;line-height:1.9;margin-top:5px"><b style="color:var(--gold)">건강 사유 ${sickList.length}명</b> <span class="hint">(다시 누르면 해제 · 나중에 보충하면 자동으로 제출로 옮겨집니다)</span><br>${pickStr(sickList,true)}</div>`:""}
       <details style="margin-top:6px"><summary class="hint" style="cursor:pointer">제출 ${done}명 보기</summary>
         <div style="font-size:13px;line-height:1.7;margin-top:4px;color:var(--muted)">${nameStr(doneList)}</div></details>
     </div>`;
@@ -7163,6 +7196,7 @@ const RUBRIC_DEFAULT={
   rise:40,
   doneRate:80,   // 항목1 공통과제 이수율(%) 합격선
   excuseMax:3,   // 항목1 건강 사유로 빼 줄 수 있는 최대 차시 수 — 이보다 많이 빠지면 빼지 않는다
+  deadline:"",   // 보충 마감일(비우면 마감 없음) — 아파서 못 한 학생이 언제까지 할 수 있는지 알린다
   hrRate:50,     // 항목2 심박 달성 세션 비율(%) 합격선
   accB1:85,      // 평균 정확도가 이 이상이면 가산 +1점
   accB2:92,      // 이 이상이면 가산 +2점 (정확도는 필수 항목이 아니라 가산점이다)
@@ -7923,6 +7957,7 @@ function renderRubric(){
   $("rbHr").value=rubric.hr; $("rbHrRate").value=rubric.hrRate;
   $("rbDone").value=rubric.doneRate;
   if($("rbExMax"))$("rbExMax").value=(rubric.excuseMax==null?3:rubric.excuseMax);
+  if($("rbDeadline"))$("rbDeadline").value=rubric.deadline||"";
   if($("rbAccB1"))$("rbAccB1").value=rubric.accB1!==undefined?rubric.accB1:85;
   if($("rbAccB2"))$("rbAccB2").value=rubric.accB2!==undefined?rubric.accB2:92;
   $("rbSelf").value=rubric.selfN; $("rbGain").value=rubric.gain;
@@ -7949,6 +7984,7 @@ if($("rbJudgePick"))$("rbJudgePick").addEventListener("click",e=>{
 if($("rbSave"))$("rbSave").addEventListener("click",()=>{
   rubric={hr:+$("rbHr").value||130, hrRate:+$("rbHrRate").value||0,
     doneRate:+$("rbDone").value||0, excuseMax:$("rbExMax")?(+$("rbExMax").value||0):3,
+    deadline:$("rbDeadline")?($("rbDeadline").value||""):"",
     accB1:+$("rbAccB1").value||85, accB2:+$("rbAccB2").value||92,
     selfN:+$("rbSelf").value||0, gain:+$("rbGain").value||0,
     keep:+$("rbKeep").value||85, useRise:$("rbRise").checked, rise:40,
