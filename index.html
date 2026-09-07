@@ -479,6 +479,15 @@
     font-size:14px; color:var(--ink);}
   .pick-group::after{content:""; flex:1; height:1px; background:var(--line);}
   .pick-group:first-of-type{margin-top:10px;}
+  /* 여러 반을 나란히 볼 때 쓰는 반 구분 머리. 작은 글씨로는 어느 반인지 구분이 안 돼
+     띠를 둘러 크게 보여 주고, 스크롤해도 위에 붙어 있게 한다. */
+  .cls-head{position:sticky; top:0; z-index:3; display:flex; align-items:baseline; gap:10px;
+    flex-wrap:wrap; margin:18px 0 10px; padding:9px 12px; border-radius:10px;
+    background:var(--primary); color:#fff; box-shadow:0 2px 10px rgba(0,0,0,.12);}
+  .cls-head:first-child{margin-top:4px;}
+  .cls-head b{font-family:"Barlow Condensed"; font-size:24px; line-height:1; letter-spacing:.5px;}
+  .cls-head .sub{font-size:13px; opacity:.9; font-weight:600;}
+  .cls-head .right{margin-left:auto; font-size:13px; opacity:.95; font-weight:700;}
   .mode-badge{font-size:13px; font-weight:600; background:var(--panel3); border:1px solid var(--line);
     border-radius:999px; padding:6px 12px;}
   .feed-item{background:var(--panel3); border-left:3px solid var(--primary); border-radius:8px;
@@ -2272,14 +2281,16 @@ function boardForClass(tsCls){
   if(!rosters[tsCls]) return `<div class="hint"><b>${shortCls(tsCls)}반</b> 명렬표가 없습니다.</div>`;
   const roster=rosters[tsCls], total=roster.length;
   const all=classLessons(tsCls);
-  const head=`<div class="pick-group" style="margin-top:6px">${shortCls(tsCls)}반</div>`;
-  if(!all.length) return head+`<div class="hint"><b>${shortCls(tsCls)}반</b>에 낸 공통과제가 없습니다.</div>`;
+  const clsHead=(extra)=>`<div class="cls-head"><b>${shortCls(tsCls)}반</b>
+      <span class="sub">${total}명 · ${all.length}차시</span>
+      <span class="right">${extra||""}</span></div>`;
+  if(!all.length) return clsHead("")+`<div class="hint">이 반에 낸 공통과제가 없습니다.</div>`;
   /* 차시가 쌓이면 오늘 낸 과제가 맨 아래로 밀려, 수업 중에 아픈 학생을 체크하려면
      매번 끝까지 내려야 했다. 오늘 낸 것만 맨 위로 올리고 나머지는 차시 순 그대로 둔다. */
   const today=todayStr();
   const isToday=x=>taskGivenAt(x.a,tsCls)===today;
   const mine=[...all.filter(isToday), ...all.filter(x=>!isToday(x))];
-  let h="";
+  let h="", needSum=0, sickSum=0;
   mine.forEach(x=>{
     const given=(x.a.classes&&typeof x.a.classes[tsCls]==="string")?x.a.classes[tsCls]:(x.a.created||"");
     // 한 학생이 여러 번 해도 한 번만 센다(첫 수행 기준)
@@ -2296,6 +2307,7 @@ function boardForClass(tsCls){
     const sickList=rest.filter(st=>isExcused(tsCls,x.id,st.name));
     const todoList=rest.filter(st=>!isExcused(tsCls,x.id,st.name));
     const done=doneList.length;
+    needSum+=todoList.length; sickSum+=sickList.length;
     const pct=total?Math.round(done/total*100):0;
     const col=done===0?"var(--bad)":(done>=total?"var(--good)":"var(--work)");
     const nameStr=list=>list.length
@@ -2328,7 +2340,10 @@ function boardForClass(tsCls){
         <div style="font-size:13px;line-height:1.7;margin-top:4px;color:var(--muted)">${nameStr(doneList)}</div></details>
     </div>`;
   });
-  return head+h;
+  const right=needSum
+    ? `아직 안 함 ${needSum}명${sickSum?` · 건강 사유 ${sickSum}명`:""}`
+    : (sickSum?`건강 사유 ${sickSum}명`:"✅ 모두 완료");
+  return clsHead(right)+h;
 }
 /* 눌림 연결 — 여러 반을 한꺼번에 그렸으므로 어느 반의 이름인지 칩에 심어 둔 값을 쓴다 */
 function bindBoard(box){
