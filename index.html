@@ -6824,11 +6824,27 @@ function renderReports(){
         <span class="hint">${escHtml(String(r.date||"").slice(0,16))}</span>
         <span class="hint">· ${escHtml(r.os||"")} ${escHtml(r.br||"")} ${escHtml(r.scr||"")}</span>
         ${r.where?`<span class="hint">· ${escHtml(r.where)}에서</span>`:""}
+        ${r.trace?'<span class="ord num" style="background:var(--primary);color:#fff">측정 신호 있음</span>':""}
       </div>
       <div style="margin-top:6px;white-space:pre-wrap">${escHtml(r.text||"")}</div>
-      <div class="row" style="margin:8px 0 0"><button class="btn btn-teal btn-sm" data-rp="${k}">✔ 확인함 (목록에서 지우기)</button></div>
+      <div class="row" style="margin:8px 0 0"><button class="btn btn-teal btn-sm" data-rp="${k}">✔ 확인함 (목록에서 지우기)</button>
+        ${r.trace?`<button class="btn btn-go btn-sm" data-tr="${k}">📈 측정 신호 내려받기</button>`:""}</div>
     </div>`;
   }).join("");
+  /* 심박 측정 신호를 파일로 꺼낸다. 카메라 심박이 왜 틀리는지는 실제 신호를 봐야 알 수 있는데,
+     이 자료는 교사만 읽을 수 있어 화면에서 꺼낼 길이 필요하다. */
+  box.querySelectorAll("button[data-tr]").forEach(b=>b.addEventListener("click",()=>{
+    const k=b.dataset.tr, r=reports[k]; if(!r||!r.trace)return;
+    let t; try{ t=JSON.parse(r.trace); }catch(e){ t={raw:r.trace}; }
+    const out={학생:`${r.cls||""}반 ${r.name||""}`, 보낸때:r.date||"", 기기:`${r.os||""} ${r.br||""} ${r.scr||""}`,
+      설명:r.text||"", 신호:t};
+    const blob=new Blob([JSON.stringify(out,null,1)],{type:"application/json"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=`심박신호_${(r.cls||"").replace(/[^0-9-]/g,"")}_${(r.name||"학생")}_${String(r.date||"").slice(0,10)}.json`;
+    a.click(); URL.revokeObjectURL(a.href);
+    toast("신호 파일을 내려받았습니다","good","📈");
+  }));
   box.querySelectorAll("button[data-rp]").forEach(b=>b.addEventListener("click",()=>{
     const k=b.dataset.rp, r=reports[k];
     if(!r)return;
