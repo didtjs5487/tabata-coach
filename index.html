@@ -1037,8 +1037,12 @@
     </div>
 
     <div class="row" style="margin-top:8px">
-      <div class="field" style="flex:1;min-width:180px"><label>과제 이름</label><input type="text" id="taskTitle" placeholder="예: 하체 집중 타바타" style="width:100%"></div>
+      <div class="field" style="flex:1;min-width:180px"><label>과제 이름</label><input type="text" id="taskTitle" placeholder="예: 맛있는 운동 · 몸~몸~몸매" style="width:100%"></div>
     </div>
+    <!-- 재미있는 이름이 학생 호응이 좋다는 현장 의견에 따라, 고르면 바로 채워지는 보기를 둔다.
+         고른 뒤 그대로 고쳐 써도 되고, 처음부터 직접 적어도 된다. -->
+    <div class="hint" style="margin:2px 0 4px">이름을 누르면 채워집니다 — 그대로 고쳐 쓰셔도 됩니다 <span id="taskNameMore" style="cursor:pointer;text-decoration:underline">🔀 다른 이름</span></div>
+    <div id="taskNamePick" class="task-class-pick"></div>
     <div style="margin-top:6px">
       <div class="hint" style="margin-bottom:4px"><b>차시는 적지 않아도 됩니다</b> — 그 반에 낸 순서대로 앱이 1차시, 2차시…로 붙입니다. 이름에는 <b>운동 내용</b>을 적어 주세요.<br>오늘 수업한 반만 고르세요 (안 고르면 전체 반). 다른 반은 그 반 차례가 왔을 때 아래 <b>[반]</b>으로 추가하면 됩니다.</div>
       <div id="taskClassPick" class="task-class-pick"></div>
@@ -2166,6 +2170,28 @@ function openTaskClassEditor(id){
   taskClassEditId=(taskClassEditId===id)?null:id;
   renderTasks();
 }
+/* 과제 이름 보기 — 학생들이 재미있는 이름에 호응이 좋다고 해서 골라 쓸 수 있게 둔다.
+   여기 있는 것을 꼭 써야 하는 것은 아니고, 직접 적는 것이 늘 우선이다. */
+const TASK_NAMES=[
+  "맛있는 운동","몸~몸~몸매","섹쉬 바뒤~~","오늘은 좀 맵다","하체 실종 사건",
+  "숨쉬기 어려움 주의","복근 소환술","심장이 뛴다","4분의 기적","다리야 미안해",
+  "땀 폭포 코스","오늘도 살아남기","코어가 운다","점프 좀 치는 날","팔 없어짐 주의",
+  "내일 계단 조심","숨은 근육 찾기","오늘의 지옥철","엉덩이 기억상실","가슴이 웅장해진다",
+];
+function renderTaskNames(){
+  const box=$("taskNamePick"); if(!box)return;
+  box.innerHTML="";
+  const pool=TASK_NAMES.slice();
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  pool.slice(0,6).forEach(n=>{
+    const b=document.createElement("button");
+    b.textContent=n;
+    b.addEventListener("click",()=>{ $("taskTitle").value=n; $("taskTitle").focus(); });
+    box.appendChild(b);
+  });
+}
+if($("taskNameMore"))$("taskNameMore").addEventListener("click",renderTaskNames);
+renderTaskNames();
 /* 과제 등록 화면의 '낼 반' 고르기 */
 const newTaskClasses={};
 function renderTaskClassPick(){
