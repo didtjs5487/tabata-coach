@@ -1052,6 +1052,12 @@
          고른 뒤 그대로 고쳐 써도 되고, 처음부터 직접 적어도 된다. -->
     <div class="hint" style="margin:2px 0 4px">이름을 누르면 채워집니다 — 그대로 고쳐 쓰셔도 됩니다 <span id="taskNameMore" style="cursor:pointer;text-decoration:underline">🔀 다른 이름</span></div>
     <div id="taskNamePick" class="task-class-pick"></div>
+    <!-- 자주 쓰는 운동 조합을 이름 붙여 두고 한 번에 불러온다 -->
+    <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)">
+      <div class="hint" style="margin-bottom:4px">⭐ <b>자주 쓰는 조합</b> — 누르면 위 설계 칸에 그대로 채워집니다
+        <button class="btn btn-teal btn-sm" id="tplSave" style="margin-left:6px">지금 구성 저장</button></div>
+      <div id="tplPick" class="task-class-pick"></div>
+    </div>
     <div style="margin-top:6px">
       <div class="hint" style="margin-bottom:4px"><b>차시는 적지 않아도 됩니다</b> — 그 반에 낸 순서대로 앱이 1차시, 2차시…로 붙입니다. 이름에는 <b>운동 내용</b>을 적어 주세요.<br>오늘 수업한 반만 고르세요 (안 고르면 전체 반). 다른 반은 그 반 차례가 왔을 때 아래 <b>[반]</b>으로 추가하면 됩니다.</div>
       <div id="taskClassPick" class="task-class-pick"></div>
@@ -2143,7 +2149,22 @@ function renderTasks(){
     const chip=document.createElement("div"); chip.className="chip";
     chip.innerHTML=`<span class="ord num">${lessonNo[id]?lessonNo[id]+"차시":"📋"}</span>${escHtml(taskLabel(a))}<span class="task-cls-tag">${taskClassLabel(a)}</span>
       <span class="hint">완료 ${doneSet.size}명</span>`;
+    /* 매번 처음부터 만들기가 번거롭다는 의견 — 지난 과제의 운동 구성을 그대로 위 설계 칸에
+       불러온다. 반만 고르고 [등록]을 누르면 오늘 날짜로 새 과제가 된다. */
+    const again=document.createElement("button"); again.textContent="↻ 다시 내기";
+    again.title="이 구성을 위 설계 칸으로 불러옵니다 (반만 골라 등록하세요)";
+    again.addEventListener("click",()=>{
+      taskDesigner.load(a);
+      $("taskTitle").value=taskLabel(a);
+      Object.keys(newTaskClasses).forEach(c=>delete newTaskClasses[c]);
+      renderTaskClassPick();
+      const box=$("taskListBox"); if(box)box.open=false;      // 목록을 접어 설계 칸이 보이게
+      const el=$("taskTitle");
+      if(el){ el.scrollIntoView({behavior:"smooth",block:"center"}); el.focus(); }
+      toast("불러왔습니다 — 낼 반을 고르고 [등록]을 누르세요","good","↻");
+    });
     const edit=document.createElement("button"); edit.textContent="반"; edit.title="이 과제를 낼 반 바꾸기";
+    chip.appendChild(again);
     edit.addEventListener("click",()=>openTaskClassEditor(id));
     const del=document.createElement("button"); del.textContent="✕"; del.title="과제 삭제";
     del.addEventListener("click",()=>{
@@ -2185,6 +2206,50 @@ function openTaskClassEditor(id){
   taskClassEditId=(taskClassEditId===id)?null:id;
   renderTasks();
 }
+/* ---------- 자주 쓰는 운동 조합 ----------
+   매 시간 과제를 처음부터 만드는 일이 번거롭다는 의견에 따라, 조합을 이름 붙여 저장해 둔다.
+   두 선생님이 같은 조합을 쓰도록 채점 기준(rubric)과 함께 서버에 담는다 —
+   그래야 폰에서 만든 조합을 노트북에서도 쓸 수 있다(민감한 자료가 아니라 운동 구성일 뿐이다). */
+function templates(){ return Array.isArray(rubric.templates)?rubric.templates:[]; }
+function renderTemplates(){
+  const box=$("tplPick"); if(!box)return;
+  box.innerHTML="";
+  const list=templates();
+  if(!list.length){ box.innerHTML='<span class="hint">아직 저장한 조합이 없습니다 — 운동을 고른 뒤 [지금 구성 저장]을 누르세요.</span>'; return; }
+  list.forEach((tp,i)=>{
+    const b=document.createElement("button");
+    const names=[...new Set((tp.seq||[]).map(k=>EXNAME[k]||k))];
+    b.innerHTML=`${escHtml(tp.name)} <span style="opacity:.65">${(tp.seq||[]).length}동작</span>`;
+    b.title=names.join(" → ")+`  ·  ${tp.work}초 운동 / ${tp.rest}초 휴식 / ${tp.rounds}번`;
+    b.addEventListener("click",()=>{
+      taskDesigner.load(tp);
+      if(!($("taskTitle").value||"").trim()) $("taskTitle").value=tp.name;
+      toast(`'${tp.name}' 조합을 불러왔습니다`,"good","⭐");
+    });
+    const del=document.createElement("button");
+    del.textContent="✕"; del.title="이 조합 지우기"; del.style.opacity=".6";
+    del.addEventListener("click",(e)=>{
+      e.stopPropagation();
+      if(!confirm(`'${tp.name}' 조합을 지울까요?`))return;
+      rubric.templates=templates().filter((_,j)=>j!==i);
+      saveAll(); pushRubric(); renderTemplates();
+    });
+    box.appendChild(b); box.appendChild(del);
+  });
+}
+if($("tplSave"))$("tplSave").addEventListener("click",()=>{
+  const cfg=taskDesigner.cfg();
+  if(!cfg.seq.length){ alert("먼저 위에서 운동을 골라 주세요."); return; }
+  const suggested=($("taskTitle").value||"").trim()
+    || [...new Set(cfg.seq.map(k=>EXNAME[k]||k))].slice(0,2).join("·");
+  const name=(prompt("이 조합을 뭐라고 부를까요?",suggested)||"").trim();
+  if(!name)return;
+  const list=templates().filter(x=>x.name!==name);      // 같은 이름이면 덮어쓴다
+  list.unshift({name,seq:cfg.seq,work:cfg.work,rest:cfg.rest,rounds:cfg.rounds,diff:cfg.diff});
+  rubric.templates=list.slice(0,12);
+  saveAll(); pushRubric(); renderTemplates();
+  toast(`'${name}' 조합을 저장했습니다`,"good","⭐");
+});
 /* 과제 이름 보기 — 학생들이 재미있는 이름에 호응이 좋다고 해서 골라 쓸 수 있게 둔다.
    여기 있는 것을 꼭 써야 하는 것은 아니고, 직접 적는 것이 늘 우선이다. */
 const TASK_NAMES=[
@@ -2796,7 +2861,18 @@ function setupMiniDesigner(o){ // o={sel,add,copy,list,work,rest,rounds,diff,onC
   render();
   return {
     get seq(){return st.seq;},
-    cfg(){return {seq:[...st.seq],work:+$(o.work).value||20,rest:+$(o.rest).value||10,rounds:+$(o.rounds).value||8,diff:$(o.diff).value};}
+    cfg(){return {seq:[...st.seq],work:+$(o.work).value||20,rest:+$(o.rest).value||10,rounds:+$(o.rounds).value||8,diff:$(o.diff).value};},
+    /* 저장해 둔 구성을 그대로 불러온다 — 지난 과제 [다시 내기], 즐겨찾기 조합에서 쓴다 */
+    load(c){
+      if(!c)return;
+      st.seq=Array.isArray(c.seq)?[...c.seq]:[];
+      if(c.work)$(o.work).value=c.work;
+      if(c.rest)$(o.rest).value=c.rest;
+      if(c.rounds)$(o.rounds).value=c.rounds;
+      if(c.diff)$(o.diff).value=c.diff;
+      render();
+      if(o.onChange)o.onChange();
+    }
   };
 }
 let taskDesigner=null;
@@ -8069,6 +8145,7 @@ function renderRubric(){
   $("rbDone").value=rubric.doneRate;
   if($("rbExMax"))$("rbExMax").value=(rubric.excuseMax==null?3:rubric.excuseMax);
   if($("rbDeadline"))$("rbDeadline").value=rubric.deadline||"";
+  renderTemplates();     // 저장해 둔 운동 조합도 함께 되살린다 (rubric에 들어 있다)
   if($("rbAccB1"))$("rbAccB1").value=rubric.accB1!==undefined?rubric.accB1:85;
   if($("rbAccB2"))$("rbAccB2").value=rubric.accB2!==undefined?rubric.accB2:92;
   $("rbSelf").value=rubric.selfN; $("rbGain").value=rubric.gain;
@@ -8093,7 +8170,8 @@ if($("rbJudgePick"))$("rbJudgePick").addEventListener("click",e=>{
   setRbJudge(b.dataset.s);
 });
 if($("rbSave"))$("rbSave").addEventListener("click",()=>{
-  rubric={hr:+$("rbHr").value||130, hrRate:+$("rbHrRate").value||0,
+  const keepTpl=templates();          // 조합은 채점 기준과 상관없다 — 지우지 않는다
+  rubric={templates:keepTpl, hr:+$("rbHr").value||130, hrRate:+$("rbHrRate").value||0,
     doneRate:+$("rbDone").value||0, excuseMax:$("rbExMax")?(+$("rbExMax").value||0):3,
     deadline:$("rbDeadline")?($("rbDeadline").value||""):"",
     accB1:+$("rbAccB1").value||85, accB2:+$("rbAccB2").value||92,
@@ -8104,7 +8182,8 @@ if($("rbSave"))$("rbSave").addEventListener("click",()=>{
   saveAll(); renderStats(); pushRubric();
 });
 if($("rbReset"))$("rbReset").addEventListener("click",()=>{
-  rubric={...RUBRIC_DEFAULT}; renderRubric(); saveAll(); renderStats(); pushRubric();
+  rubric={...RUBRIC_DEFAULT, templates:templates()};   // 기본값으로 되돌려도 조합은 남긴다
+  renderRubric(); saveAll(); renderStats(); pushRubric();
 });
 
 /* ---------- Firebase 실시간 연동 ---------- */
@@ -8405,6 +8484,7 @@ function attachFbListeners(){
   onValue(ref(fdb,"rubric"),snap=>{
     const v=snap.val(); if(!v)return;
     rubric={...RUBRIC_DEFAULT,...v};
+    if(typeof renderTemplates==="function")renderTemplates();
     renderRubric(); renderStats(); saveAll();
   },()=>{});
   onValue(ref(fdb,"rosters"),snap=>{
