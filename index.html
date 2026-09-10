@@ -1280,6 +1280,8 @@
       <div class="row" style="margin-top:8px">
         <div class="field"><label>새 비밀번호</label><input type="password" id="newPw" style="width:150px"></div>
         <button class="btn btn-teal btn-sm" id="pwBtn">변경</button>
+        <div class="hint" style="flex-basis:100%;margin-top:6px">이 비밀번호는 <b>이 기기에만</b> 저장됩니다 — 폰에서 바꿔도 노트북은 그대로입니다.
+          기기마다 맞출 필요는 없습니다. <b>🔐 교사 로그인</b>을 해 두면 그 기기에서는 비밀번호를 묻지 않습니다.</div>
       </div>
 
       <h3 style="margin-top:20px">📦 백업 · 초기화</h3>
@@ -1579,10 +1581,14 @@ document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()
     toast("운동을 끝냈습니다","task","⏹");
   }
   if(b.dataset.page==="pgAdmin"&&!adminUnlocked){
-    const pw=prompt("관리자(교사) 비밀번호를 입력하세요");
-    if(pw===null)return;
-    if(pw!==adminPw){alert("비밀번호가 틀렸습니다.");return;}
-    adminUnlocked=true;
+    if(typeof isTeacher==="function"&&isTeacher()){
+      adminUnlocked=true;                       // 교사 로그인이 되어 있으면 잠금을 묻지 않는다
+    } else {
+      const pw=prompt("이 기기 잠금 비밀번호를 입력하세요 (교사 로그인을 해 두면 다음부터 묻지 않습니다)");
+      if(pw===null)return;
+      if(pw!==adminPw){alert("비밀번호가 틀렸습니다.");return;}
+      adminUnlocked=true;
+    }
   }
   document.querySelectorAll("nav button").forEach(x=>x.classList.remove("on"));
   document.querySelectorAll(".page").forEach(x=>x.classList.remove("on"));
@@ -1597,7 +1603,7 @@ $("pwBtn")&&$("pwBtn").addEventListener("click",()=>{
   const v=$("newPw").value.trim();
   if(v.length<4){alert("4자 이상으로 정해주세요.");return;}
   adminPw=v; saveAll(); $("newPw").value="";
-  alert("비밀번호가 변경·저장되었습니다.");
+  alert("이 기기의 잠금 비밀번호를 바꿨습니다. 이 기기에만 적용됩니다 — 다른 기기에서는 교사 로그인을 해 두시면 비밀번호 없이 열립니다.");
 });
 function goPage(id){ document.querySelector(`nav button[data-page=${id}]`).click(); }
 
@@ -2338,6 +2344,8 @@ function boardForClass(tsCls){
       ${sickList.length?`<div style="font-size:13px;line-height:1.9;margin-top:5px"><b style="color:var(--gold)">건강 사유 ${sickList.length}명</b> <span class="hint">(다시 누르면 해제 · 나중에 보충하면 자동으로 제출로 옮겨집니다)</span><br>${pickStr(sickList,true)}</div>`:""}
       <details style="margin-top:6px"><summary class="hint" style="cursor:pointer">제출 ${done}명 보기</summary>
         <div style="font-size:13px;line-height:1.7;margin-top:4px;color:var(--muted)">${nameStr(doneList)}</div></details>
+      <div class="row" style="margin:8px 0 0"><button class="btn btn-stop btn-sm" data-drop="${x.id}" data-dcls="${tsCls}"
+        title="이 반에 잘못 나간 과제라면 빼세요 — 이수율 계산에서 사라집니다">🚫 이 반에서 빼기</button></div>
     </div>`;
   });
   const right=needSum
@@ -2347,6 +2355,9 @@ function boardForClass(tsCls){
 }
 /* 눌림 연결 — 여러 반을 한꺼번에 그렸으므로 어느 반의 이름인지 칩에 심어 둔 값을 쓴다 */
 function bindBoard(box){
+  box.querySelectorAll("button[data-drop]").forEach(b=>b.addEventListener("click",()=>{
+    dropTaskFromClass(b.dataset.dcls, b.dataset.drop);
+  }));
   box.querySelectorAll(".ex-pick").forEach(el=>el.addEventListener("click",()=>{
     toggleExcuse(el.dataset.cls, el.dataset.task, el.dataset.no, el.dataset.name);
   }));
@@ -7021,6 +7032,29 @@ function excuseNoOf(cls,name){
 function isExcused(cls,taskId,name){
   const no=excuseNoOf(cls,name);
   return !!(no && excused[cls] && excused[cls][taskId] && excused[cls][taskId][no]);
+}
+/* 이 과제를 이 반에서 뺀다 — 전체 반으로 잘못 나간 경우.
+   빼면 그 반 학생들의 이수율 계산에서 사라져 '안 한 것'으로 불이익을 받지 않는다.
+   이미 한 학생의 운동 기록은 그대로 남는다(자율 실천으로 남음). */
+function dropTaskFromClass(cls,taskId){
+  const a=assignments[taskId]; if(!a)return;
+  const cur=Object.keys(a.classes||{}).filter(k=>a.classes[k]);
+  const list=cur.length?cur:classNames();          // 비어 있으면 '전체 반'이라는 뜻
+  const rest=list.filter(c=>c!==cls);
+  const label=taskLabel(a);
+  if(!rest.length){
+    if(!confirm(`'${label}'을(를) ${shortCls(cls)}반에서 빼면 남는 반이 없습니다.\n\n과제를 아예 지울까요? (이미 한 학생의 운동 기록은 그대로 남습니다)`))return;
+    delete assignments[taskId];
+    if(fdb)fmod.remove(fmod.ref(fdb,"assignments/"+taskId)).catch(()=>{});
+  } else {
+    if(!confirm(`'${label}'을(를) ${shortCls(cls)}반에서 뺄까요?\n\n그 반 학생들의 이수율 계산에서 빠져 '안 한 것'으로 불이익을 받지 않습니다.\n남는 반: ${rest.map(shortCls).join(", ")}반`))return;
+    const next={};
+    rest.forEach(c=>{ next[c]=(a.classes&&typeof a.classes[c]==="string")?a.classes[c]:(a.created||todayStr()); });
+    a.classes=next;
+    if(fdb)fmod.set(fmod.ref(fdb,"assignments/"+taskId),a).catch(()=>{});
+  }
+  saveAll(); renderTasks(); renderTsClassPick(); renderTaskBoard(); renderTaskRows(); renderStats();
+  toast(`${shortCls(cls)}반에서 뺐습니다`,"good","✔");
 }
 function toggleExcuse(cls,taskId,no,name){
   if(!excused[cls])excused[cls]={};
