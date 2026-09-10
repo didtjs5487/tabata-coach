@@ -308,8 +308,8 @@
     border-radius:0; border:0; margin:0; z-index:9999;}
   .stage.fullscreen video, .stage.fullscreen canvas.ov{object-fit:cover;}
   /* 운동 중 전체화면에서만 보이는 조작 버튼들 (종료·음악 바꾸기) */
-  .stage-tools{position:absolute; top:14px; right:14px; z-index:20; display:none; gap:8px;}
-  .stage.fullscreen .stage-tools{display:flex;}
+  .stage-tools{position:absolute; top:14px; right:14px; z-index:30; display:none; gap:8px; flex-wrap:wrap; justify-content:flex-end;}
+  .stage.fullscreen .stage-tools, .stage.running .stage-tools{display:flex;}
   .exit-fs{background:rgba(0,0,0,.5); color:#fff; border:0; border-radius:10px; padding:8px 14px;
     font-family:"Barlow Condensed",sans-serif; font-weight:700; font-size:16px; cursor:pointer;}
   video,canvas.ov{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scaleX(-1);}
@@ -1583,7 +1583,7 @@ document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()
   const curPage=(document.querySelector("nav button.on")||{dataset:{}}).dataset.page;
   if(running && curPage==="pgWork" && b.dataset.page!=="pgWork"){
     if(!confirm("운동이 진행 중입니다.\n\n다른 탭으로 나가면 이번 운동은 여기서 끝납니다. 나갈까요?"))return;
-    stopAll();
+    stopAll(); resetStage();
     toast("운동을 끝냈습니다","task","⏹");
   }
   if(b.dataset.page==="pgAdmin"&&!adminUnlocked){
@@ -3721,20 +3721,42 @@ function startModelLoad(){
   setTimeout(()=>{ if(!settled) build(LITE).then(lm=>done(lm,"lite")).catch(()=>{}); },15000);
   setTimeout(()=>{ if(!settled){ modelLoading=false; modelFailed=true; } },60000);
 }
+let loopErrs=0, lastFrameAt=0, camFixing=false;
+/* 영상이 몇 초째 멈춰 있으면(오류도 없이 조용히 멎는 경우) 스스로 카메라를 다시 잡는다 */
+function watchFrames(){
+  if(!running||noCamMode||camFixing)return;
+  const now=performance.now();
+  if(!lastFrameAt){ lastFrameAt=now; return; }
+  if(now-lastFrameAt<6000)return;
+  camFixing=true; lastFrameAt=0;
+  $("fb").textContent="화면이 멈춰 있어요 — 카메라를 다시 잡는 중…";
+  Promise.resolve(refreshWorkoutCam()).catch(()=>{}).then(()=>{ camFixing=false; });
+}
 function loop(){
+  if(!running)return;
+  try{ loopBody(); loopErrs=0; }
+  catch(e){
+    loopErrs++;
+    if(loopErrs===1)$("fb").textContent="화면이 잠깐 멎었어요 — 다시 잡는 중…";
+    if(loopErrs>=5){ loopErrs=0; refreshWorkoutCam(); return; }   // 계속 나면 카메라를 다시 잡는다
+  }
+  if(running)rafId=requestAnimationFrame(loop);
+}
+function loopBody(){
   if(!running)return;
   if(noCamMode){    // 볼 영상도 판정할 관절도 없다 — 타이머(tick)만 돌아간다
     $("fb").textContent="📵 카메라 없이 진행 중 — 화면의 시간에 맞춰 운동하세요";
-    rafId=requestAnimationFrame(loop); return;
+    return;
   }
   if(!landmarker){  // 자세 인식 파일을 아직 받는 중 — 운동은 이미 돌아가고 있다
     $("fb").textContent=modelFailed
       ? "자세 인식을 준비하지 못했어요 — 운동은 그대로 하세요 (횟수는 세어지지 않습니다)"
       : "🤖 자세 인식 준비 중… 먼저 화면의 시간에 맞춰 운동을 시작하세요";
-    rafId=requestAnimationFrame(loop); return;
+    return;
   }
+  watchFrames();
   if(video.currentTime!==lastVid){
-    lastVid=video.currentTime;
+    lastVid=video.currentTime; lastFrameAt=performance.now();   // 새 프레임이 왔다
     const res=landmarker.detectForVideo(video,performance.now());
     ctx.clearRect(0,0,overlay.width,overlay.height);
     /* 각도는 '화면에 비친 2차원 좌표' 대신 '몸 기준 3차원 좌표'로 잰다.
@@ -3757,7 +3779,6 @@ function loop(){
       }
     } else if(phase==="work"){$("fb").textContent="화면에 사람이 안 보여요";}
   }
-  rafId=requestAnimationFrame(loop);
 }
 
 /* ---------- tabata engine ---------- */
@@ -6903,16 +6924,17 @@ async function start(opts){
       ?"운동 전 심박수를 잰 지 15분이 지났습니다.\n지금 몸 상태와 달라 기준이 되지 못하므로 STEP 1에서 다시 재주세요."
       :"운동 전 심박수를 먼저 측정해 주세요. STEP 1에서 카메라 측정·맥박 세기·직접 입력 중 하나로 재면 시작할 수 있습니다.");
     try{$("preStart").scrollIntoView({behavior:"smooth",block:"center"});}catch(e){}
-    $("startBtn").disabled=false;
+    syncStartBtn();
     return;
   }
-  $("startBtn").disabled=true; $("result").style.display="none"; clearPostHrNeed();
+  $("result").style.display="none"; clearPostHrNeed();
   roundIdx=0; log=[];
   workSec=+$("workSec").value||20; restSec=+$("restSec").value||10; totalRounds=+$("rounds").value||8;
-  try{await setup();}catch(e){$("startBtn").disabled=false;return;}
+  try{await setup();}catch(e){ syncStartBtn(); return; }
   $("intro").style.display="none"; $("hud").style.display="flex";
   enterFullscreen();
-  running=true; loop();
+  running=true; $("stage").classList.add("running"); syncStartBtn();
+  loopErrs=0; lastFrameAt=0; camFixing=false; loop();
   updatePresence(3); startPresenceHeartbeat();
   // 첫 동작도 준비할 시간을 준다 — 휴식으로 시작해 다음 동작을 안내한 뒤 운동에 들어간다
   renderWhoBadge();
@@ -6924,8 +6946,7 @@ async function start(opts){
 }
 function stopAll(){
   hideSideTip();
-  running=false; if(rafId)cancelAnimationFrame(rafId); if(tickId)clearInterval(tickId);
-  $("startBtn").disabled=false;
+  running=false; $("stage").classList.remove("running"); syncStartBtn(); if(rafId)cancelAnimationFrame(rafId); if(tickId)clearInterval(tickId);
   $("nextPreview").style.display="none";
   exitFullscreen();
   ctx.clearRect(0,0,overlay.width,overlay.height); phase="idle";
@@ -6953,7 +6974,7 @@ function exitFullscreen(){
   document.body.classList.remove("fs-lock");
   if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});
 }
-$("exitFs").addEventListener("click",stopAll);
+$("exitFs").addEventListener("click",()=>{ stopAll(); resetStage(); });
 $("camFlip")&&$("camFlip").addEventListener("click",flipWorkoutCam);
 $("camFlipFs")&&$("camFlipFs").addEventListener("click",flipWorkoutCam);
 $("camRefresh")&&$("camRefresh").addEventListener("click",refreshWorkoutCam);
@@ -7288,7 +7309,29 @@ function attachReports(){
 if($("rpReload"))$("rpReload").addEventListener("click",attachReports);
 applyCamMirror();   // 저장해 둔 값을 화면에 먼저 반영해 둔다
 renderCamGuides();  // 심박 측정 그림 안내를 STEP 1·3 두 곳에 그려 둔다
-$("startBtn").addEventListener("click",()=>{ ensureAudio(); primeVoice(); start(); });
+function resetStage(){
+  $("hud").style.display="none";
+  $("nextPreview").style.display="none";
+  $("intro").innerHTML='<h2>준비되면 시작을 누르세요</h2>';
+  $("intro").style.display="";
+  $("fb").textContent="자세를 잡아주세요";
+}
+function syncStartBtn(){
+  const b=$("startBtn"); if(!b)return;
+  b.disabled=false;                          // 잠긴 채로 남지 않게 한다 — 늘 누를 수 있어야 한다
+  b.textContent=running?"■ 그만하기":"시작";
+  b.classList.toggle("btn-stop",!!running);
+  b.classList.toggle("btn-go",!running);
+}
+$("startBtn").addEventListener("click",()=>{
+  if(running){                                // 운동 중이면 이 버튼이 '그만하기'다
+    if(!confirm("지금 운동을 끝낼까요?"))return;
+    stopAll(); resetStage();
+    toast("운동을 끝냈습니다 — 다시 시작할 수 있어요","task","⏹");
+    return;
+  }
+  ensureAudio(); primeVoice(); start();
+});
 $("voiceBtn")&&$("voiceBtn").addEventListener("click",()=>{
   voiceOn=!voiceOn;
   $("voiceBtn").textContent=voiceOn?"🗣 음성 안내 ON":"🔇 음성 안내 OFF";
