@@ -944,16 +944,20 @@
 
   <!-- ================= ADMIN / LEARNING CENTER ================= -->
   <section class="page" id="pgAdmin">
-    <div class="hint" id="saveStatusLine" style="margin-bottom:12px;font-weight:600">저장 상태 확인 중…</div>
+    <div class="row" style="margin:0 0 6px;align-items:center">
+      <span class="hint" id="saveStatusLine" style="font-weight:600">저장 상태 확인 중…</span>
+      <button class="btn btn-teal btn-sm" id="csvBtn" title="지금까지의 모든 수행 기록을 CSV로 받습니다">⬇ 백업 CSV</button>
+    </div>
     <div class="row" id="authChipRow" style="margin:6px 0 14px;align-items:center">
       <span class="hint" id="authChip" style="font-weight:600">🔐 <b style="color:var(--bad)">로그인 필요</b> — 성찰·계획서가 보이지 않습니다</span>
       <button class="btn btn-go btn-sm" id="authJump">🔐 로그인</button>
     </div>
 
     <!-- 계획서를 안 낸 학생에게 바로 알릴 수 있게, 학습센터를 열면 바로 보이게 맨 위에 둔다.
-         접어 두면 있는 줄 모르고 지나쳐서, 펼쳐진 채로 눈에 띄게 놓았다. -->
-    <div class="step-box" style="margin:14px 0 0;padding:14px;border-color:var(--primary);background:rgba(124,108,255,.08)">
-      <div style="font-weight:800;font-size:17px;color:var(--primary)">📢 학생에게 알림 보내기</div>
+         접어 두면 있는 줄 모르고 지나쳐서 펼친 채로 시작하되, 접어 둘 수도 있게 했다
+         (접었는지 아닌지는 이 기기에 기억해 둔다). -->
+    <details class="step-box" id="msgCompose" open style="margin:14px 0 0;padding:14px;border-color:var(--primary);background:rgba(124,108,255,.08)">
+      <summary style="cursor:pointer;font-weight:800;font-size:17px;color:var(--primary)">📢 학생에게 알림 보내기</summary>
       <div class="hint" style="margin:4px 0 8px">학생 <b>내 과제</b> 화면 맨 위에 크게 뜹니다. 최근 것 하나만 보입니다.</div>
       <textarea id="msgText" rows="3" placeholder="예: 운동계획서 빨리 제출해주세요"
         style="width:100%;background:var(--panel3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px;font-family:inherit;font-size:16px;font-weight:600;resize:vertical"></textarea>
@@ -969,18 +973,8 @@
         <span class="hint" id="msgAdminMsg"></span>
       </div>
       <div id="msgList" style="margin-top:8px"></div>
-    </div>
-
-    <details class="collapsible" id="rpAdminBox">
-    <summary>🛠 학생이 알린 앱 문제 <span id="rpCount" style="color:var(--bad);font-weight:800"></span></summary>
-    <div class="hint" style="margin:10px 0 8px">학생이 <b>내 과제</b> 탭에서 보낸 것입니다. 어떤 기기에서 생긴 일인지 함께 표시됩니다.
-      확인한 것은 <b>[확인함]</b>을 누르면 목록에서 사라집니다(잘못 눌렀으면 바로 되돌릴 수 있습니다).</div>
-    <div class="row" style="margin:0 0 8px">
-      <button class="btn btn-stop btn-sm" id="rpReload">🔄 다시 불러오기</button>
-      <span class="hint" id="rpAdminMsg"></span>
-    </div>
-    <div id="rpList"></div>
     </details>
+
 
     <details class="collapsible">
     <summary>📋 공통 과제 내기</summary>
@@ -1132,6 +1126,17 @@
       <table><tbody id="recRows"></tbody></table>
       <div id="pvDetail"></div><div id="rfDetail"></div>
     </div>
+    </details>
+
+    <details class="collapsible" id="rpAdminBox">
+    <summary>🛠 학생이 알린 앱 문제 <span id="rpCount" style="color:var(--bad);font-weight:800"></span></summary>
+    <div class="hint" style="margin:10px 0 8px">학생이 <b>내 과제</b> 탭에서 보낸 것입니다. 어떤 기기에서 생긴 일인지 함께 표시됩니다.
+      확인한 것은 <b>[확인함]</b>을 누르면 목록에서 사라집니다(잘못 눌렀으면 바로 되돌릴 수 있습니다).</div>
+    <div class="row" style="margin:0 0 8px">
+      <button class="btn btn-stop btn-sm" id="rpReload">🔄 다시 불러오기</button>
+      <span class="hint" id="rpAdminMsg"></span>
+    </div>
+    <div id="rpList"></div>
     </details>
 
     <details class="collapsible" id="setupBox">
@@ -1286,9 +1291,8 @@
         </div>
 
         <h3 style="margin-top:20px">📦 백업 · 초기화</h3>
-        <div class="hint">먼저 백업 CSV를 받아두세요. <b>기기 초기화</b>는 이 기기 자료만 지우고 서버 기록은 남습니다(재연결하면 다시 내려받음). <b>수행 기록 전체 삭제</b>는 서버에서도 지워 되돌릴 수 없으며, <b>명렬표와 공통과제는 그대로 유지</b>됩니다.</div>
+        <div class="hint">먼저 맨 위 <b>[⬇ 백업 CSV]</b>를 받아두세요. <b>기기 초기화</b>는 이 기기 자료만 지우고 서버 기록은 남습니다(재연결하면 다시 내려받음). <b>수행 기록 전체 삭제</b>는 서버에서도 지워 되돌릴 수 없으며, <b>명렬표와 공통과제는 그대로 유지</b>됩니다.</div>
         <div class="row" style="margin-top:8px">
-          <button class="btn btn-teal btn-sm" id="csvBtn">⬇ 전체 기록 백업 CSV</button>
           <button class="btn btn-stop btn-sm" id="wipeBtn" style="color:var(--bad)">🗑 이 기기 초기화</button>
           <button class="btn btn-stop btn-sm" id="serverWipeBtn" style="color:var(--bad)">☁️🗑 수행 기록 전체 삭제 (서버 포함)</button>
         </div>
@@ -2204,9 +2208,14 @@ function renderTaskClassPick(){
    시간마다 반별로 과제를 내면 목록이 수십 개가 되어 매번 찾아 고르는 일이 번거로웠다.
    이제 반 하나만 고르면 그 반에 낸 과제가 차시순으로 모두 펼쳐지고,
    과제마다 누가 냈고 누가 아직 안 했는지 이름으로 바로 보인다. */
-/* 한 번에 여러 반을 나란히 볼 수 있게 한다 — 같은 시간에 두 반을 함께 보는 일이 잦다.
-   tsPick이 화면에 펼칠 반 목록이고, tsCls는 마지막으로 고른 반(자세한 기록 표가 쓰는 값)이다. */
-let tsCls="", tsTask="", tsPick=[];
+/* 반 고르기 — 수업은 한 반씩 하므로, 누르면 그 반만 보이는 것이 기본이다.
+   예전에는 누를 때마다 반이 더해지고 마지막 하나는 빼지도 못해서,
+   7반을 보려면 7반을 켜고 1반을 다시 꺼야 했다. 게다가 처음 열면 늘 1반이 켜져 있었다.
+   여러 반을 나란히 보는 일도 있어서, 그건 [＋ 여러 반 같이 보기]로 따로 켠다.
+   tsPick이 화면에 펼칠 반 목록이고, tsCls는 마지막으로 고른 반(정확도·심박 표가 쓰는 값)이다. */
+const TSCLS_KEY="tabataTaskCls";
+let tsCls="", tsTask="", tsPick=[], tsMulti=false;
+try{ const v=JSON.parse(localStorage.getItem(TSCLS_KEY)||"[]"); if(Array.isArray(v))tsPick=v; }catch(e){}
 function renderTsClassPick(){
   const box=$("tsClassPick"); if(!box)return;
   box.innerHTML="";
@@ -2214,11 +2223,15 @@ function renderTsClassPick(){
   if(!cs.length){ box.innerHTML='<span class="hint">명렬표를 등록하면 반이 표시됩니다.</span>'; return; }
   /* 예전에는 위에 '반별 차시 진도'가 따로 있었는데, 반을 골라 그 반 현황을 여는
      똑같은 일을 해서 두 줄이 겹쳤다. 진도표를 없애고 그 정보(몇 차시까지 나갔는지)를
-     이 버튼에 합쳤다.
-     같은 시간에 두 반을 함께 보는 일이 잦아, 이제 여러 반을 골라 나란히 볼 수 있다. */
+     이 버튼에 합쳤다. */
   tsPick=tsPick.filter(c=>cs.includes(c));
-  if(!tsPick.length) tsPick=[cs[0]];          // 처음 열면 첫 반 하나
-  if(!tsPick.includes(tsCls)) tsCls=tsPick[0];
+  if(tsPick.length>1)tsMulti=true;            // 여러 반을 보던 중이면 그 모드를 잇는다
+  if(!tsPick.includes(tsCls)) tsCls=tsPick[tsPick.length-1]||"";
+  const redraw=()=>{
+    tsCls=tsPick[tsPick.length-1]||""; tsTask="";
+    try{ localStorage.setItem(TSCLS_KEY,JSON.stringify(tsPick)); }catch(e){}   // 다음에 열면 보던 반 그대로
+    renderTsClassPick(); renderTaskBoard(); renderTaskRows();
+  };
   cs.forEach(c=>{
     const n=classLessons(c).length;
     const on=tsPick.includes(c);
@@ -2226,27 +2239,35 @@ function renderTsClassPick(){
     b.className=on?"on":"";
     b.innerHTML=`${shortCls(c)}반 <b style="font-size:15px">${n}</b>차시`;
     if(!n)b.style.opacity=".5";
-    b.title=on?"다시 누르면 이 반을 뺍니다":"누르면 이 반도 함께 봅니다";
+    b.title=tsMulti?(on?"다시 누르면 이 반을 뺍니다":"누르면 이 반도 함께 봅니다"):"이 반 현황 보기";
     b.addEventListener("click",()=>{
-      // 누를 때마다 넣고 뺀다. 마지막 하나는 빼지 않는다(볼 것이 없어지므로).
-      if(on){ if(tsPick.length>1) tsPick=tsPick.filter(x=>x!==c); }
-      else tsPick=cs.filter(x=>tsPick.includes(x)||x===c);   // 반 순서를 유지한다
-      tsCls=tsPick[tsPick.length-1]; tsTask="";
-      renderTsClassPick(); renderTaskBoard(); renderTaskRows();
+      if(tsMulti) tsPick=on?tsPick.filter(x=>x!==c):cs.filter(x=>tsPick.includes(x)||x===c);  // 반 순서를 유지한다
+      else tsPick=on?[]:[c];                  // 고른 반만 — 다시 누르면 접는다
+      redraw();
     });
     box.appendChild(b);
   });
   if(cs.length>1){
-    const isAll=tsPick.length===cs.length;
-    const b=document.createElement("button");
-    b.textContent=isAll?"↩︎ 하나만":"전체 반";
-    b.style.borderStyle="dashed";
-    b.addEventListener("click",()=>{
-      tsPick=isAll?[cs[0]]:cs.slice();
-      tsCls=tsPick[tsPick.length-1]; tsTask="";
-      renderTsClassPick(); renderTaskBoard(); renderTaskRows();
+    const m=document.createElement("button");
+    m.textContent=(tsMulti?"✓":"＋")+" 여러 반 같이 보기";
+    m.className=tsMulti?"on":"";
+    m.style.borderStyle="dashed";
+    m.title="켜면 누를 때마다 반이 더해집니다";
+    m.addEventListener("click",()=>{
+      tsMulti=!tsMulti;
+      if(!tsMulti&&tsPick.length>1)tsPick=[tsPick[tsPick.length-1]];   // 끄면 마지막에 고른 반만 남긴다
+      redraw();
     });
-    box.appendChild(b);
+    box.appendChild(m);
+    const isAll=tsPick.length===cs.length;
+    const a=document.createElement("button");
+    a.textContent=isAll?"↩︎ 접기":"전체 반";
+    a.style.borderStyle="dashed";
+    a.addEventListener("click",()=>{
+      if(isAll){ tsPick=[]; tsMulti=false; } else { tsPick=cs.slice(); tsMulti=true; }
+      redraw();
+    });
+    box.appendChild(a);
   }
 }
 function renderTaskBoard(){
@@ -2311,6 +2332,7 @@ function boardForClass(tsCls){
         +`<button data-clsedit="${x.id}" style="border-style:dashed">✓ 닫기</button></div>` : "";
     const tools=`<div class="row" style="margin:8px 0 0;gap:6px">
       <button class="btn btn-stop btn-sm" data-clsedit="${x.id}" title="낼 반 고치기 — 켜면 그 반에 추가, 끄면 그 반에서 빠집니다">🏫 ${taskClassLabel(x.a)}</button>
+      <button class="btn btn-stop btn-sm" data-dropcls="${x.id}" data-c="${tsCls}" title="${shortCls(tsCls)}반은 이 수업을 안 했다면 빼세요 — 다른 반은 그대로입니다">🚫 이 반 빼기</button>
       <button class="btn btn-stop btn-sm" data-again="${x.id}" title="같은 구성으로 새 과제 만들기">↻ 다시 내기</button>
       <button class="btn btn-stop btn-sm" data-delall="${x.id}" title="모든 반에서 지우기">🗑 삭제</button></div>${clsRow}`;
     // 챙길 학생이 없는 과제는 한 줄로 줄인다 — 목록이 늘어지지 않게
@@ -2346,6 +2368,9 @@ function bindBoard(box){
   }));
   box.querySelectorAll("button[data-setcls]").forEach(b=>b.addEventListener("click",()=>{
     setTaskClass(b.dataset.setcls, b.dataset.c);
+  }));
+  box.querySelectorAll("button[data-dropcls]").forEach(b=>b.addEventListener("click",()=>{
+    dropThisClass(b.dataset.dropcls, b.dataset.c);
   }));
   box.querySelectorAll("button[data-again]").forEach(b=>b.addEventListener("click",()=>{
     reuseTask(b.dataset.again);
@@ -7085,7 +7110,16 @@ function setTaskClass(taskId,cls){
   saveAll(); renderTasks(); renderTsClassPick(); renderTaskBoard(); renderTaskRows(); renderStats();
   toast(on?`${shortCls(cls)}반에서 뺐습니다`:`${shortCls(cls)}반에 냈습니다`,"good","✔");
 }
-/* 잘못 만들어 낸 과제를 통째로 지운다 — 한 반만 빼려면 [🏫 …]에서 그 반을 끄면 된다.
+/* 여러 반에 냈는데 실제로 수업한 반은 하나뿐일 때, 나머지 반의 현황에서 각각 바로 뺀다.
+   [🏫 …]를 펼쳐 그 반을 찾아 끄는 것과 결과는 같지만, 지금 보고 있는 반이라 한 번이면 된다.
+   대개는 수업을 안 했으니 아무도 안 했지만, 이미 한 학생이 있으면 되묻는다. */
+function dropThisClass(taskId,cls){
+  const a=assignments[taskId]; if(!a||!cls)return;
+  const doneN=new Set(records.filter(r=>r.taskId===taskId&&r.cls===cls).map(r=>r.name)).size;
+  if(doneN&&!confirm(`${shortCls(cls)}반에서 이미 ${doneN}명이 했습니다.\n\n그래도 이 반에서 뺄까요? (그 학생들의 운동 기록은 그대로 남습니다)`))return;
+  setTaskClass(taskId,cls);
+}
+/* 잘못 만들어 낸 과제를 통째로 지운다 — 한 반만 빼려면 [🚫 이 반 빼기]나 [🏫 …]를 쓴다.
    이미 한 학생의 운동 기록은 지우지 않는다(자율 실천처럼 남는다). */
 function deleteTaskEverywhere(taskId){
   const a=assignments[taskId]; if(!a)return;
@@ -7244,6 +7278,16 @@ function renderNoticeAdmin(){
 }
 $("msgSend")&&$("msgSend").addEventListener("click",()=>sendNotice(msgCls?"class":"all"));
 $("msgSendUndone")&&$("msgSendUndone").addEventListener("click",()=>sendNotice("pick"));
+/* 처음엔 펼쳐 두되(있는 줄 모르고 지나치던 자리라) 접을 수 있게 하고,
+   접었는지 아닌지는 이 기기에 기억한다 — 매번 접는 수고를 덜려고. */
+const MSGBOX_KEY="tabataMsgBoxOpen";
+if($("msgCompose")){
+  // 브라우저가 새로고침 때 접힘 상태를 제 나름대로 되살리므로, 기억한 값으로 못박는다
+  try{ $("msgCompose").open=localStorage.getItem(MSGBOX_KEY)!=="0"; }catch(e){}
+  $("msgCompose").addEventListener("toggle",()=>{
+    try{ localStorage.setItem(MSGBOX_KEY,$("msgCompose").open?"1":"0"); }catch(e){}
+  });
+}
 $("msgClear")&&$("msgClear").addEventListener("click",()=>{
   if(!confirm("보낸 알림을 모두 지울까요? 학생 화면에서도 사라집니다."))return;
   Object.keys(notices).forEach(k=>{ if(fdb)fmod.remove(fmod.ref(fdb,"notices/"+k)).catch(()=>{}); });
