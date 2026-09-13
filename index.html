@@ -3925,6 +3925,18 @@ function gradeRawIdx(score){
 function gradeOf(score,spice){
   return GRADES[Math.max(gradeRawIdx(score), gradeCapIdx(spice||activeLevel()))];
 }
+/* 지난 기록 하나의 등급 — 그때 받은 등급이 남아 있으면 그대로 쓴다.
+   맛마다 꼭대기를 둔 것(2026-09-11)은 앞으로의 규칙이라, 그 전에 받은 S+를 되짚어 깎지 않는다
+   (내 기록·CSV는 원래 남은 등급을 보여 주므로 포트폴리오도 같아야 한다).
+   예전에는 포트폴리오가 gradeOf로 다시 매기면서 기록에 맛이 없으면 '이 기기에서 지금 고른 맛'을
+   써서, 같은 학생의 같은 기록이 인쇄하는 기기마다 다른 등급으로 나올 수 있었다.
+   등급이 안 남은 오래된 기록만 점수로 다시 매기고, 그때 맛을 모르면 꼭대기를 두지 않는다. */
+function recGrade(r){
+  const saved=r&&GRADES.find(x=>x.g===r.grade);
+  if(saved)return saved;
+  const sc=+((r&&r.score)||0);
+  return GRADES[Math.max(gradeRawIdx(sc), (r&&SPICE_CAP[r.spice])?gradeCapIdx(r.spice):0)];
+}
 function renderGrade(s){
   const card=$("gradeCard"); if(!card)return;
   const lv=activeLevel();
@@ -5890,7 +5902,7 @@ function pfRender(ctx) {
   const scores = rs.map(r => +r.score || 0);
   const first = scores.length ? scores[0] : null;
   const best = scores.length ? Math.max.apply(null, scores) : null;
-  const bestG = best == null ? null : gradeOf(best, (rs.find(function (r) { return (+r.score || 0) === best; }) || {}).spice);
+  const bestG = best == null ? null : recGrade(rs.find(function (r) { return (+r.score || 0) === best; }));
   const mins = Math.round(rs.reduce((a, r) => a + (+r.time || 0), 0) / 60);
   const jP = rs.reduce((a, r) => a + (+r.jP || 0), 0);
   const jG = rs.reduce((a, r) => a + (+r.jG || 0), 0);
@@ -5908,7 +5920,7 @@ function pfRender(ctx) {
     const cx = function (i) { return pad + i * gap + bw / 2; };
     const cy = function (v) { return H - 26 - Math.round(v / 100 * (H - 52)) - 8; };
     const bars = scores.map(function (v, i) {
-      const g = gradeOf(v, (rs[i] || {}).spice), h = Math.max(6, Math.round(v / 100 * (H - 46)));
+      const g = recGrade(rs[i]), h = Math.max(6, Math.round(v / 100 * (H - 46)));
       const x = pad + i * gap, y = H - 26 - h;
       return '<rect x="' + x + '" y="' + y + '" width="' + bw + '" height="' + h + '" rx="4" fill="' + g.c + '" fill-opacity=".92"/>'
         + '<text x="' + (x + bw / 2) + '" y="' + (y + 13) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">' + v + '</text>'
@@ -6133,7 +6145,7 @@ function pfRender(ctx) {
   const used = {};
   var time = rs.map(function (r, i) {
     const l = logs[r.id]; if (l) used[r.id] = 1;
-    const g = gradeOf(+r.score || 0, r.spice);
+    const g = recGrade(r);
     const sp = SPICE[r.spice];
     const dOk = isDiligent(r);
     const pre = +r.hrPre || 0, post = +r.hr || 0;
