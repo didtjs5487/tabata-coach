@@ -561,7 +561,7 @@
     <!-- 공간이 좁아 둘씩 짝을 지어 한 폰을 나눠 쓴다. 매번 학번을 다시 치지 않도록
          이 폰을 쓴 학생을 기억해 두고 한 번에 바꿀 수 있게 한다. -->
     <div id="pairBox" style="display:none;margin-top:8px">
-      <div class="hint" style="margin-bottom:4px">👥 <b>짝과 한 폰을 나눠 쓸 때</b> — 이름을 누르면 그 학생으로 바뀝니다. 기록·성찰은 각자 따로 저장됩니다.</div>
+      <div class="hint" style="margin-bottom:4px">👥 짝과 같이 쓸 때 이름을 누르세요 — 기록은 각자 저장됩니다</div>
       <div id="pairPick" class="task-class-pick"></div>
     </div>
 
@@ -577,7 +577,6 @@
           <button class="pick-chip" data-preset="cardio">유산소 위주</button>
         </div>
       </div>
-      <div class="hint" style="margin-bottom:8px">직접 골라 순서대로 추가할 수도 있습니다. 아래에서 고른 배수(×1·×2·×3)만큼 이 목록을 처음부터 되풀이합니다.</div>
       <div class="row" style="margin-bottom:0">
         <div class="field"><label>운동 추가</label>
           <select id="addEx">
@@ -658,9 +657,7 @@
          평소에는 쓸 일이 없으므로 화면 맨 아래에 둔다. -->
     <div class="step-box" id="prefetchBox" style="margin-top:24px">
       <div style="font-weight:700;font-size:14px;color:var(--muted)">📶 처음 한 번만 — 자세 인식 파일 받아두기</div>
-      <div class="hint" style="margin:3px 0 8px">약 <b>9MB</b>를 이 기기에 저장합니다.
-        받아두면 수업 때 여럿이 함께 써도 <b>끊기지 않습니다.</b>
-        <b>와이파이가 여유로울 때</b>(수업 시작 전·쉬는 시간) 한 번만 눌러 주세요.</div>
+      <div class="hint" style="margin:3px 0 8px">약 <b>9MB</b> — 와이파이가 한가할 때 한 번만 받아 두면 수업 중에 끊기지 않아요</div>
       <div class="row" style="margin:0">
         <button class="btn btn-stop btn-sm" id="prefetchBtn">⬇️ 지금 받아두기</button>
         <span class="hint" id="prefetchMsg" style="flex:1;min-width:160px"></span>
@@ -674,15 +671,12 @@
     <!-- 선생님이 보낸 알림 — 학생이 제일 먼저 보도록 맨 위에 둔다 -->
     <div id="msgBox" style="display:none"></div>
     <h3>내 과제</h3>
-    <div class="hint" style="margin-bottom:10px">할 것을 고르면 <b>운동하기</b>로 넘어갑니다.
-      선생님이 낸 <b>공통과제</b>와 내가 만든 <b>자율 실천과제</b>가 모두 여기 모입니다.</div>
     <div id="taskCards"></div>
 
     <!-- 앱이 안 되는 것을 학생이 그 자리에서 알릴 수 있게 한다 — 수업 중 바로 확인해 고치기 위함 -->
     <div class="step-box" style="margin-top:20px">
       <div style="font-weight:800;font-size:16px">🛠 앱이 이상해요 (선생님께 알리기)</div>
-      <div class="hint" style="margin:2px 0 8px">안 되는 것·불편한 것을 적어 주세요.
-        <b>선생님만</b> 볼 수 있고, 어떤 기기에서 생긴 일인지 자동으로 함께 전해집니다.</div>
+      <div class="hint" style="margin:2px 0 8px">안 되는 것을 적어 주세요 — <b>선생님만</b> 봅니다</div>
       <textarea id="rpText" rows="3" style="width:100%;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:14px;resize:vertical" placeholder="예: 크런치를 했는데 횟수가 안 올라가요 / 심박 측정에서 화면이 멈춰요"></textarea>
       <div class="row" style="margin:8px 0 0">
         <button class="btn btn-go btn-sm" id="rpSend">📨 보내기</button>
@@ -695,7 +689,7 @@
   <section class="page" id="pgWork">
     <div id="healthGate" class="step-box" style="border-color:var(--bad);background:#FDECEE">
       <div style="font-weight:700;color:var(--bad);margin-bottom:6px">🩺 운동 전 건강 자가체크</div>
-      <div class="hint" style="margin-bottom:8px">아래 항목 중 <b>해당되는 것이 하나라도 있으면</b> 오늘은 무리하지 말고 선생님께 알리세요.</div>
+      <div class="hint" style="margin-bottom:8px">하나라도 해당되면 <b>무리하지 말고</b> 선생님께 알리세요</div>
       <div id="parqList"></div>
       <div class="row" style="margin-top:8px;margin-bottom:0">
         <button class="btn btn-go btn-sm" id="parqOk">모두 해당 없음 · 운동 준비 완료</button>
@@ -777,8 +771,7 @@
       <button class="btn btn-stop" id="voiceBtn" title="다음 동작·남은 시간을 말로 알려 줍니다">🗣 음성 안내 ON</button>
       <button class="btn btn-stop" id="soundTest" title="폰 스피커에서 소리가 나는지 확인">🔊 소리 확인</button>
     </div>
-    <div class="hint" style="margin:6px 0 0">🤳 <b>셀카</b>는 내 모습을 보며 혼자 할 때,
-      📷 <b>뒤 카메라</b>는 친구가 폰을 들고 찍어줄 때 고르세요. 판정은 어느 쪽이든 똑같습니다.</div>
+    <div class="hint" style="margin:6px 0 0">🤳 혼자면 <b>셀카</b> · 📷 친구가 찍어 주면 <b>뒤 카메라</b></div>
     <div class="row" id="volRow" style="margin:8px 0 0;align-items:center">
       <span class="hint" style="white-space:nowrap">소리 크기</span>
       <input type="range" id="bgmVol" min="0" max="5" step="0.2" value="2.6" style="flex:1;min-width:120px">
@@ -854,7 +847,7 @@
 
       <div class="step-box" id="reflectBox" style="margin-top:18px">
         <div style="font-weight:700">✍️ 오늘의 성찰</div>
-        <div class="hint" style="margin:2px 0 10px">기본 정보와 운동 데이터는 <b>자동으로 채워집니다.</b> 성찰 문항만 쓰면 돼요.</div>
+        <div class="hint" style="margin:2px 0 10px">성찰 문항만 쓰면 돼요</div>
         <button class="btn btn-teal btn-sm" id="rfOpenBtn">✍️ 성찰 일지 쓰기</button>
         <span class="hint" id="rfBoxMsg" style="margin-left:8px"></span>
       </div>
@@ -866,12 +859,11 @@
   <!-- ================= MY RECORDS ================= -->
   <section class="page" id="pgMine">
     <h3>내 기록</h3>
-    <div class="hint">내가 한 것이 모두 여기에 모입니다 — <b>계획 → 실천 → 결투 → 성찰</b> 순서예요.<br>
-      <span style="color:var(--muted)">계획서와 성찰은 <b>이 기기에 저장된 것</b>만 보입니다. 다른 기기에서는 비어 보여도 선생님께는 정상적으로 제출되어 있어요.</span></div>
+    <div class="hint">계획서·성찰은 <b>이 기기에 쓴 것</b>만 보여요 — 다른 기기에서 비어 보여도 제출은 된 거예요</div>
     <div class="step-box" id="mineTodo" style="margin-top:10px"></div>
     <div class="row" style="margin:8px 0 0">
       <button class="btn btn-teal btn-sm" id="resyncBtn">☁️ 서버로 다시 보내기</button>
-      <span class="hint" id="resyncMsg" style="flex:1;min-width:160px">선생님 화면에 내 계획서·성찰이 안 보인다면 눌러 주세요.</span>
+      <span class="hint" id="resyncMsg" style="flex:1;min-width:160px">선생님께 안 보이면 눌러 주세요</span>
     </div>
     <div class="kpis" style="margin-top:12px">
       <div class="kpi"><div class="v num c1" id="mineCount">0</div><div class="k">누적 세션</div></div>
@@ -887,12 +879,11 @@
     </div>
     <button class="mine-sec" type="button">📝 내 운동 계획서<span class="arw">▾</span></button>
     <div class="mine-body">
-      <div class="hint" style="margin-bottom:6px">운동 설계에서 만든 구성입니다. 누르면 계획서를 쓰거나 고칠 수 있어요.</div>
+      <div class="hint" style="margin-bottom:6px">누르면 계획서를 쓰거나 고칠 수 있어요</div>
       <div id="minePlans"></div>
     </div>
     <button class="mine-sec" type="button">🏃 운동 기록<span class="arw">▾</span></button>
     <div class="mine-body">
-      <div class="hint" style="margin-bottom:6px">운동을 누르면 그날의 상세 결과가 펼쳐집니다.</div>
       <div id="mineSessions"></div>
     </div>
     <button class="mine-sec" type="button">⚔️ 결투 결과<span class="arw">▾</span></button>
@@ -908,8 +899,8 @@
     <div class="mine-body">
     <div class="step-box" id="finalRfBox" style="margin-top:0">
       <div style="font-weight:700;font-size:16px">단원 전체를 돌아보기</div>
-      <div class="hint" style="margin:2px 0 10px">모든 수업이 끝난 뒤 <b>한 번</b> 작성합니다. 저장한 뒤에도 언제든 고칠 수 있어요.</div>
-      <div class="hint" style="margin-bottom:4px">내 기록 요약 — 이 숫자를 보면서 써 보세요</div>
+      <div class="hint" style="margin:2px 0 10px">모든 수업이 끝난 뒤 <b>한 번</b> 씁니다 (저장한 뒤에도 고칠 수 있어요)</div>
+      <div class="hint" style="margin-bottom:4px">내 기록 요약</div>
       <div class="rf-sum" id="frSummary"></div>
 
       <div class="rf-q"><label>1. 이 단원에서 내 체력은 어떻게 달라졌나요?</label>
@@ -934,8 +925,7 @@
          맨 아래에 접히지 않는 독립 항목으로 빼서 바로 눈에 띄게 한다. -->
     <div id="pfMineBox" class="step-box" style="margin-top:18px;border:2px solid var(--primary2)">
       <div style="font-weight:800;font-size:17px">📘 내 운동 포트폴리오</div>
-      <div class="hint" style="margin:2px 0 8px">이번 프로젝트에서 내가 한 것을 <b>한 권으로</b> 묶어 줍니다 —
-        운동 계획서부터 매 차시 운동 기록과 그날의 성찰, 마무리 성찰까지 순서대로.</div>
+      <div class="hint" style="margin:2px 0 8px">계획서·운동 기록·성찰을 <b>한 권으로</b> 묶어 줍니다</div>
       <div id="pfMineChk" class="rf-sum" style="margin-bottom:8px"></div>
       <div class="row" style="margin:0">
         <button class="btn btn-go" id="pfMineBtn">📘 내 포트폴리오 만들기</button>
@@ -1967,7 +1957,7 @@ function renderTasks(){
   const ids=Object.keys(assignments);
   const mine=ids.filter(id=>taskHasClass(assignments[id],myCls));
   const tag=document.createElement("div"); tag.className="step-tag";
-  tag.textContent="STEP 0 · 무엇을 할까요? (눌러서 선택)";
+  tag.textContent="STEP 0 · 무엇을 할까요?";
   tc.appendChild(tag);
   const group=t=>{ const g=document.createElement("div"); g.className="pick-group"; g.textContent=t; tc.appendChild(g); };
 
@@ -2009,9 +1999,9 @@ function renderTasks(){
     if(todo.length){
       const n=document.createElement("div"); n.className="hint"; n.style.margin="0 0 6px 2px";
       const sickN=todo.filter(x=>x.sick).length;
-      n.innerHTML=`<b style="color:var(--work)">보충할 과제 ${todo.length}개</b> — 지난 과제도 지금 하면 그대로 인정됩니다`
+      n.innerHTML=`<b style="color:var(--work)">보충할 과제 ${todo.length}개</b> — 지금 해도 인정돼요`
         +(deadlineStr()?` (<b>${deadlineStr()}</b>까지)`:"")
-        +(sickN?`<br><span style="color:var(--gold)">몸이 안 좋아 못 한 과제 ${sickN}개가 있어요. 나으면 해도 됩니다.</span>`:"");
+        +(sickN?`<br><span style="color:var(--gold)">몸이 안 좋아 못 한 과제 ${sickN}개 — 나으면 하세요</span>`:"");
       tc.appendChild(n);
     }
     all.forEach(({id,a,given,done,isToday,sick})=>{
@@ -2913,6 +2903,24 @@ function spawnConfetti(){
 }
 
 /* ---------- geometry ---------- */
+/* 가로로 찍어도 세로와 똑같이 채점한다.
+   MediaPipe 좌표는 x를 화면 폭으로, y를 화면 높이로 따로 나눈 값이라 폭과 높이가 다르면 각도가 비틀린다.
+   같은 스쿼트(실제 무릎 90°)가 세로 3:4에서 78°, 가로 4:3에서 102°, 가로 16:9에서 114°로 읽혀,
+   가로에서는 제대로 앉아도 down 문턱(100°)을 못 넘어 횟수로 세지 않았다.
+   카메라는 960×720을 요청하므로 폰을 세우면 3:4이고, 채점 기준값도 그 모양에서 맞춰졌다.
+   그래서 어떤 화면이든 '세로 3:4에서 본 모양'으로 바꿔 채점한다 — 세로 3:4는 값이 하나도 안 바뀐다.
+   화면 가운데를 축으로 가로만 늘이거나 줄이므로 각도·기울기·좌우 비교가 함께 맞춰지고,
+   위아래(y)만 쓰는 이동량 검사는 그대로다. 뼈대 그리기는 원래 좌표를 써야 화면과 맞으므로 채점용 복사본만 바꾼다.
+   ※ '가로를 세로와 같게' 맞춘 것일 뿐, 세로 3:4도 실제 관절 각도보다 약 12° 깊게 잰다.
+     실제 각도로 맞추려면 기준값을 모두 다시 잡아야 해서 학기 경계로 미뤄 두었다(2026-09-13). */
+const PORTRAIT_REF=3/4;
+function portraitView(lm){
+  const W=video.videoWidth, H=video.videoHeight;
+  if(!W||!H)return lm;
+  const f=(W/H)/PORTRAIT_REF;
+  if(Math.abs(f-1)<0.01)return lm;               // 이미 세로 3:4 — 손대지 않는다
+  return lm.map(p=>({...p, x:0.5+(p.x-0.5)*f}));
+}
 function angle(a,b,c){
   const ab={x:a.x-b.x,y:a.y-b.y},cb={x:c.x-b.x,y:c.y-b.y};
   const m=Math.hypot(ab.x,ab.y)*Math.hypot(cb.x,cb.y); if(!m)return 180;
@@ -3769,11 +3777,12 @@ function loopBody(){
       draw.drawLandmarks(lm,{color:"#FFB020",radius:3});
       if(phase==="work"){
         const def=EX[curEx];
-        if(def.type==="rep")procRep(lm,def);
-        else if(def.type==="jack")procJack(lm);
-        else if(def.type==="knee")procKnee(lm,def);
-        else if(def.type==="burpee")procBurpee(lm,def);
-        else procHold(lm,def);
+        const lmS=portraitView(lm);        // 채점은 폰 방향과 무관하게 '세로 3:4에서 본 모양'으로
+        if(def.type==="rep")procRep(lmS,def);
+        else if(def.type==="jack")procJack(lmS);
+        else if(def.type==="knee")procKnee(lmS,def);
+        else if(def.type==="burpee")procBurpee(lmS,def);
+        else procHold(lmS,def);
       }
     } else if(phase==="work"){$("fb").textContent="화면에 사람이 안 보여요";}
   }
@@ -4792,15 +4801,7 @@ function setSpice(k){
   if(box)[...box.querySelectorAll("button")].forEach(b=>b.classList.toggle("on",b.dataset.s===k));
   const el=$("spiceHint");
   if(el){
-    const d=EX.squat, full=d.perfect-(d.down-d.perfect), T=JUDGE_TIERS[k];
-    const need=Math.round(full+(100-T.p)*(d.down-full)/45);
-    const par=repAccuracy(90,d);
-    const parTier=par>=T.p?"PERFECT":par>=T.g?"GREAT":par>=T.gd?"GOOD":par>=T.o?"OK":"MISS";
-    el.innerHTML=`${SPICE[k].desc} — 스쿼트로 <b>PERFECT</b>를 받으려면 무릎 <b>${need}°</b>까지, `
-      +`허벅지가 바닥과 평행(90°)이면 <b style="color:var(--good)">${parTier}</b>`
-      +`<br><b style="color:var(--gold)">이 맛에서 오를 수 있는 꼭대기는 ${SPICE_CAP[k]||"SSS"}등급</b>`
-      +`<span style="color:var(--muted)"> — 점수 계산은 어떤 맛이든 똑같지만, 높은 등급은 어려운 맛에서만 나옵니다.`
-      +`<br>선생님이 낸 공통 과제는 선생님이 정한 맛으로 진행합니다.</span>`;
+    el.innerHTML=`${SPICE[k].desc} · 이 맛의 꼭대기 <b style="color:var(--gold)">${SPICE_CAP[k]||"SSS"}등급</b>`;
   }
   saveAll();
 }
@@ -7548,10 +7549,10 @@ const JUDGE_TIERS={
   legend:{p:100,g:97, gd:92, o:85}
 };
 const SPICE={
-  easy:  {emoji:"🥛", name:"순한맛", desc:"성공 경험 위주 — 처음이라면 여기부터"},
-  normal:{emoji:"🌶️", name:"보통맛", desc:"교과서대로 하면 GOOD"},
+  easy:  {emoji:"🥛", name:"순한맛", desc:"처음이라면 여기부터"},
+  normal:{emoji:"🌶️", name:"보통맛", desc:"기본 난이도"},
   hard:  {emoji:"🔥", name:"매운맛", desc:"제대로 깊게 해야 인정"},
-  hell:  {emoji:"💀", name:"지옥맛", desc:"평행으로는 어림없다"},
+  hell:  {emoji:"💀", name:"지옥맛", desc:"아주 깊고 정확해야 인정"},
   legend:{emoji:"👑", name:"전설맛", desc:"완벽에 가깝게 해야 인정"}
 };
 const SPICE_ORDER=["easy","normal","hard","hell","legend"];
@@ -7629,10 +7630,10 @@ $("hrSave").addEventListener("click",()=>{
   renderStats(); saveAll(); pushRecord(rec); updatePresence(5); handleBattleEvents();
   const rise=(+rec.hrPre)?bpm-(+rec.hrPre):null;
   // 2분이 넘으면 심박이 이미 내려간 뒤라 값이 실제 강도보다 낮다 — 학생에게도 교사에게도 알린다
-  const lateTxt=gap>120?`<br>⏱ <b style="color:var(--gold)">운동이 끝난 지 ${Math.floor(gap/60)}분 ${gap%60}초 뒤</b>에 잰 값입니다. 심박이 이미 내려가 실제 강도보다 낮게 나옵니다 — 다음엔 운동 직후 바로 재주세요.`:"";
+  const lateTxt=gap>120?`<br>⏱ <b style="color:var(--gold)">끝난 지 ${Math.floor(gap/60)}분 ${gap%60}초 뒤</b>에 잰 값이라 실제보다 낮아요 — 다음엔 바로 재세요`:"";
   $("hrMsg").innerHTML=(diligent
-    ?`✅ <b style="color:var(--good)">성실 수행으로 인정</b>됩니다 (심박 ${bpm}${rise!=null?`, 운동 전 대비 +${rise}`:""}). 기록·CSV에 저장되었습니다.`
-    :`성실 수행 기준에 미달했습니다 (심박 ${bpm}${rise!=null?`, 운동 전 대비 +${rise}`:""}). 심박 120 이상 또는 운동 전보다 40 이상 올라야 인정됩니다. 다음엔 조금 더 강도를 올려보세요. (기록은 저장됨)`)+lateTxt;
+    ?`✅ <b style="color:var(--good)">성실 수행 인정</b> (심박 ${bpm}${rise!=null?`, 운동 전 대비 +${rise}`:""})`
+    :`성실 수행 기준 미달 (심박 ${bpm}${rise!=null?`, 운동 전 대비 +${rise}`:""}) — 120 이상이거나 운동 전보다 40 이상 올라야 해요`)+lateTxt;
   $("hrLive").style.display="block";
   clearPostHrNeed();          // 다 쟀으니 안내를 내린다
   // 성찰이 화면 아래에 있어 그냥 지나치기 쉬웠다 — 심박을 재면 바로 성찰을 띄운다
@@ -8161,7 +8162,7 @@ $("hrStart").addEventListener("click",()=>{
   measurePPG($("hrWave"),$("hrMsg"),$("hrStart"),bpm=>{
     const pre=(lastRec&&lastRec.hrPre)?+lastRec.hrPre:(pendingPreHr!=null?+pendingPreHr:null);
     askHr(bpm,{what:"운동 후 심박수",pre,
-      onUse:()=>{ showHr(bpm); $("hrMsg").textContent="측정 완료! [기록에 저장]을 누르면 세션·CSV에 연결됩니다."; },
+      onUse:()=>{ showHr(bpm); $("hrMsg").textContent="측정 완료!"; },
       onRetry:()=>{ $("hrStart").click(); }});
   },$("hrCam"),"hrManual");   // 카메라가 실패하면 맥박 세기로 이어받는다
 });
