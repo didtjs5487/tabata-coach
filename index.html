@@ -534,7 +534,7 @@
   <span class="tag">자세 인식 · 정확도/반복수/시간/강도 측정</span>
   <div class="profile">
     <div class="avatar" id="avatarEmoji">🥚</div>
-    <div><div class="pv num" id="totalPts">0 P</div><div class="pl" id="levelName">Lv.1 새싹</div></div>
+    <div><div class="pv num" id="totalPts">0 P</div><div class="pl" id="levelName">Lv.1 알</div></div>
   </div>
 </header>
 
@@ -2830,7 +2830,42 @@ taskDesigner=setupMiniDesigner({sel:"tAddEx",add:"tAddBtn",copy:"tCopyBtn",list:
   work:"tWorkSec",rest:"tRestSec",rounds:"tRounds",diff:"tDifficulty",pick:"tRepeatPick"});
 
 /* ---------- gamification ---------- */
-let totalPts=0;
+let totalPts=0;   // 이 기기에 쌓아 둔 점수 — 이제는 아래 스위치를 껐을 때만 화면에 쓴다
+/* ---------- 점수(레벨)는 그 학생의 기록에서 센다 (2026-09-14) ----------
+   예전에는 기기·브라우저마다 따로 쌓아 두던 숫자(totalPts)였다. 그래서
+   ① 카카오톡·네이버 링크처럼 저장 공간이 따로인 브라우저로 들어오면 매번 0점(알)이었고
+   ② 짝과 한 폰을 나눠 쓰면 두 학생 점수가 하나로 합쳐졌다.
+   운동 기록에는 그 세션의 점수(pts)가 들어 있고 서버에서 모든 기기로 내려오므로,
+   학번만 넣으면 어느 기기·브라우저에서든 같은 점수·레벨이 된다.
+   결투 보상은 기록에 남지 않아, 결투 결과(battles)에서 지급할 때와 같은 규칙으로 다시 센다.
+   학번이 없는 옛 기록(서버 1,450건 중 494건)은 이름과 반으로 맞춘다. */
+const PTS_FROM_RECORDS=true;   // 문제가 생기면 false — 예전처럼 이 기기에 쌓아 둔 점수를 쓴다
+function battleReward(b,me){
+  if(!b||b.status!=="done")return 0;
+  const iAmC=sameP(b.ch,me), iAmO=sameP(b.op,me);
+  if(!iAmC&&!iAmO)return 0;
+  const role=iAmC?"c":"o";
+  const res=(b.results||{})[role]||{};
+  if(res.recId&&res.dil===undefined)return 0;    // 운동 후 심박을 아직 안 쟀다 — 잴 때까지 보류
+  if(res.recId&&res.dil!==true)return 0;         // 심박 기준 미달 (규칙 전의 옛 결투는 recId가 없어 그대로 지급)
+  return b.winner==="draw"?20:(b.winner===role?30:10);
+}
+function myPoints(){
+  const me=myKey(); if(!me.name||!me.cls)return 0;
+  const sid=String($("stuId").value||"").replace(/[^0-9]/g,"");
+  const seen=new Set(); let sum=0;
+  records.forEach(r=>{
+    if(!r||(r.id&&seen.has(r.id)))return;          // 이 기기 것과 서버에서 내려온 것이 겹치면 한 번만
+    const mine=(sid&&r.sid)?String(r.sid)===sid
+      :(String(r.name||"").trim()===me.name&&String(r.cls)===String(me.cls));
+    if(!mine)return;
+    if(r.id)seen.add(r.id);
+    sum+=+r.pts||0;
+  });
+  Object.values(battles).forEach(b=>{ sum+=battleReward(b,me); });
+  return sum;
+}
+function shownPts(){ return PTS_FROM_RECORDS?myPoints():totalPts; }
 /* 피닉스 이모지(🐦‍🔥)는 2023년에 생겨 아직 없는 기기가 많다.
    없는 기기에서는 새와 불이 두 글자로 쪼개져 보이므로, 폭을 재어 한 글자로 그려지는 기기에서만 쓴다. */
 const PHOENIX=(()=>{ try{
@@ -2854,9 +2889,11 @@ const LEVELS=[
 function levelIndex(pts){ let i=0; LEVELS.forEach((l,idx)=>{ if(pts>=l[0]) i=idx; }); return i; }
 let shownLevel=0;
 function refreshProfile(opts){
-  const idx=levelIndex(totalPts), cur=LEVELS[idx];
+  let pts=totalPts;
+  try{ pts=shownPts(); }catch(e){}            // 기록이 아직 준비 안 됐으면 이 기기 값으로 잠깐 버틴다
+  const idx=levelIndex(pts), cur=LEVELS[idx];
   $("avatarEmoji").textContent=cur[1]; $("levelName").textContent=cur[2];
-  $("totalPts").textContent=totalPts+" P";
+  $("totalPts").textContent=pts+" P";
   if(!(opts&&opts.silent) && idx>shownLevel && shownLevel>0){
     celebrateLevelUp(cur);
   }
@@ -4463,6 +4500,7 @@ function resetMyId(){
 }
 function syncMyInfoFields(){
   const name=($("stuName").value||"").trim(), cls=($("stuClass").value||"").trim();
+  refreshProfile({silent:true});   // 학번·이름이 바뀌면 그 학생의 레벨로 (기록에서 센다)
   refreshBattleUI(); // 결투 신청이 이제 이 탭에 있어 이름·학반이 바뀔 때마다 상대 목록도 갱신
   if(name&&cls){ updatePresence(myStage||0); startPresenceHeartbeat(); } // 신원 확정 즉시 접속 표시 + 주기 신호 시작
 }
@@ -6925,7 +6963,7 @@ function finish(){
       <div class="scorebar"><div style="width:${Math.min(v,100)}%;background:var(${c})"></div></div>`;
     bd.appendChild(d);
   });
-  totalPts+=s.pts; refreshProfile();
+  totalPts+=s.pts;   // 레벨은 아래 addRecord 뒤에 그린다 — 점수를 이 세션 기록에서 세므로
   $("rPerfect").textContent=s.jP; $("rGreat").textContent=s.jG; $("rGood").textContent=s.jGd; $("rOk").textContent=s.jO; $("rMiss").textContent=s.jB;
   $("gainPts").textContent="+"+s.pts+" P";
   $("gainAv").textContent=$("avatarEmoji").textContent;
@@ -6944,6 +6982,8 @@ function finish(){
   setTimeout(()=>{try{$("hrStep3").scrollIntoView({behavior:"smooth",block:"start"});}catch(e){}},200); // 운동 직후 STEP 3 심박 측정으로 안내
   needPostHr();               // 잴 때까지 빨간 안내와 알림을 띄운다
   addRecord(s); beep(1200,.3);
+  refreshProfile();                                   // 방금 남긴 기록까지 더한 점수로 (레벨이 오르면 축하)
+  $("gainAv").textContent=$("avatarEmoji").textContent;
   resetReflectForm(); // 세션마다 새로 쓰도록 비운다 (addRecord가 lastRec을 채운 뒤에 호출)
   if(prevBest>0&&s.score>prevBest) toast(`신기록! 종합점수 ${prevBest}점 → ${s.score}점`,"best","🏅");
 }
@@ -8592,7 +8632,7 @@ function attachFbListeners(){
      처음 쏟아지는 몫은 조용히 받고, 통계·저장은 한 번만 몰아서 한다. */
   let feedReady=false, statsPend=null;
   setTimeout(()=>{feedReady=true;},4000);      // 처음 쏟아지는 backfill이 지나간 뒤부터 알린다
-  const flushStats=()=>{ if(statsPend)return; statsPend=setTimeout(()=>{statsPend=null;renderStats();saveAll();},400); };
+  const flushStats=()=>{ if(statsPend)return; statsPend=setTimeout(()=>{statsPend=null;renderStats();saveAll();refreshProfile({silent:true});},400); };
   let lastFeedBeep=0;
   onChildAdded(ref(fdb,"records"),snap=>{
     const r=snap.val(); if(!r||!r.name)return;
@@ -8646,6 +8686,7 @@ function attachFbListeners(){
     Object.keys(battles).forEach(k=>delete battles[k]);
     Object.assign(battles,snap.val()||{});
     renderBattles(); renderTasks(); handleBattleEvents(); // 운동하기의 결투 카드도 함께 갱신
+    refreshProfile({silent:true});                        // 결투 보상도 점수에 들어가므로
     checkBattleAutoStart();                               // 수락된 배틀이 있으면 동시 시작 카운트다운
   });
   attachProtected(onValue,ref);
@@ -9051,7 +9092,7 @@ $("boardCtrlStop").addEventListener("click",()=>sendControlBoard("stop"));
 $("boardCtrlGo")&&$("boardCtrlGo").addEventListener("click",()=>sendControlBoard("go"));
 
 loadAll();
-shownLevel=levelIndex(totalPts);
+try{ shownLevel=levelIndex(shownPts()); }catch(e){ shownLevel=levelIndex(totalPts); }
 refreshClassUI();
 refreshProfile({silent:true});
 renderTasks();
