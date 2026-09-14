@@ -2914,6 +2914,7 @@ function spawnConfetti(){
    ※ '가로를 세로와 같게' 맞춘 것일 뿐, 세로 3:4도 실제 관절 각도보다 약 12° 깊게 잰다.
      실제 각도로 맞추려면 기준값을 모두 다시 잡아야 해서 학기 경계로 미뤄 두었다(2026-09-13). */
 const PORTRAIT_REF=3/4;
+const USE_PORTRAIT_VIEW=false;   // 2026-09-14 잠시 끔 — 채점 루프의 주석 참고
 function portraitView(lm){
   const W=video.videoWidth, H=video.videoHeight;
   if(!W||!H)return lm;
@@ -3082,10 +3083,7 @@ function judge(acc){
   else if(tier==="good"){roundJ.gd++; beep(988*k,.09,.15);}
   else if(tier==="ok"){roundJ.o++; beep(740*k,.09,.13);}
   else {roundJ.b++; beep(300,.14,.18); setTimeout(()=>beep(200,.16,.15),90);}
-  if(tier!=="miss"){
-    if(combo>=5&&combo%5===0)callOut(combo+"연속!");
-    else if(tier==="perfect"&&Math.random()<0.35)callOut(CHEERS[Math.floor(Math.random()*CHEERS.length)]);
-  }
+  // 목소리 응원(callOut)은 2026-09-14부터 운동 중에 부르지 않는다 — 위 ③ 설명과 watchFrames 참고
   const el=$("judge");
   el.textContent=tier==="perfect"?"PERFECT!!":tier==="great"?"GREAT!":tier==="good"?"GOOD":tier==="ok"?"OK":"MISS";
   el.className="judge j-"+tier;
@@ -3592,20 +3590,29 @@ async function ensureWorkoutCam(){
    운동을 처음부터 다시 하지 않고, 카메라와 자세 인식만 다시 잡는다.
    지금까지 센 횟수·남은 시간·타이머는 그대로 이어진다(운동을 잃지 않는다). */
 async function refreshWorkoutCam(){
+  if(camFixing)return;                        // 이미 다시 잡는 중이면 겹쳐 하지 않는다
+  camFixing=true;
   const btn=$("camRefresh");
   if(btn){btn.disabled=true;btn.textContent="♻️ 다시 잡는 중…";}
   try{
-    if(rafId)cancelAnimationFrame(rafId);     // 멈춘 그리기 루프를 확실히 끊는다
     stopWorkoutCam();
     await new Promise(r=>setTimeout(r,350));  // 카메라가 놓일 시간
+    /* 기다리는 사이 운동이 끝났으면 카메라를 다시 켜지 않는다.
+       예전엔 그대로 켜면서 심박 측정 카메라까지 꺼 버려, 운동 직후 심박 측정이 끊겼다(2026-09-14). */
+    if(!running)return;
     await ensureWorkoutCam();
-    lastVid=-1;                               // 같은 프레임으로 오해해 건너뛰지 않도록 초기화
-    if(running){ rafId=requestAnimationFrame(loop); }
+    if(!running){ stopWorkoutCam(); return; }
+    lastVid=-1; lastFrameAt=0;                // 같은 프레임으로 오해해 건너뛰지 않도록 초기화
+    /* 그리기 루프가 살아 있으면 새로 시작하지 않는다 — 예전엔 다시 잡을 때마다
+       루프가 하나씩 더 생겨 폰이 점점 무거워졌다. 멈춰 버린 경우에만 다시 돌린다. */
+    if(performance.now()-lastLoopAt>300){ rafId=requestAnimationFrame(loop); }
     toast("화면을 다시 잡았어요 — 이어서 하세요","good","♻️");
   }catch(e){
-    toast("다시 잡지 못했어요 — [✕ 종료] 후 다시 시작해 주세요","task","⚠️");
+    if(running)toast("다시 잡지 못했어요 — [✕ 종료] 후 다시 시작해 주세요","task","⚠️");
+  }finally{
+    camFixing=false;
+    if(btn){btn.disabled=false;btn.textContent="♻️ 새로고침";}
   }
-  if(btn){btn.disabled=false;btn.textContent="♻️ 새로고침";}
 }
 /* 카메라 전환 — 운동 중에 눌러도 그 자리에서 바로 바뀐다 */
 async function flipWorkoutCam(){
@@ -3729,22 +3736,44 @@ function startModelLoad(){
 }
 let loopErrs=0, lastFrameAt=0, camFixing=false;
 /* 영상이 몇 초째 멈춰 있으면(오류도 없이 조용히 멎는 경우) 스스로 카메라를 다시 잡는다 */
+let camFixCount=0, lastLoopAt=0;   // 이번 운동에서 카메라를 다시 잡은 횟수 · 그리기 루프가 마지막으로 돈 때
+const CAM_FIX_MAX=2;
 function watchFrames(){
-  if(!running||noCamMode||camFixing)return;
+  if(!running||noCamMode||camFixing||document.hidden)return;
   const now=performance.now();
   if(!lastFrameAt){ lastFrameAt=now; return; }
+  /* 2026-09-14 수업에서 "다시 잡는 중" 안내가 끝없이 되풀이됐다.
+     영상이 멈춘 까닭이 카메라 고장이 아니라 '재생이 일시정지된 것'인 경우가 있다
+     (소리·음성이 날 때 일부 폰이 영상을 멈춘다). 그럴 땐 카메라를 껐다 켜지 않고 재생만 다시 건다. */
+  if(video.paused&&now-lastFrameAt>=1500){
+    lastFrameAt=now;
+    try{ const p=video.play(); if(p&&p.catch)p.catch(()=>{}); }catch(e){}
+    return;
+  }
   if(now-lastFrameAt<6000)return;
-  camFixing=true; lastFrameAt=0;
+  /* 카메라를 껐다 켜는 것은 한 번 운동에 두 번까지만.
+     넘으면 되풀이하지 않고 학생에게 맡긴다 — 되풀이할수록 폰이 무거워져 더 자주 멈췄다. */
+  if(camFixCount>=CAM_FIX_MAX){
+    lastFrameAt=now;
+    $("fb").textContent="화면이 자꾸 멈춰요 — ♻️ 새로고침을 누르거나 ✕ 종료 후 다시 시작해 주세요";
+    return;
+  }
+  camFixCount++; lastFrameAt=0;
   $("fb").textContent="화면이 멈춰 있어요 — 카메라를 다시 잡는 중…";
-  Promise.resolve(refreshWorkoutCam()).catch(()=>{}).then(()=>{ camFixing=false; });
+  refreshWorkoutCam();
 }
 function loop(){
   if(!running)return;
+  lastLoopAt=performance.now();
   try{ loopBody(); loopErrs=0; }
   catch(e){
     loopErrs++;
     if(loopErrs===1)$("fb").textContent="화면이 잠깐 멎었어요 — 다시 잡는 중…";
-    if(loopErrs>=5){ loopErrs=0; refreshWorkoutCam(); return; }   // 계속 나면 카메라를 다시 잡는다
+    if(loopErrs>=5){
+      loopErrs=0;
+      if(camFixCount<CAM_FIX_MAX&&!camFixing){ camFixCount++; refreshWorkoutCam(); return; }   // 루프를 멈추고 카메라를 다시 잡는다
+      $("fb").textContent="화면이 자꾸 멈춰요 — ♻️ 새로고침을 누르거나 ✕ 종료 후 다시 시작해 주세요";
+    }
   }
   if(running)rafId=requestAnimationFrame(loop);
 }
@@ -3777,7 +3806,9 @@ function loopBody(){
       draw.drawLandmarks(lm,{color:"#FFB020",radius:3});
       if(phase==="work"){
         const def=EX[curEx];
-        const lmS=portraitView(lm);        // 채점은 폰 방향과 무관하게 '세로 3:4에서 본 모양'으로
+        /* 가로모드 보정은 2026-09-14 수업에서 오류가 늘어 잠시 껐다 — 원인을 가리기 위해
+           지난 수업과 같은 채점으로 되돌린다. 깨끗한 수업을 한 번 확인한 뒤 켠다. */
+        const lmS=USE_PORTRAIT_VIEW?portraitView(lm):lm;
         if(def.type==="rep")procRep(lmS,def);
         else if(def.type==="jack")procJack(lmS);
         else if(def.type==="knee")procKnee(lmS,def);
@@ -3844,7 +3875,6 @@ function endRound(){
   const judged=roundJ.p+roundJ.g+roundJ.gd+roundJ.o+roundJ.b;
   if(judged>=4&&roundJ.b===0){
     [0,90,180,320].forEach((d,i)=>setTimeout(()=>beep([1046,1318,1568,2093][i],.14,.18),d));
-    callOut("풀콤보!");
   }
   log.push({ex:curEx,type:def.type,reps:def.type==="hold"?+(holdMs/1000).toFixed(1):roundReps,acc,
     perfect:roundJ.p,great:roundJ.g,good:roundJ.gd,ok:roundJ.o,bad:roundJ.b});
@@ -6983,7 +7013,7 @@ async function start(opts){
   enterFullscreen();
   running=true; combo=0; bestCombo=0; lastCallAt=0;
   $("stage").classList.add("running"); syncStartBtn();
-  loopErrs=0; lastFrameAt=0; camFixing=false; loop();
+  loopErrs=0; lastFrameAt=0; camFixing=false; camFixCount=0; loop();
   updatePresence(3); startPresenceHeartbeat();
   // 첫 동작도 준비할 시간을 준다 — 휴식으로 시작해 다음 동작을 안내한 뒤 운동에 들어간다
   renderWhoBadge();
