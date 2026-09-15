@@ -2951,7 +2951,7 @@ function spawnConfetti(){
    ※ '가로를 세로와 같게' 맞춘 것일 뿐, 세로 3:4도 실제 관절 각도보다 약 12° 깊게 잰다.
      실제 각도로 맞추려면 기준값을 모두 다시 잡아야 해서 학기 경계로 미뤄 두었다(2026-09-13). */
 const PORTRAIT_REF=3/4;
-const USE_PORTRAIT_VIEW=false;   // 2026-09-14 잠시 끔 — 채점 루프의 주석 참고
+const USE_PORTRAIT_VIEW=true;    // 9/14 잠시 껐다가 9/15 선생님 요청으로 다시 켬 — 문제가 생기면 false
 function portraitView(lm){
   const W=video.videoWidth, H=video.videoHeight;
   if(!W||!H)return lm;
@@ -3103,6 +3103,8 @@ function updateJCount(){
    ④ 미스는 둔탁한 두 음으로 떨어뜨려 콤보가 끊긴 걸 귀로 알린다. */
 let combo=0, bestCombo=0, lastCallAt=0;
 const CHEERS=["좋아요","그레이트","완벽해요","멋지다","최고예요","바로 그거예요"];
+const VOICE_CHEERS=true;         // 운동 중 판정 목소리 응원 — 문제가 생기면 false
+let lastRoundFullCombo=false;    // 방금 끝난 라운드를 미스 없이 마쳤나 (라운드 끝 안내에 붙인다)
 function callOut(text){
   const now=performance.now();
   if(now-lastCallAt<3000)return;      // 말이 겹치면 오히려 흐름이 끊긴다
@@ -3120,7 +3122,12 @@ function judge(acc){
   else if(tier==="good"){roundJ.gd++; beep(988*k,.09,.15);}
   else if(tier==="ok"){roundJ.o++; beep(740*k,.09,.13);}
   else {roundJ.b++; beep(300,.14,.18); setTimeout(()=>beep(200,.16,.15),90);}
-  // 목소리 응원(callOut)은 2026-09-14부터 운동 중에 부르지 않는다 — 위 ③ 설명과 watchFrames 참고
+  /* 목소리 응원 — 9/14에 영상 멈춤이 의심돼 껐다가 9/15 선생님 요청으로 다시 켰다.
+     그 사이 영상이 일시정지되면 watchFrames가 재생을 다시 걸어 주도록 고쳐 두었다. */
+  if(VOICE_CHEERS&&tier!=="miss"){
+    if(combo>=5&&combo%5===0)callOut(combo+"연속!");
+    else if(tier==="perfect"&&Math.random()<0.35)callOut(CHEERS[Math.floor(Math.random()*CHEERS.length)]);
+  }
   const el=$("judge");
   el.textContent=tier==="perfect"?"PERFECT!!":tier==="great"?"GREAT!":tier==="good"?"GOOD":tier==="ok"?"OK":"MISS";
   el.className="judge j-"+tier;
@@ -3878,8 +3885,8 @@ function loopBody(){
       draw.drawLandmarks(lm,{color:"#FFB020",radius:3});
       if(phase==="work"){
         const def=EX[curEx];
-        /* 가로모드 보정은 2026-09-14 수업에서 오류가 늘어 잠시 껐다 — 원인을 가리기 위해
-           지난 수업과 같은 채점으로 되돌린다. 깨끗한 수업을 한 번 확인한 뒤 켠다. */
+        /* 가로모드 보정 — 9/14에 원인을 가리려고 잠시 껐다가, 9/15 오류가 이것과 무관한
+           자세 인식 실패로 밝혀져 선생님 요청으로 다시 켰다. 끄려면 USE_PORTRAIT_VIEW=false. */
         const lmS=USE_PORTRAIT_VIEW?portraitView(lm):lm;
         if(def.type==="rep")procRep(lmS,def);
         else if(def.type==="jack")procJack(lmS);
@@ -3945,7 +3952,8 @@ function endRound(){
   const def=EX[curEx];
   const acc=roundAccN?Math.round(roundAccSum/roundAccN):0;
   const judged=roundJ.p+roundJ.g+roundJ.gd+roundJ.o+roundJ.b;
-  if(judged>=4&&roundJ.b===0){
+  lastRoundFullCombo=(judged>=4&&roundJ.b===0);
+  if(lastRoundFullCombo){
     [0,90,180,320].forEach((d,i)=>setTimeout(()=>beep([1046,1318,1568,2093][i],.14,.18),d));
   }
   log.push({ex:curEx,type:def.type,reps:def.type==="hold"?+(holdMs/1000).toFixed(1):roundReps,acc,
@@ -3962,8 +3970,8 @@ function tick(){
   if(timeLeft<=0){
     if(phase==="work"){
       endRound(); roundIdx++;
-      if(roundIdx>=totalRounds){ speak("운동 끝. 수고했습니다",{cut:true}); finish(); return; }
-      speak("운동 종료",{cut:true});
+      if(roundIdx>=totalRounds){ speak((VOICE_CHEERS&&lastRoundFullCombo?"풀콤보! ":"")+"운동 끝. 수고했습니다",{cut:true}); finish(); return; }
+      speak((VOICE_CHEERS&&lastRoundFullCombo?"풀콤보! ":"")+"운동 종료",{cut:true});
       startRest();
     } else startWork();
     $("timerBig").textContent=timeLeft;
