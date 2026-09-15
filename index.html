@@ -651,13 +651,13 @@
       <div id="battleList" style="margin-top:10px"></div>
     </details>
 
-    <!-- 학교 와이파이에서 여러 명이 동시에 시작하면 자세 인식 파일(약 9MB)을 한꺼번에 받아
+    <!-- 학교 와이파이에서 여러 명이 동시에 시작하면 자세 인식 파일(약 18MB)을 한꺼번에 받아
          수업이 버벅인다. 만든 쪽 설정이 '1시간만 보관'이라 교시마다 다시 받게 되기 때문이다.
          한 번 받아 두면 이 기기는 그 뒤로 다시 받지 않는다.
          평소에는 쓸 일이 없으므로 화면 맨 아래에 둔다. -->
     <div class="step-box" id="prefetchBox" style="margin-top:24px">
       <div style="font-weight:700;font-size:14px;color:var(--muted)">📶 처음 한 번만 — 자세 인식 파일 받아두기</div>
-      <div class="hint" style="margin:3px 0 8px">약 <b>9MB</b> — 와이파이가 한가할 때 한 번만 받아 두면 수업 중에 끊기지 않아요</div>
+      <div class="hint" style="margin:3px 0 8px">약 <b>18MB</b> — 와이파이가 한가할 때 한 번만 받아 두면 수업 중에 끊기지 않아요</div>
       <div class="row" style="margin:0">
         <button class="btn btn-stop btn-sm" id="prefetchBtn">⬇️ 지금 받아두기</button>
         <span class="hint" id="prefetchMsg" style="flex:1;min-width:160px"></span>
@@ -7218,7 +7218,7 @@ function renderReports(){
     const k=b.dataset.tr, r=reports[k]; if(!r||!r.trace)return;
     let t; try{ t=JSON.parse(r.trace); }catch(e){ t={raw:r.trace}; }
     const out={학생:`${r.cls||""}반 ${r.name||""}`, 보낸때:r.date||"", 기기:`${r.os||""} ${r.br||""} ${r.scr||""}`,
-      설명:r.text||"", 신호:t};
+      설명:r.text||"", 손으로센맥박:(t&&t.hand!=null)?t.hand:"", 신호:t};
     const blob=new Blob([JSON.stringify(out,null,1)],{type:"application/json"});
     const a=document.createElement("a");
     a.href=URL.createObjectURL(blob);
@@ -7869,6 +7869,7 @@ $("pulseUndo").addEventListener("click",(e)=>{
 $("pulseUse").addEventListener("click",()=>{
   const bpm=pulseTaps*4;
   if(bpm<40){ toast("맥박 수가 너무 적어요 — [다시 세기]로 다시 측정하세요","task","⚠️"); return; }
+  lastTapBpm={bpm,at:Date.now()};
   $("pulseOverlay").style.display="none";
   const isPost=(pulseTarget==="hrManual");
   const pre=isPost?((lastRec&&lastRec.hrPre)?+lastRec.hrPre:(pendingPreHr!=null?+pendingPreHr:null)):null;
@@ -7887,19 +7888,24 @@ $("hrCountBtn").addEventListener("click",()=>openPulse("hrManual"));
 let ppgStream=null, lastHrDeviceId=null;
 /* 방금 잰 심박 신호 — 학생이 [이상해요]를 누르면 이대로 선생님께 간다.
    카메라 심박이 왜 틀리는지는 실제 기기의 신호를 봐야 알 수 있다. */
-let lastTrace=null;
+let lastTrace=null, lastTapBpm=null;   // lastTapBpm: 방금 [맥박 세기]로 센 값 — 신호를 보낼 때 미리 채운다
 if($("hrTrace"))$("hrTrace").addEventListener("click",()=>{
   if(!lastTrace){ toast("보낼 신호가 없습니다 — 먼저 카메라로 측정해 주세요","task","📈"); return; }
   const me=myKey();
   if(!me.name){ toast("운동 설계 탭에서 학번을 먼저 입력하세요","task","⚠️"); return; }
   if(!fdb){ toast("인터넷이 연결되어야 보낼 수 있어요","task","📡"); return; }
   const r=lastTrace.result||{};
+  /* 짝이 손목을 짚어 손으로 센 맥박을 함께 받는다 — 카메라 값이 맞았는지 가릴 ‘정답’이 된다.
+     카메라가 실패해 [맥박 세기]로 셌다면 그 값을 미리 채워 둔다. */
+  const tap=(lastTapBpm&&lastTapBpm.at>=(lastTrace.at||0)&&Date.now()-lastTapBpm.at<5*60*1000)?String(lastTapBpm.bpm):"";
+  const hand=parseInt(prompt("짝이 손목을 짚어 센 맥박이 있으면 적어 주세요 (1분 기준 · 없으면 빈칸)",tap),10);
+  lastTrace.hand=(hand>=30&&hand<=240)?hand:null;
   const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   const d=deviceInfo();
   fmod.set(fmod.ref(fdb,"reports/"+id),{
     name:me.name, cls:me.cls, date:nowStamp(),
     text:`[심박 측정 신호] ${r.ok?("나온 값 "+r.bpm+" BPM"):("실패 — "+(r.why||"이유 없음"))}`
-      +` · ${lastTrace.secs}초 ${lastTrace.n}프레임 · 플래시 ${lastTrace.torch?"켜짐":"없음"} · ${lastTrace.facing||"카메라 미상"}`,
+      +` · ${lastTrace.secs}초 ${lastTrace.n}프레임 · 플래시 ${lastTrace.torch?"켜짐":"없음"} · ${lastTrace.facing||"카메라 미상"}`+(lastTrace.hand?" · 손으로 센 맥박 "+lastTrace.hand:""),
     os:d.os, br:d.br, scr:d.scr, ua:d.ua, where:"심박 측정",
     trace:JSON.stringify(lastTrace),
   }).then(()=>{ toast("측정 신호를 선생님께 보냈습니다 — 고치는 데 씁니다","good","📈"); $("hrTrace").style.display="none"; })
@@ -7910,6 +7916,11 @@ if($("hrTrace"))$("hrTrace").addEventListener("click",()=>{
 // 다른 카메라로 바뀐다"는 문제가 있었다. 이제 이 기기에 저장해 앱을 껐다 켜도 기억한다.
 const HR_CAM_KEY="tabataHrCamId";
 try{ lastHrDeviceId=localStorage.getItem(HR_CAM_KEY)||null; }catch(e){}
+/* 카메라 심박 스위치 (2026-09-15) — 문제가 생기면 그 줄만 false로 바꾼다 */
+const PPG_SPECTRAL=true;   // 박자 찾기: true 스펙트럼(v4, 아래 judgeSpectral) · false 예전 자기상관(v3)
+const PPG_SNR_DB=3;        // 맥박 박자에 모인 힘의 문턱(dB) — 실제 신호 3건 중 2건 맞춤·잡음 150번 중 0번 통과(9/15). 낮추면 잡음도 통과한다
+const PPG_DARK=20;         // 빨강 평균이 이보다 어두우면 맥박이 실릴 빛이 없다 (플래시 없는 폰 실제 7.6)
+const PPG_DARK_FAST=true;  // 플래시 없는 폰이 까맣게만 나오면 24초를 기다리지 않고 바로 맥박 세기로
 /* ---------- 심박 PPG 측정 v3 ----------
    v2까지 남아있던 두 가지 실사용 문제:
    ① 측정할 때마다 getUserMedia를 새로 요청하면 폰이 후면 카메라 중 다른 렌즈(광각 등)를
@@ -8003,7 +8014,7 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
   const wctx=waveEl.getContext("2d");
   const MIN_DUR=8000, CHECK_STEP=2000, MAX_DUR=24000; // 최소 8초, 이후 2초마다 재확인, 최대 24초
   const t0=performance.now(), sig=[];
-  let lastWarnT=0, stopped=false, nextCheck=MIN_DUR, checking=false;
+  let lastWarnT=0, stopped=false, nextCheck=MIN_DUR, checking=false, lastDarkT=0;
 
   let lastR=0, lastG=0;
   function grab(){ // 새 프레임 1개당 1회만 호출됨
@@ -8084,6 +8095,7 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
   }
 
   function maybeCheck(t){
+    if(tooDark(t))return;
     // 최소 시간 전이거나 이미 분석 중이면 건너뜀. 신뢰 가능한 결과가 나오면 즉시 종료(더 기다릴 필요 없음),
     // 아니면 카메라는 그대로 둔 채 다음 체크 시점까지 계속 데이터를 쌓는다(최대 MAX_DUR까지).
     if(checking||t<nextCheck)return;
@@ -8091,8 +8103,19 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
     checking=true;
     const r=analyze(t);
     checking=false;
-    if(r.ok){ keepTrace({ok:true,bpm:r.bpm}); finish(r.bpm); }
-    else if(t>=MAX_DUR){ keepTrace({ok:false,why:r.why||""}); giveUp(); }
+    if(r.ok){ keepTrace({ok:true,bpm:r.bpm,info:r.info}); finish(r.bpm); }
+    else if(t>=MAX_DUR){ keepTrace({ok:false,why:r.why||"",info:r.info}); giveUp(); }
+  }
+  /* 플래시가 없는 폰은 렌즈를 덮으면 거의 까매져(실제로 받은 신호의 빨강 평균 7.6) 맥박이 실릴 빛이 없다.
+     24초를 다 기다리게 하지 말고, 4초가 지나서도 2초 내내 까맣게만 나오면 바로 맥박 세기로 넘긴다. */
+  function tooDark(t){
+    if(!PPG_DARK_FAST||hasTorch||stopped||t<4000||t-lastDarkT<500)return false;
+    lastDarkT=t;
+    let sum=0, cnt=0;
+    for(let i=sig.length-1;i>=0&&sig[i].t>=t-2000;i--){ sum+=sig[i].v; cnt++; }
+    if(cnt<15||sum/cnt>=PPG_DARK)return false;
+    keepTrace({ok:false,why:"플래시 없음·너무 어두움"}); giveUp(true);
+    return true;
   }
   // 측정이 끝나면 안내 문구를 원래대로 돌려 둔다(다음 측정 때 헷갈리지 않게)
   function resetHint(){
@@ -8106,7 +8129,7 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
     ppgStream=null; btn.disabled=false; resetHint();
     onDone(bpm);
   }
-  function giveUp(){
+  function giveUp(dark){
     stopped=true;
     try{track.stop();}catch(e){}
     try{if(camEl){camEl.pause();camEl.srcObject=null;}}catch(e){}
@@ -8114,9 +8137,10 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
     // 여기서 안내 문구만 띄우면 학생 입장에서는 막다른 길이었다(스스로 다른 방법을 찾아
     // 눌러야 했다). 특히 운동 직후엔 땀·떨림 때문에 카메라가 실패하기 쉬운데, 그 사이에도
     // 심박은 계속 떨어진다. 그래서 실패하면 곧바로 짝과 함께 하는 맥박 세기 창을 열어 준다.
-    say("카메라로는 잘 안 잡혔어요 — 짝과 함께 맥박을 세어 볼게요.",true);
+    say(dark?"플래시가 없는 폰은 너무 어두워서 카메라로 재기 어려워요 — 짝과 함께 맥박을 세어 볼게요."
+           :"카메라로는 잘 안 잡혔어요 — 짝과 함께 맥박을 세어 볼게요.",true);
     if(fallbackTarget){ setTimeout(()=>{ if($("pulseOverlay").style.display!=="flex")
-      openPulse(fallbackTarget,"📷 <b>카메라로는 맥박이 잘 안 잡혔어요</b><br>대신 <b>짝과 함께 맥박을 세어</b> 측정할게요.<br><span style=\"font-weight:400;opacity:.85\">아래 [▶ 시작]을 누르고 15초 동안 심장이 뛸 때마다 큰 원을 탭하세요.</span>"); },600); }
+      openPulse(fallbackTarget,(dark?"💡 <b>플래시가 없는 폰은 카메라로 재기 어려워요</b>":"📷 <b>카메라로는 맥박이 잘 안 잡혔어요</b>")+"<br>대신 <b>짝과 함께 맥박을 세어</b> 측정할게요.<br><span style=\"font-weight:400;opacity:.85\">아래 [▶ 시작]을 누르고 15초 동안 심장이 뛸 때마다 큰 원을 탭하세요.</span>"); },600); }
   }
   /* 방금 잰 신호를 그대로 담아 둔다.
      카메라 심박이 왜 틀리는지는 실제 기기에서 나온 신호를 봐야 알 수 있다.
@@ -8131,7 +8155,7 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
         g:pick.map(p=>p.g==null?null:Math.round(p.g*10)/10),
         t:pick.map(p=>Math.round(p.t)),
         n:sig.length, secs:Math.round((sig.length?sig[sig.length-1].t:0)/100)/10,
-        result:result||null, torch:hasTorch, facing:facing||"",
+        result:result||null, torch:hasTorch, facing:facing||"", algo:PPG_SPECTRAL?"v4":"v3", at:Date.now(),
         ua:(navigator.userAgent||"").slice(0,120),
       };
       const b=$("hrTrace"); if(b)b.style.display="inline-block";
@@ -8168,7 +8192,7 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
     return out;
   }
   function analyze(elapsed){
-    const from=Math.max(0,elapsed-15000);
+    const from=Math.max(PPG_SPECTRAL?2000:0,elapsed-15000);   // 스펙트럼은 노출이 자리 잡는 앞 2초를 뺀다
     const pts=sig.filter(p=>p.t>=from);
     if(pts.length<40) return {ok:false,why:"표본 부족"};
     const FS=30, stepMs=1000/FS;
@@ -8180,7 +8204,60 @@ async function measurePPG(waveEl,msgEl,btn,onDone,camEl,fallbackTarget){
        모의 실험에서 자동노출 오류는 그대로였고(51/49/53/50/48) 깨끗한 신호는 오히려
        70을 147로 읽었다. 실제 측정 신호를 받아 본 뒤에 다시 손대기로 한다.
        (초록은 계속 기록해 둔다 — 아래 '측정 신호 보내기'로 선생님께 보내기 위함) */
+    if(PPG_SPECTRAL){
+      // 플래시가 켜졌으면 손가락이 그 렌즈를 덮고 있었는지도 센다 — covered()와 같은 기준(빨강만 밝고 초록은 어둡다)
+      const cover=hasTorch?pts.filter(p=>p.v>60&&p.v-(p.g==null?0:p.g)>25).length/pts.length:null;
+      return judgeSpectral(rs,m,FS,cover);
+    }
     return judgeSeries(rs,m,FS);
+  }
+  /* ---------- 박자 찾기 v4 — 스펙트럼 (2026-09-15) ----------
+     학생들이 보낸 실제 신호를 다시 돌려 보니, 예전 방식(자기상관)은 맥박 두세 번을 한 박으로
+     읽어 111을 56으로, 141을 47로 보고 '맥박이 뚜렷하지 않음'으로 떨어뜨렸다.
+     이제는 밝기 떨림 가운데 어느 박자가 가장 센지 직접 잰다(창을 씌운 푸리에 변환).
+     믿을지는 두 가지로 가린다 — 그 박자(와 두 배 박자)에 힘이 충분히 모였나,
+     앞 절반과 뒤 절반을 따로 재도 같은 박자가 나오나. 끄려면 PPG_SPECTRAL=false. */
+  function ppgFlat(rs,FS){        // 1.5초 이동평균을 빼 느린 밝기 변화(자동노출·누르는 힘)를 걷어낸다
+    const m=rs.length, h=Math.round(FS*0.75), pre=[0], x=new Array(m);
+    for(let i=0;i<m;i++) pre.push(pre[i]+rs[i]);
+    for(let i=0;i<m;i++){ const a=Math.max(0,i-h), b=Math.min(m,i+h+1); x[i]=rs[i]-(pre[b]-pre[a])/(b-a); }
+    return x;
+  }
+  function ppgSpectrum(x,FS){     // 30~240 BPM을 0.5 BPM 간격으로 — ps[j]는 (30+j/2) BPM 떨림의 힘
+    const n=x.length, w=new Array(n), ps=[];
+    for(let i=0;i<n;i++) w[i]=x[i]*(0.5-0.5*Math.cos(2*Math.PI*i/(n-1)));
+    for(let j=0;j<=420;j++){
+      const k=2*Math.PI*(30+j/2)/60/FS; let re=0, im=0;
+      for(let i=0;i<n;i++){ re+=w[i]*Math.cos(k*i); im+=w[i]*Math.sin(k*i); }
+      ps.push(re*re+im*im);
+    }
+    return ps;
+  }
+  function ppgTop(ps){            // 사람 맥박 범위(45~210 BPM)에서 가장 센 박자
+    let best=45, bp=-1;
+    for(let j=30;j<=360;j++) if(ps[j]>bp){ bp=ps[j]; best=30+j/2; }
+    return best;
+  }
+  function judgeSpectral(rs,m,FS,cover){
+    if(m<FS*9.5) return {ok:false,why:"시간 부족"};
+    let mean=0; for(let i=0;i<m;i++) mean+=rs[i]; mean/=m;
+    if(mean<PPG_DARK) return {ok:false,why:"너무 어두움"};
+    if(cover!=null&&cover<0.8) return {ok:false,why:"렌즈가 덮이지 않음"};
+    const x=ppgFlat(rs,FS), ps=ppgSpectrum(x,FS), f0=ppgTop(ps);
+    /* 그 박자와 두 배 박자 둘레(±6)에 모인 힘 ÷ 사람 맥박 범위(45 BPM 이상)의 나머지 — 잡음은 고르게 퍼진다.
+       45 아래(느린 밝기 흔들림)는 세지 않는다 — 넣었더니 밝기가 흔들린 실제 신호가 끝까지 못 잡혔다(9/15). */
+    let on=0, all=0;
+    for(let j=30;j<ps.length;j++){
+      const b=30+j/2; all+=ps[j];
+      if(Math.abs(b-f0)<=6||Math.abs(b-2*f0)<=6) on+=ps[j];
+    }
+    const snr=10*Math.log10(Math.max(on,1e-12)/Math.max(all-on,1e-12));
+    // 앞 절반·뒤 절반을 따로 — 겹치지 않는 두 구간이 같은 박자를 가리켜야 우연이 아니다
+    const h=Math.floor(m/2), a=ppgTop(ppgSpectrum(x.slice(0,h),FS)), b=ppgTop(ppgSpectrum(x.slice(h),FS));
+    const tol=Math.max(10,f0*0.12);
+    const info={bpm:f0, snr:Math.round(snr*10)/10, halves:[a,b]};
+    if(snr<PPG_SNR_DB||Math.abs(a-f0)>tol||Math.abs(b-f0)>tol) return {ok:false,why:"맥박이 뚜렷하지 않음",info};
+    return {ok:true,bpm:Math.round(f0),info};
   }
   function judgeSeries(rs,m,FS){
     /* ① 손가락이 움직인 순간 메우기 — 갑자기 크게 튀는 프레임은 앞 값으로 잇는다.
@@ -9148,18 +9225,23 @@ renderPairPick(); renderWhoBadge();
 initJoinShare();
 initFirebase();
 // 크롬 PWA 설치(주소창 옆 설치 아이콘)는 매니페스트의 icons 배열 + 등록된 서비스워커가 있어야 뜬다
-/* 자세 인식에 쓰는 큰 파일(약 9MB)을 이 기기에 미리 받아 둔다.
+/* 자세 인식에 쓰는 큰 파일(모델 둘과 엔진, 약 18MB)을 이 기기에 미리 받아 둔다.
    만든 쪽 설정이 '1시간만 보관'이라 교시가 바뀔 때마다 다시 받게 되는데,
    30~60명이 동시에 받으면 학교 와이파이가 감당하지 못해 수업이 버벅였다.
    서비스워커가 한 번 받아 두면 그 뒤로는 네트워크를 쓰지 않는다. */
 const BIG_ASSETS=[
   "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",
+  /* 가벼운 모델 — 전체 모델이 늦거나 자세 인식이 자꾸 실패할 때 바꿔 쓴다. 그때 받기 시작하면
+     수업 중 와이파이로 6MB를 기다리게 되므로 함께 받아 둔다 (2026-09-15) */
+  "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.12/wasm/vision_wasm_internal.wasm",
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.12/wasm/vision_wasm_internal.js"
 ];
+const BIG_MB=[9.4,5.8,2.6,0.1];   // 받을 때 크기(MB) — 아직 안 받은 것만 더해 알려 준다
+let bigMissMB=18;
 function prefetchMsg(html){ const el=$("prefetchMsg"); if(el)el.innerHTML=html; }
 /* 이미 받아 뒀는지 확인해 학생이 눌러야 할지 알려 준다 */
-async function checkBigAssets(){
+async function checkBigAssets(quiet){
   const btn=$("prefetchBtn"); if(!btn)return;
   if(!("caches" in window)||!("serviceWorker" in navigator)){
     prefetchMsg('<span style="color:var(--muted)">이 브라우저에서는 미리 받아두기를 쓸 수 없어요 — 그냥 수업하셔도 됩니다.</span>');
@@ -9167,13 +9249,21 @@ async function checkBigAssets(){
   }
   try{
     const c=await caches.open("tabata-model-v1");
-    const hit=await c.match(BIG_ASSETS[0]);
-    if(hit){
+    const miss=[];
+    for(let i=0;i<BIG_ASSETS.length;i++){ if(!(await c.match(BIG_ASSETS[i])))miss.push(i); }
+    bigMissMB=Math.max(1,Math.round(miss.reduce((a,i)=>a+BIG_MB[i],0)));
+    if(!miss.length){
+      if(quiet)return;     // 방금 받기를 마친 참이면 "준비 완료" 안내를 그대로 둔다
       prefetchMsg('<b style="color:var(--good)">✔ 이미 받아뒀어요 — 다시 받을 필요 없습니다</b>');
       btn.textContent="✔ 준비됨"; btn.disabled=true;
       btn.style.opacity=".6";
+    } else if(await c.match(BIG_ASSETS[0])){
+      // 예전에 받아 둔 기기 — 가벼운 모델이 새로 더해져 한 번 더 받아야 한다
+      prefetchMsg('<span style="color:var(--gold)">받을 파일이 더 있어요 (약 '+bigMissMB+'MB) — 한 번 더 눌러 주세요</span>');
+      btn.textContent="⬇️ 지금 받아두기"; btn.disabled=false; btn.style.opacity="";
     } else {
       prefetchMsg('<span style="color:var(--gold)">아직 안 받았어요 — 수업 전에 한 번 눌러 주세요</span>');
+      btn.textContent="⬇️ 지금 받아두기"; btn.disabled=false; btn.style.opacity="";
     }
   }catch(e){}
 }
@@ -9184,7 +9274,7 @@ function prefetchBigAssets(){
     return;
   }
   const btn=$("prefetchBtn"); if(btn){btn.disabled=true;btn.textContent="⬇️ 받는 중…";}
-  prefetchMsg("받는 중… 화면을 끄지 말고 잠시 기다려 주세요 (약 9MB)");
+  prefetchMsg("받는 중… 화면을 끄지 말고 잠시 기다려 주세요 (약 "+bigMissMB+"MB)");
   sw.postMessage({type:"PREFETCH",urls:BIG_ASSETS});
   // 응답이 없으면(오래된 서비스워커 등) 계속 '받는 중'으로 남지 않게 되돌린다
   setTimeout(()=>{ if(btn&&btn.disabled&&btn.textContent==="⬇️ 받는 중…"){
@@ -9201,6 +9291,7 @@ if("serviceWorker" in navigator){
         btn.style.opacity=".6"; }
       prefetchMsg('<b style="color:var(--good)">✔ 준비 완료 — 이제 이 기기는 수업 때 다시 받지 않습니다</b>');
       toast("자세 인식 파일 준비 완료","good","✅");
+      setTimeout(()=>checkBigAssets(true),800);   // 하나라도 못 받았으면 다시 누르라고 알린다
     }
   });
   // 서비스워커가 화면을 넘겨받은 뒤 상태를 확인한다
