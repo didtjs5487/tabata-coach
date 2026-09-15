@@ -3749,7 +3749,32 @@ async function setup(){
   return;
 }
 let modelLoading=false, modelFailed=false;
-function startModelLoad(){
+/* ---------- 자세 인식이 계속 실패하면 스스로 다시 준비한다 (2026-09-15) ----------
+   9/15 수업 영상에서 "화면이 잠깐 멎었어요 — 다시 잡는 중…"이 라운드 내내 떠 있고 관절·판정이 전혀 없었다.
+   몸이 안 보일 때 뜨는 다른 안내로 바뀌지 않았다는 건, 채점 코드에 닿기 전 — 자세 인식(detectForVideo)
+   자체가 부를 때마다 실패했다는 뜻이다. 아이폰 사파리에서 GPU 메모리가 모자라 그래픽 문맥이 끊기면
+   그 뒤로는 부를 때마다 실패한다.
+   예전 복구는 '연달아 5번' 실패해야 움직였는데, 새 프레임이 없는 틈마다 셈이 0으로 돌아가 한 번도
+   움직이지 않았고, 움직였더라도 카메라만 다시 켤 뿐 망가진 인식 모델은 그대로였다.
+   이제 인식 실패만 따로 세어, 이어지면 모델을 닫고 가벼운 모델을 CPU로 다시 만든다(운동은 계속 돈다).
+   두 번 다시 만들어도 안 되면 채점 없이 운동만 이어가게 한다 — 무한히 되풀이하지 않게. */
+const DETECT_SELF_HEAL=true;          // 문제가 생기면 false — 예전처럼 둔다
+let detectErrs=0, detectRebuilds=0, lastDetectErr="";
+function onDetectError(e){
+  lastDetectErr=String((e&&(e.message||e.name))||e||"알 수 없는 오류").slice(0,160);   // 앱 문제 알리기에 함께 보낸다
+  if(!DETECT_SELF_HEAL)return;
+  detectErrs++;
+  if(detectErrs<8||modelLoading)return;
+  detectErrs=0;
+  const old=landmarker; landmarker=null;          // 루프는 '자세 인식 준비 중' 안내로 돈다
+  try{ if(old&&old.close)old.close(); }catch(_){}
+  if(detectRebuilds>=2){ modelFailed=true; return; }   // 더 되풀이하지 않고 운동만
+  detectRebuilds++;
+  toast("자세 인식이 자꾸 멈춰서 다시 준비하는 중… 운동은 계속하세요","task","🤖");
+  startModelLoad({cpu:true});
+}
+function startModelLoad(opt){
+  opt=opt||{};
   if(landmarker||modelLoading)return;
   modelLoading=true; modelFailed=false;
   const LITE="https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
@@ -3760,15 +3785,22 @@ function startModelLoad(){
   const build=async(url)=>{
     const vision=await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.12/wasm");
     return await PoseLandmarker.createFromOptions(vision,{
-      baseOptions:{modelAssetPath:url,delegate:"GPU"}, runningMode:"VIDEO", numPoses:1});
+      baseOptions:{modelAssetPath:url,delegate:opt.cpu?"CPU":"GPU"}, runningMode:"VIDEO", numPoses:1});
   };
   const done=(lm,which)=>{
-    if(settled||!lm)return; settled=true; modelLoading=false;
+    // 이미 다른 모델로 시작했으면 늦게 온 쪽은 닫는다 — 아이폰에서 두 모델이 함께 GPU에 남으면 버벅였다
+    if(settled||!lm){ try{ if(lm&&lm.close)lm.close(); }catch(e){} return; }
+    settled=true; modelLoading=false;
     landmarker=lm; draw=draw||new DrawingUtils(ctx);
-    toast(which==="lite"?"자세 인식 준비 완료 (가벼운 모드)":"자세 인식 준비 완료","good","🤖");
+    toast(opt.cpu?"자세 인식을 다시 준비했어요 (안정 모드)":(which==="lite"?"자세 인식 준비 완료 (가벼운 모드)":"자세 인식 준비 완료"),"good","🤖");
   };
-  build(FULL).then(lm=>done(lm,"full")).catch(()=>{});
-  setTimeout(()=>{ if(!settled) build(LITE).then(lm=>done(lm,"lite")).catch(()=>{}); },15000);
+  if(opt.cpu){
+    // 그래픽 문맥이 끊긴 기기에서 같은 방식(GPU)으로 또 만들면 또 끊긴다 — 가벼운 모델을 CPU로
+    build(LITE).then(lm=>done(lm,"lite")).catch(()=>{});
+  } else {
+    build(FULL).then(lm=>done(lm,"full")).catch(()=>{});
+    setTimeout(()=>{ if(!settled) build(LITE).then(lm=>done(lm,"lite")).catch(()=>{}); },15000);
+  }
   setTimeout(()=>{ if(!settled){ modelLoading=false; modelFailed=true; } },60000);
 }
 let loopErrs=0, lastFrameAt=0, camFixing=false;
@@ -3829,7 +3861,10 @@ function loopBody(){
   watchFrames();
   if(video.currentTime!==lastVid){
     lastVid=video.currentTime; lastFrameAt=performance.now();   // 새 프레임이 왔다
-    const res=landmarker.detectForVideo(video,performance.now());
+    let res;
+    try{ res=landmarker.detectForVideo(video,performance.now()); }
+    catch(e){ onDetectError(e); throw e; }
+    detectErrs=0;
     ctx.clearRect(0,0,overlay.width,overlay.height);
     /* 각도는 '화면에 비친 2차원 좌표' 대신 '몸 기준 3차원 좌표'로 잰다.
        화면 좌표로 재면 카메라를 어디서 들고 있느냐에 따라 같은 자세가 다른 각도로 보여
@@ -7109,7 +7144,7 @@ function deviceInfo(){
   const ua=navigator.userAgent||"";
   const os=/Android/i.test(ua)?"안드로이드":/iPhone|iPad|iPod/i.test(ua)?"아이폰·아이패드":/Windows/i.test(ua)?"윈도우":/Mac/i.test(ua)?"맥":"기타";
   const br=/SamsungBrowser/i.test(ua)?"삼성인터넷":/Edg/i.test(ua)?"엣지":/Chrome/i.test(ua)?"크롬":/Firefox/i.test(ua)?"파이어폭스":/Safari/i.test(ua)?"사파리":"기타";
-  return {os,br,scr:`${screen.width}x${screen.height}`,ua:ua.slice(0,160)};
+  return {os,br,scr:`${screen.width}x${screen.height}`,ua:ua.slice(0,160),det:lastDetectErr||""};   // 마지막 자세 인식 오류(있으면)
 }
 function renderMyReports(){
   const el=$("rpMine"); if(!el)return;
@@ -7124,7 +7159,7 @@ if($("rpSend"))$("rpSend").addEventListener("click",()=>{
   if(!me.name){msg.innerHTML='<span class="err">운동 설계 탭에서 학번을 먼저 입력하세요.</span>';return;}
   const d=deviceInfo();
   const rep={name:me.name,cls:me.cls,text:txt,date:nowStamp(),
-    os:d.os,br:d.br,scr:d.scr,ua:d.ua,
+    os:d.os,br:d.br,scr:d.scr,ua:d.ua,det:d.det,
     where:(document.querySelector("nav button.on")||{}).textContent||""};
   myReports.push({date:rep.date,text:txt});
   try{ localStorage.setItem(RP_KEY,JSON.stringify(myReports)); }catch(e){}
@@ -7161,6 +7196,7 @@ function renderReports(){
         <span class="hint">${escHtml(String(r.date||"").slice(0,16))}</span>
         <span class="hint">· ${escHtml(r.os||"")} ${escHtml(r.br||"")} ${escHtml(r.scr||"")}</span>
         ${r.where?`<span class="hint">· ${escHtml(r.where)}에서</span>`:""}
+        ${r.det?`<span class="hint" style="color:var(--bad)">· 인식 오류: ${escHtml(r.det)}</span>`:""}
         ${r.trace?'<span class="ord num" style="background:var(--primary);color:#fff">측정 신호 있음</span>':""}
       </div>
       <div style="margin-top:6px;white-space:pre-wrap">${escHtml(r.text||"")}</div>
