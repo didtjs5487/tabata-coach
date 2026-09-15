@@ -1276,15 +1276,6 @@
         <div class="hint" id="srvStatus"></div>
         <div id="liveFeed" style="display:none;margin-top:8px;max-height:340px;overflow-y:auto"></div>
 
-        <h3 style="margin-top:20px">🔑 관리자 비밀번호</h3>
-        <div class="hint">초기 비밀번호는 <b>1234</b>입니다. 학생 배포 전에 꼭 변경하세요.</div>
-        <div class="row" style="margin-top:8px">
-          <div class="field"><label>새 비밀번호</label><input type="password" id="newPw" style="width:150px"></div>
-          <button class="btn btn-teal btn-sm" id="pwBtn">변경</button>
-          <div class="hint" style="flex-basis:100%;margin-top:6px">이 비밀번호는 <b>이 기기에만</b> 저장됩니다 — 폰에서 바꿔도 노트북은 그대로입니다.
-            기기마다 맞출 필요는 없습니다. <b>🔐 교사 로그인</b>을 해 두면 그 기기에서는 비밀번호를 묻지 않습니다.</div>
-        </div>
-
         <h3 style="margin-top:20px">📦 백업 · 초기화</h3>
         <div class="hint">먼저 맨 위 <b>[⬇ 백업 CSV]</b>를 받아두세요. <b>기기 초기화</b>는 이 기기 자료만 지우고 서버 기록은 남습니다(재연결하면 다시 내려받음). <b>수행 기록 전체 삭제</b>는 서버에서도 지워 되돌릴 수 없으며, <b>명렬표와 공통과제는 그대로 유지</b>됩니다.</div>
         <div class="row" style="margin-top:8px">
@@ -1383,6 +1374,17 @@
   <div class="row" style="margin:6px 0 0;justify-content:center">
     <button class="btn btn-go" id="hrConfirmUse" style="padding:12px 28px;font-size:17px">✔ 이 값으로 기록</button>
     <button class="btn btn-stop" id="hrConfirmRetry" style="background:#6C63C8;color:#fff;padding:12px 22px;font-size:17px">↻ 다시 측정</button>
+  </div>
+</div>
+<!-- 학습센터 열기 — 교사 로그인 (기기마다 따로 두던 잠금 비밀번호를 대신한다) -->
+<div id="unlockOverlay" style="display:none;position:fixed;inset:0;z-index:10009;background:rgba(20,22,48,.96);flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center">
+  <div style="color:#fff;font-size:20px;font-weight:800">🔐 교사 로그인</div>
+  <input type="email" id="unlockEmail" autocomplete="username" placeholder="이메일" style="width:min(320px,100%);padding:12px;border-radius:10px;border:1px solid #6C63C8;font-size:16px">
+  <input type="password" id="unlockPw" autocomplete="current-password" placeholder="비밀번호" style="width:min(320px,100%);padding:12px;border-radius:10px;border:1px solid #6C63C8;font-size:16px">
+  <div id="unlockMsg" style="color:#C9C6EE;font-size:14px;min-height:20px;max-width:340px"></div>
+  <div class="row" style="margin:0;justify-content:center">
+    <button class="btn btn-go" id="unlockGo" style="padding:12px 28px;font-size:17px">로그인</button>
+    <button class="btn btn-stop" id="unlockCancel" style="background:#6C63C8;color:#fff;padding:12px 22px;font-size:17px">취소</button>
   </div>
 </div>
 <div id="qrOverlay" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(43,49,96,.92);flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:24px;cursor:pointer">
@@ -1570,7 +1572,7 @@ import { PoseLandmarker, FilesetResolver, DrawingUtils }
 const $=id=>document.getElementById(id);
 
 /* ---------- nav ---------- */
-let adminUnlocked=false, adminPw="1234";
+let adminUnlocked=false;
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>{
   /* 운동이 돌아가는 중에 다른 탭을 누르면, 화면은 가려지는데 타이머와 배경음은 계속 돌았다.
      학생 눈에는 '앱에서 비프음이 계속 나는' 것으로만 보이고, 운동 화면이 숨어 있어 멈출 방법도 없었다.
@@ -1585,10 +1587,7 @@ document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()
     if(typeof isTeacher==="function"&&isTeacher()){
       adminUnlocked=true;                       // 교사 로그인이 되어 있으면 잠금을 묻지 않는다
     } else {
-      const pw=prompt("이 기기 잠금 비밀번호를 입력하세요 (교사 로그인을 해 두면 다음부터 묻지 않습니다)");
-      if(pw===null)return;
-      if(pw!==adminPw){alert("비밀번호가 틀렸습니다.");return;}
-      adminUnlocked=true;
+      openUnlock(); return;                     // 교사 로그인 창 — 로그인되면 그 자리에서 학습센터로 들어간다
     }
   }
   document.querySelectorAll("nav button").forEach(x=>x.classList.remove("on"));
@@ -1600,12 +1599,42 @@ document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()
   if(b.dataset.page==="pgWork" && !parqPassed){ $("healthGate").style.display="block"; $("workBody").style.display="none"; initParq(); }
   if(b.dataset.page==="pgAdmin")renderDashboard();
 }));
-$("pwBtn")&&$("pwBtn").addEventListener("click",()=>{
-  const v=$("newPw").value.trim();
-  if(v.length<4){alert("4자 이상으로 정해주세요.");return;}
-  adminPw=v; saveAll(); $("newPw").value="";
-  alert("이 기기의 잠금 비밀번호를 바꿨습니다. 이 기기에만 적용됩니다 — 다른 기기에서는 교사 로그인을 해 두시면 비밀번호 없이 열립니다.");
-});
+/* 학습센터는 교사 로그인으로 연다 (2026-09-15)
+   예전에는 기기마다 따로 저장되는 잠금 비밀번호(처음 1234)를 물었다 — 바꾸면 그 기기만 바뀌어
+   폰·집 데스크탑·학교 노트북의 비밀번호가 제각각이 됐고, 한 번도 안 바꾼 학생 폰에서는 1234로 열렸다.
+   교사 계정은 어느 기기에서나 같고, 한 번 로그인한 기기는 로그아웃할 때까지 묻지 않는다. */
+const TEACHER_EMAIL_KEY="tabataTeacherEmail";
+let authKnown=false; const authWaiters=[];
+function waitAuth(ms){ return authKnown?Promise.resolve():new Promise(r=>{ authWaiters.push(r); setTimeout(r,ms); }); }
+async function openUnlock(){
+  const ov=$("unlockOverlay"), msg=$("unlockMsg");
+  try{ if(!$("unlockEmail").value)$("unlockEmail").value=localStorage.getItem(TEACHER_EMAIL_KEY)||""; }catch(e){}
+  $("unlockPw").value=""; msg.textContent="";
+  ov.style.display="flex";
+  if(!authKnown){                            // 앱을 막 열었으면 로그인돼 있는지 아직 모른다
+    msg.textContent="로그인 확인 중…";
+    await waitAuth(6000);
+    if(ov.style.display!=="flex")return;     // 기다리는 사이에 [취소]
+    msg.textContent="";
+  }
+  if(isTeacher()){ ov.style.display="none"; adminUnlocked=true; goPage("pgAdmin"); return; }
+  ($("unlockEmail").value?$("unlockPw"):$("unlockEmail")).focus();
+}
+async function doUnlock(){
+  const em=($("unlockEmail").value||"").trim(), pw=$("unlockPw").value||"", msg=$("unlockMsg");
+  if(!em||!pw){ msg.innerHTML='<span class="err">이메일과 비밀번호를 입력하세요.</span>'; return; }
+  if(!fbAuth){ msg.innerHTML='<span class="err">서버에 연결되는 중이에요 — 잠시 뒤 다시 눌러 주세요.</span>'; return; }
+  msg.textContent="로그인 중…";
+  try{
+    await authMod.signInWithEmailAndPassword(fbAuth,em,pw);
+    try{ localStorage.setItem(TEACHER_EMAIL_KEY,em); }catch(e){}
+    $("unlockPw").value=""; $("unlockOverlay").style.display="none";
+    adminUnlocked=true; goPage("pgAdmin");
+  }catch(e){ msg.innerHTML='<span class="err">'+authErrText(e)+'</span>'; }
+}
+$("unlockGo").addEventListener("click",doUnlock);
+$("unlockPw").addEventListener("keydown",e=>{ if(e.key==="Enter")doUnlock(); });
+$("unlockCancel").addEventListener("click",()=>{ $("unlockOverlay").style.display="none"; $("unlockPw").value=""; });
 function goPage(id){ document.querySelector(`nav button[data-page=${id}]`).click(); }
 
 /* ---------- 운동 전 건강 자가체크 (PAR-Q 간이) ---------- */
@@ -7443,6 +7472,7 @@ function renderMsgClsPick(){
 function sendNotice(to){
   const text=($("msgText").value||"").trim();
   if(!text){ $("msgAdminMsg").innerHTML='<span class="err">보낼 말을 적어 주세요.</span>'; return; }
+  if(fdb&&!isTeacher()){ $("msgAdminMsg").innerHTML='<span class="err">🔐 교사 로그인이 필요합니다 — 로그인해야 학생에게 보낼 수 있어요.</span>'; return; }
   const cls=msgCls;
   if(to!=="all"&&!cls){ $("msgAdminMsg").innerHTML='<span class="err">먼저 반을 고르세요.</span>'; return; }
   let names=null;
@@ -7456,7 +7486,7 @@ function sendNotice(to){
   notices[id]=n;
   if(fdb)fmod.set(fmod.ref(fdb,"notices/"+id),n)
     .then(()=>{ $("msgAdminMsg").innerHTML='<b style="color:var(--good)">보냈습니다</b>'; })
-    .catch(()=>{ $("msgAdminMsg").innerHTML='<span class="err">보내지 못했습니다 — 규칙에 notices를 추가해 주세요.</span>'; });
+    .catch(()=>{ delete notices[id]; renderNoticeAdmin(); if(!$("msgText").value)$("msgText").value=text; $("msgAdminMsg").innerHTML='<span class="err">보내지 못했습니다 — 인터넷을 확인하고 다시 보내 주세요.</span>'; });
   else $("msgAdminMsg").innerHTML='<span class="err">서버 연결이 필요합니다.</span>';
   $("msgText").value="";
   renderNoticeAdmin();
@@ -8402,7 +8432,7 @@ function saveAll(){
   if(!storageOK)return;
   try{
     const recs=records.map(({_row,...r})=>r);
-    localStorage.setItem(STORE_KEY,JSON.stringify({rosters,records:recs,totalPts,fbCfg:$("fbCfg").value,adminPw,assignments,seenBattles,myPlans,rubric,mySpice,myLogs:myLogsLocal,myFinal:myFinalLocal}));
+    localStorage.setItem(STORE_KEY,JSON.stringify({rosters,records:recs,totalPts,fbCfg:$("fbCfg").value,assignments,seenBattles,myPlans,rubric,mySpice,myLogs:myLogsLocal,myFinal:myFinalLocal}));
   }catch(e){}
   savePersonal();     // 개인 자료는 학번별 칸에도 따로 남긴다(기기를 나눠 쓸 때 섞이지 않게)
 }
@@ -8430,7 +8460,6 @@ function loadAll(){
       (d.records||[]).forEach(r=>{records.push(r);renderRecRow(r);});
       totalPts=+d.totalPts||0;
       if(d.fbCfg)$("fbCfg").value=d.fbCfg;
-      if(d.adminPw)adminPw=d.adminPw;
       if(d.assignments)Object.assign(assignments,d.assignments);
       if(Array.isArray(d.seenBattles))seenBattles=d.seenBattles;
       if(d.rubric)rubric={...RUBRIC_DEFAULT,...d.rubric};
@@ -8521,6 +8550,22 @@ function parseFbCfg(text){
   const cfg={}, re=/(\w+)\s*:\s*["']([^"']+)["']/g; let m;
   while((m=re.exec(text)))cfg[m[1]]=m[2];
   return (cfg.apiKey&&cfg.databaseURL)?cfg:null;
+}
+/* 서버에서 지워진 기록을 이 기기 목록에서도 뺀다 (표의 줄도 함께) */
+function dropRecord(id){
+  const i=records.findIndex(r=>r&&r.id===id); if(i<0)return false;
+  const r=records[i]; records.splice(i,1);
+  try{ if(r._row)r._row.remove(); }catch(e){}
+  return true;
+}
+/* 서버에 올라갔던 기록(synced)인데 지금 서버에 없으면 지워진 것 — 아직 못 올린 기록은 그대로 둔다 */
+function pruneDeletedRecords(serverIds){
+  let n=0;
+  for(let i=records.length-1;i>=0;i--){
+    const r=records[i];
+    if(r&&r.id&&r.synced===true&&!serverIds.has(r.id)){ try{ if(r._row)r._row.remove(); }catch(e){} records.splice(i,1); n++; }
+  }
+  return n;
 }
 function normalizeRec(r){
   return {id:r.id||"",date:String(r.date||""),name:r.name,cls:String(r.cls||""),sid:r.sid||"",noCam:!!r.noCam,
@@ -8617,7 +8662,10 @@ async function ensureAuth(app){
   fbAuth=authMod.getAuth(app);
   authMod.onAuthStateChanged(fbAuth,u=>{
     teacherUser=u||null;
+    authKnown=true; authWaiters.splice(0).forEach(f=>f());
     if(!u){ // 로그아웃하면 화면에 남은 남의 자료를 지운다
+      adminUnlocked=false;                     // 학습센터도 다시 잠근다 — 보고 있던 중이면 첫 화면으로
+      if((document.querySelector("nav button.on")||{dataset:{}}).dataset.page==="pgAdmin")goPage("pgSetup");
       Object.keys(plans).forEach(k=>delete plans[k]);
       Object.keys(reflections).forEach(k=>delete reflections[k]);
       Object.keys(reports).forEach(k=>delete reports[k]); renderReports();
@@ -8636,19 +8684,22 @@ $("authIn").addEventListener("click",async()=>{
   msg.textContent="로그인 중…";
   try{
     await authMod.signInWithEmailAndPassword(fbAuth,em,pw);
+    try{ localStorage.setItem(TEACHER_EMAIL_KEY,em); }catch(e){}
     $("authPw").value="";
   }catch(e){
-    const c=String(e&&e.code||"");
-    msg.innerHTML='<span class="err">'+(
-      /user-not-found|invalid-credential|wrong-password/.test(c)?"이메일 또는 비밀번호가 맞지 않습니다.":
-      /too-many-requests/.test(c)?"시도가 많아 잠시 막혔습니다. 잠시 뒤 다시 해주세요.":
-      /operation-not-allowed|configuration-not-found/.test(c)
-        ?"Firebase 콘솔 → Authentication에서 '이메일/비밀번호' 로그인을 먼저 켜 주세요.":
-      /invalid-email/.test(c)?"이메일 주소 형식이 올바르지 않습니다.":
-      /network/.test(c)?"인터넷 연결을 확인하세요.":
-      "로그인 실패 ("+c+")")+'</span>';
+    msg.innerHTML='<span class="err">'+authErrText(e)+'</span>';
   }
 });
+function authErrText(e){
+  const c=String(e&&e.code||"");
+  return /user-not-found|invalid-credential|wrong-password/.test(c)?"이메일 또는 비밀번호가 맞지 않습니다.":
+    /too-many-requests/.test(c)?"시도가 많아 잠시 막혔습니다. 잠시 뒤 다시 해주세요.":
+    /operation-not-allowed|configuration-not-found/.test(c)
+      ?"Firebase 콘솔 → Authentication에서 '이메일/비밀번호' 로그인을 먼저 켜 주세요.":
+    /invalid-email/.test(c)?"이메일 주소 형식이 올바르지 않습니다.":
+    /network/.test(c)?"인터넷 연결을 확인하세요.":
+    "로그인 실패 ("+c+")";
+}
 $("authPwChange").addEventListener("click",()=>{
   const r=$("authPwRow");
   r.style.display=r.style.display==="none"?"flex":"none";
@@ -8698,7 +8749,7 @@ function attachProtected(onValue,ref){
   },quiet));
 }
 function attachFbListeners(){
-  const {ref,onChildAdded,onChildChanged,onValue}=fmod;
+  const {ref,onChildAdded,onChildChanged,onChildRemoved,onValue}=fmod;
   $("liveFeed").style.display="block";
   attachPresenceListener();
   // 교사 수업 통제 신호 수신 (학생)
@@ -8780,6 +8831,19 @@ function attachFbListeners(){
       if(cell){cell.innerHTML=hrCellHTML(loc); cell.style.color=hrCellColor(loc);}}
     renderStats(); saveAll();
   });
+  /* 서버에서 지운 기록은 이 기기에서도 지운다 (2026-09-15) — 레벨은 이 기기에 있는 기록을 더해 매기는데,
+     선생님이 지운 기록이 그 전에 받아 둔 기기에만 남아 기기마다 레벨이 달랐다.
+     한꺼번에 많이 지워질 때(기록 전체 삭제) 화면이 멎지 않게 저장·다시 그리기는 몰아서 한다. */
+  onChildRemoved(ref(fdb,"records"),snap=>{
+    const v=snap.val();
+    if(dropRecord((v&&v.id)||snap.key))flushStats();
+  });
+  // 이 기기가 꺼져 있던 사이에 지워진 것 — 처음 한 번 서버 목록과 맞춰 본다
+  onValue(ref(fdb,"records"),snap=>{
+    const ids=new Set();
+    snap.forEach(c=>{ const v=c.val(); ids.add((v&&v.id)||c.key); });
+    if(pruneDeletedRecords(ids))flushStats();
+  },{onlyOnce:true});
   let taskSyncedOnce=false;
   onValue(ref(fdb,"assignments"),snap=>{
     const prevIds=Object.keys(assignments);
