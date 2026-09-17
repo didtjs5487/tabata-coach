@@ -272,21 +272,60 @@
   .cfg-fixed{flex:1; min-width:220px; background:var(--panel); border:1px solid var(--line);
     border-radius:10px; padding:10px 12px; font-size:14px; line-height:1.55;}
   .cfg-fixed span{display:block; color:var(--muted); font-size:12.5px; margin-top:2px;}
-  #levelupOverlay{position:fixed; inset:0; z-index:10000; display:none; align-items:center; justify-content:center;
-    background:rgba(43,49,96,.55); backdrop-filter:blur(4px); opacity:0; transition:opacity .35s;}
+  /* ---------- 진화 카드 뽑기 (2026-09-17) ---------- */
+  #levelupOverlay{position:fixed; inset:0; z-index:10000; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    padding:24px; background:radial-gradient(circle at 50% 45%, rgba(91,81,232,.6), rgba(20,22,48,.95) 70%); opacity:0; transition:opacity .35s;}
   #levelupOverlay.show{opacity:1;}
-  #levelupOverlay .lu-card{background:#fff; border-radius:24px; padding:34px 44px; text-align:center;
-    box-shadow:0 20px 60px rgba(91,81,232,.35); transform:scale(.6); transition:transform .45s cubic-bezier(.34,1.56,.64,1);}
-  #levelupOverlay.show .lu-card{transform:scale(1);}
-  .lu-title{font-family:"Barlow Condensed"; font-weight:700; font-size:30px; letter-spacing:1px;
-    background:linear-gradient(90deg,var(--primary),var(--work)); -webkit-background-clip:text; background-clip:text; color:transparent;}
-  .lu-emoji{font-size:96px; line-height:1.1; margin:6px 0; animation:luBounce 1s ease-in-out infinite;}
-  @keyframes luBounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-10px) scale(1.06)}}
-  .lu-name{font-family:"Barlow Condensed"; font-weight:700; font-size:34px; color:var(--primary);}
-  .lu-sub{color:var(--muted); font-size:15px; margin-top:4px;}
+  .evo-head{color:#fff; font-weight:800; font-size:clamp(22px,6vw,32px); text-align:center; min-height:1.3em;}
+  .evo-tap{color:#C9C6EE; font-size:15px; font-weight:700; min-height:1.4em; text-align:center; animation:evoBlink 1.2s ease-in-out infinite;}
+  @keyframes evoBlink{50%{opacity:.35}}
+  .evo-stage{position:relative; width:min(240px,64vw); aspect-ratio:3/4; max-width:100%; perspective:1000px; cursor:pointer;}
+  .evo-rays{position:absolute; inset:-45%; border-radius:50%; opacity:0; pointer-events:none; transition:opacity .6s;
+    background:repeating-conic-gradient(from 0deg, rgba(255,215,90,.55) 0 10deg, transparent 10deg 30deg);
+    -webkit-mask:radial-gradient(circle, #000 25%, transparent 68%); mask:radial-gradient(circle, #000 25%, transparent 68%);
+    animation:evoSpin 9s linear infinite;}
+  .evo-stage.revealed .evo-rays{opacity:1;}
+  @keyframes evoSpin{to{transform:rotate(360deg)}}
+  .evo-card{position:absolute; inset:0; transform-style:preserve-3d; -webkit-transform-style:preserve-3d; transition:transform .9s cubic-bezier(.3,1.35,.5,1);}
+  .evo-stage.charging .evo-card{animation:evoShake .5s ease-in-out infinite;}
+  .evo-stage.charging.hot .evo-card{animation:evoShake .16s linear infinite;}
+  @keyframes evoShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-3deg) translateY(-2px)}75%{transform:rotate(3deg) translateY(2px)}}
+  .evo-stage.revealed .evo-card{transform:rotateY(180deg); animation:none;}
+  .evo-face{position:absolute; inset:0; border-radius:20px; overflow:hidden; backface-visibility:hidden; -webkit-backface-visibility:hidden;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;}
+  .evo-back{background:linear-gradient(135deg,#5B51E8,#8B80F9 55%,#FF9F1C); border:4px solid #fff;
+    box-shadow:0 0 28px rgba(255,215,90,.6), inset 0 0 40px rgba(255,255,255,.25);}
+  .evo-stage.charging .evo-back{animation:evoGlow 1s ease-in-out infinite;}
+  @keyframes evoGlow{50%{box-shadow:0 0 64px rgba(255,230,120,.95), inset 0 0 60px rgba(255,255,255,.5)}}
+  .evo-back b{font-size:clamp(64px,20vw,96px); line-height:1; color:#fff; text-shadow:0 4px 18px rgba(0,0,0,.25);}
+  .evo-back span{color:#fff; font-weight:800; letter-spacing:3px; font-size:12px; opacity:.9;}
+  .evo-front{transform:rotateY(180deg); background:#fff; border:4px solid #FFD75A; box-shadow:0 0 40px rgba(255,215,90,.85); padding:10px;}
+  .evo-front::after{content:""; position:absolute; inset:0; pointer-events:none; transform:translateX(-120%);
+    background:linear-gradient(115deg, transparent 35%, rgba(255,255,255,.85) 50%, transparent 65%);}
+  .evo-stage.revealed .evo-front::after{animation:evoShine 1.4s ease .9s 2;}
+  @keyframes evoShine{to{transform:translateX(120%)}}
+  .evo-emoji{font-size:clamp(72px,24vw,108px); line-height:1.05;}
+  .evo-stage.revealed .evo-emoji,.evo-stage.revealed .evo-art{animation:evoPop .7s cubic-bezier(.3,1.6,.5,1) .5s both;}
+  @keyframes evoPop{0%{transform:scale(.2)}100%{transform:scale(1)}}
+  .evo-art{width:80%; aspect-ratio:1; max-width:100%;}
+  .evo-art svg{width:100%; height:100%; display:block;}
+  .evo-name{font-weight:800; font-size:clamp(20px,5.6vw,26px); color:var(--primary); text-align:center; line-height:1.2;}
+  .evo-sub{color:#8a86b8; font-size:13px; font-weight:700; text-align:center;}
+  .evo-stars{color:#FFB400; font-size:17px; letter-spacing:2px;}
+  .evo-new{position:absolute; top:10px; left:10px; background:#F45B69; color:#fff; font-weight:800; font-size:12px; border-radius:99px; padding:3px 9px;}
+  .evo-btns{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; min-height:48px;}
   #confetti{position:absolute; inset:0; overflow:hidden; pointer-events:none;}
   #confetti span{position:absolute; top:-16px; border-radius:2px; opacity:.9; animation:confFall linear forwards;}
   @keyframes confFall{to{transform:translateY(105vh) rotate(720deg); opacity:.4}}
+  /* ---------- 운동 설계: 고른 운동의 움직이는 자세 (2026-09-17) ---------- */
+  .ex-preview{display:flex; gap:12px; align-items:center; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:10px; margin:8px 0 4px;}
+  .ex-preview .exp-art{width:118px; height:118px; flex:0 0 118px; max-width:40%;}
+  .ex-preview .exp-art svg{width:100%; height:100%; display:block;}
+  .ex-preview .exp-name{font-weight:800; font-size:17px;}
+  .ex-preview .exp-tip{font-size:14px; line-height:1.5; margin-top:2px;}
+  .ex-preview .exp-cam{font-size:12.5px; color:var(--muted); margin-top:4px;}
+  .ex-preview .exp-lock{font-size:13.5px; font-weight:800; color:var(--gold); margin-top:4px;}
+  .ex-preview.locked .exp-art{filter:grayscale(1); opacity:.55;}
   /* 어느 렌즈를 덮어야 하는지 그림으로 알려 주는 안내.
      기종마다 카메라 위치가 달라 특정 위치를 짚을 수 없으므로, 위치 대신 '불이 켜진 곳 옆'이라는
      원리만 그림으로 보여주고, 정확히 맞았는지는 아래 실시간 ✅ 표시가 확인해 준다. */
@@ -604,6 +643,16 @@
           </select>
         </div>
         <button class="btn btn-teal btn-sm" id="addBtn">+ 추가</button>
+      </div>
+      <!-- 고른 운동의 자세를 움직이는 그림으로 보여 준다 — 이름만으로는 자세를 모르는 학생이 많다 -->
+      <div class="ex-preview" id="exPreview" style="display:none">
+        <div class="exp-art" id="expArt"></div>
+        <div style="min-width:0">
+          <div class="exp-name" id="expName"></div>
+          <div class="exp-tip" id="expTip"></div>
+          <div class="exp-cam" id="expCam"></div>
+          <div class="exp-lock" id="expLock"></div>
+        </div>
       </div>
       <div class="seqlist" id="seqList"></div>
       <div class="row" style="margin-top:10px;margin-bottom:0;align-items:flex-end">
@@ -1302,14 +1351,18 @@
   </section>
 </div>
 
-<div id="levelupOverlay">
+<div id="levelupOverlay" role="dialog" aria-label="진화 카드">
   <div id="confetti"></div>
-  <div class="lu-card">
-    <div class="lu-title">LEVEL UP! 🎉</div>
-    <div class="lu-emoji" id="luEmoji">💪</div>
-    <div class="lu-name" id="luName">Lv.4 파이터</div>
-    <div class="lu-sub">축하해요! 아바타가 성장했어요</div>
+  <div class="evo-head" id="evoHead"></div>
+  <div class="evo-stage" id="evoStage">
+    <div class="evo-rays"></div>
+    <div class="evo-card">
+      <div class="evo-face evo-back"><b>?</b><span>EVOLUTION</span></div>
+      <div class="evo-face evo-front" id="evoFront"></div>
+    </div>
   </div>
+  <div class="evo-tap" id="evoTap"></div>
+  <div class="evo-btns" id="evoBtns"></div>
 </div>
 <!-- 포트폴리오는 앱 안에서 띄운다 — 새 창은 폰에서 팝업 차단에 막힌다 -->
 <div id="pfOverlay" style="display:none;position:fixed;inset:0;z-index:10007;background:var(--bg);flex-direction:column">
@@ -1706,7 +1759,10 @@ function commitPlan(){
 /* ---------- exercise defs ---------- */
 const EXNAME={squat:"스쿼트",pushup:"푸쉬업",pushupknee:"푸쉬업(무릎대고)",lunge:"런지",jack:"점핑잭",plank:"플랭크",
   crunch:"크런치",legraise:"레그레이즈",sidelunge:"사이드런지",jumpsquat:"점프스쿼트",
-  highknee:"하이니",mtclimber:"마운틴클라이머",burpee:"버피"};
+  highknee:"하이니",mtclimber:"마운틴클라이머",burpee:"버피",
+  revlunge:"리버스 런지",highplank:"하이 플랭크",widesquat:"와이드 스쿼트",crossmt:"크로스 마운틴클라이머",
+  widepushup:"와이드 푸쉬업",squathold:"기마 자세 버티기",starjump:"스타 점프",jumplunge:"점프 런지",
+  shouldertap:"플랭크 숄더탭",diamondpushup:"다이아몬드 푸쉬업",pushburpee:"푸쉬업 버피"};
 // minVis: 관절 최소 신뢰도 기준. 서서 하는 동작은 카메라에 잘 잡히지만
 // 엎드리거나 눕는 동작(푸쉬업·플랭크·크런치·레그레이즈·버피의 엎드림)은 몸이 겹치거나
 // 바닥에 가까워 포즈 모델의 인식 신뢰도가 원래 낮게 나온다. 기본 0.4 기준을 그대로 쓰면
@@ -1774,6 +1830,36 @@ const EX={
   highknee:{type:"knee",pose:"stand",good:"무릎 높이 최고!",shallow:"무릎을 허리까지!"},
   mtclimber:{type:"knee",pose:"flat",good:"빠른 템포 좋아요!",shallow:"무릎을 가슴쪽으로 더"},
   burpee:{type:"burpee",good:"완벽한 버피!",shallow:"점프까지 완전히!",minVis:0.28},
+  /* ---------- 진화하면 열리는 새 운동 (2026-09-17) ----------
+     채점이 검증된 기존 동작의 판정을 그대로 쓰는 변형 동작이다 — 손 모양·반대쪽 무릎처럼
+     변형만의 차이는 카메라가 가려내지 못하므로, 기본 동작 기준으로 채점한다.
+     기마 자세 버티기만 새 판정(무릎 각도를 target 둘레로 유지)을 쓴다. */
+  revlunge:{type:"rep",joints:[[24,26,28],[23,25,27]],down:110,up:165,perfect:95,
+    pose:"stand",travelPt:"hip",travelMin:0.04,
+    good:"안정적인 런지!",shallow:"무릎을 더 낮추기"},
+  highplank:{type:"hold",joints:[[12,24,28],[11,23,27]],lo:150,hi:200,minVis:0.22,pose:"flat",
+    good:"곧게 유지 중!",bad:"엉덩이 높이 맞추기"},
+  widesquat:{type:"rep",joints:[[24,26,28],[23,25,27]],down:100,up:160,perfect:85,
+    pose:"stand",travelPt:"hip",travelMin:0.05,sym:true,form:"squat",
+    good:"좋은 깊이!",shallow:"조금 더 깊게 앉기"},
+  crossmt:{type:"knee",pose:"flat",good:"빠른 템포 좋아요!",shallow:"무릎을 반대쪽 가슴으로 더"},
+  widepushup:{type:"rep",joints:[[12,14,16],[11,13,15]],down:95,up:155,perfect:80,minVis:0.22,
+    pose:"flat",travelPt:"shoulder",travelMin:0.03,sym:true,form:"line",
+    good:"가슴까지 OK!",shallow:"팔꿈치 더 굽히기"},
+  // 허벅지가 바닥과 나란하면 무릎이 90도 남짓 — 그 둘레(target)에서 멀어질수록 정확도를 깎는다
+  squathold:{type:"hold",joints:[[24,26,28],[23,25,27]],lo:50,hi:125,target:95,pose:"stand",
+    good:"좋아요, 그대로 버티기!",bad:"허벅지가 바닥과 나란하게 앉기"},
+  starjump:{type:"jack",pose:"stand",good:"별처럼 쫙!",shallow:"팔을 머리 위까지!"},
+  // 점프스쿼트와 같은 까닭으로 빠르게 뛰는 동작은 최소 시간을 낮추고, 착지 후 완전히 펴지 않아도 인정한다
+  jumplunge:{type:"rep",joints:[[24,26,28],[23,25,27]],down:115,up:155,perfect:100,minRepMs:300,
+    pose:"stand",travelPt:"hip",travelMin:0.04,
+    good:"파워풀한 점프 런지!",shallow:"더 낮게 내려갔다 점프"},
+  shouldertap:{type:"hold",joints:[[12,24,28],[11,23,27]],lo:150,hi:200,minVis:0.22,pose:"flat",
+    good:"흔들림 없이 좋아요!",bad:"엉덩이 높이 맞추기"},
+  diamondpushup:{type:"rep",joints:[[12,14,16],[11,13,15]],down:95,up:155,perfect:80,minVis:0.22,
+    pose:"flat",travelPt:"shoulder",travelMin:0.03,sym:true,form:"line",
+    good:"가슴까지 OK!",shallow:"팔꿈치 더 굽히기"},
+  pushburpee:{type:"burpee",good:"완벽한 버피!",shallow:"점프까지 완전히!",minVis:0.28},
 };
 
 /* ---------- 운동 자세 그래픽 (SVG) + 팁 ---------- */
@@ -1791,6 +1877,17 @@ const EXTIP={
   highknee:"제자리에서 무릎을 허리 높이까지 번갈아",
   mtclimber:"엎드려 무릎을 가슴쪽으로 번갈아 당기기",
   burpee:"섰다가 엎드리고 다시 점프",
+  revlunge:"한 발을 뒤로 크게 딛고 양 무릎 90도로 내리기",
+  highplank:"팔을 쭉 펴고 손바닥·발끝으로 몸 일직선 유지",
+  widesquat:"발을 어깨보다 넓게, 발끝은 바깥으로 두고 앉기",
+  crossmt:"엎드려 무릎을 반대쪽 팔꿈치 쪽으로 번갈아 당기기",
+  widepushup:"손을 어깨보다 넓게 짚고 팔굽혀펴기",
+  squathold:"허벅지가 바닥과 나란하게 앉은 채로 버티기",
+  starjump:"웅크렸다가 팔·다리를 별 모양으로 쫙 벌리며 점프",
+  jumplunge:"런지로 내려갔다가 점프하며 앞뒤 발 바꾸기",
+  shouldertap:"팔 펴고 버티며 한 손씩 반대쪽 어깨 톡",
+  diamondpushup:"양손을 가슴 아래 모아 다이아몬드 모양으로 팔굽혀펴기",
+  pushburpee:"엎드렸을 때 푸쉬업 한 번 하고 일어나 점프",
 };
 // 공통 스틱맨 헬퍼: 머리+몸통을 조합해 자세별 SVG 생성 (색상 통일)
 function exerciseArt(k){
@@ -1812,8 +1909,197 @@ function exerciseArt(k){
     case "mtclimber": return G(H(26,56)+L(35,58,92,70)+L(44,60,44,78,A)+L(92,70,104,78)+L(60,64,74,58,A)+L(74,58,74,50,A));
     case "burpee": return G(H(60,20)+L(60,28,60,50)+L(60,34,44,30,A)+L(60,34,76,30,A)+L(60,50,50,66)+L(60,50,70,66)+`<text x="60" y="92" font-size="11" fill="${C}" text-anchor="middle">서기→엎드림</text>`+`<text x="60" y="106" font-size="11" fill="${A}" text-anchor="middle">→점프</text>`);
     case "jack": return G(H(60,24)+L(60,33,60,60)+L(60,40,40,24,A)+L(60,40,80,24,A)+L(60,60,44,88)+L(60,60,76,88)+`<text x="60" y="108" font-size="11" fill="${A}" text-anchor="middle">팔·다리 벌리기</text>`);
-    default: return G(H(60,30)+L(60,39,60,70)+L(60,50,44,58,A)+L(60,50,76,58,A)+L(60,70,48,92)+L(60,70,72,92));
+    default:
+      if(typeof EXANIM!=="undefined"&&EXANIM[k])return exerciseAnim(k,Math.min(1,EXANIM[k].f.length-1));
+      return G(H(60,30)+L(60,39,60,70)+L(60,50,44,58,A)+L(60,50,76,58,A)+L(60,70,48,92)+L(60,70,72,92));
   }
+}
+
+/* ---------- 움직이는 운동 자세 그림 (2026-09-17) ----------
+   운동 설계에서 이름만 보고는 자세를 모르는 학생이 많아, 막대 인형이 실제 동작처럼 움직이게 보여 준다.
+   자세마다 골반(H)·어깨(S)·손(W)·발(F) 자리만 정하면 팔꿈치·무릎은 팔다리 길이를 지키며 스스로 찾는다.
+   SVG 안의 animate로 움직이므로 따로 그리기 루프가 돌지 않는다.
+   kn·kf·en·ef는 무릎·팔꿈치가 굽는 쪽(1 또는 -1). */
+const EXA_L={torso:28,head:10,thigh:22,shin:22,upper:14,fore:13};
+function exaBend(a,b,l1,l2,side){
+  const dx=b[0]-a[0], dy=b[1]-a[1], d=Math.hypot(dx,dy)||1e-6, ux=dx/d, uy=dy/d;
+  if(d>=(l1+l2)*0.95) return {mid:[a[0]+ux*l1,a[1]+uy*l1], end:[a[0]+ux*(l1+l2),a[1]+uy*(l1+l2)]};
+  const x=(l1*l1-l2*l2+d*d)/(2*d), h=Math.sqrt(Math.max(0,l1*l1-x*x));
+  return {mid:[a[0]+ux*x-side*uy*h, a[1]+uy*x+side*ux*h], end:[b[0],b[1]]};
+}
+function exaPose(p){
+  const H=p.H, S=p.S, dx=S[0]-H[0], dy=S[1]-H[1], d=Math.hypot(dx,dy)||1e-6;
+  const lN=exaBend(H,p.FN,EXA_L.thigh,EXA_L.shin,p.kn), lF=exaBend(H,p.FF,EXA_L.thigh,EXA_L.shin,p.kf);
+  const aN=exaBend(S,p.WN,EXA_L.upper,EXA_L.fore,p.en), aF=exaBend(S,p.WF,EXA_L.upper,EXA_L.fore,p.ef);
+  return {head:[S[0]+dx/d*EXA_L.head, S[1]+dy/d*EXA_L.head], S, H,
+    KN:lN.mid, FN:lN.end, KF:lF.mid, FF:lF.end, EN:aN.mid, WN:aN.end, EF:aF.mid, WF:aF.end};
+}
+/* 자세 모음 — R: 오른쪽을 보고 선 옆모습 / L: 왼쪽을 보고 엎드리거나 누운 옆모습 / F: 앞모습 */
+const EXA_P=(()=>{
+  const R={kn:-1,kf:-1,en:1,ef:1}, L={kn:1,kf:1,en:-1,ef:-1};
+  const P={
+    stand:{...R,H:[60,60],S:[60,32],FN:[62,104],FF:[58,104],WN:[66,58],WF:[56,58]},
+    squatLow:{...R,H:[46,84],S:[64,63],FN:[62,104],FF:[58,104],WN:[88,62],WF:[86,65]},
+    squatLow2:{...R,H:[46,86],S:[64,65],FN:[62,104],FF:[58,104],WN:[88,64],WF:[86,67]},
+    squatAir:{...R,H:[60,52],S:[60,24],FN:[62,96],FF:[58,96],WN:[85,14],WF:[82,17]},
+    lungeUp:{...R,H:[60,62],S:[60,34],FN:[74,104],FF:[46,104],WN:[62,61],WF:[58,61]},
+    lungeLow:{...R,H:[60,84],S:[60,56],FN:[76,104],FF:[42,104],WN:[62,83],WF:[58,83]},
+    revLow:{...R,H:[50,84],S:[50,56],FN:[62,104],FF:[28,104],WN:[52,83],WF:[48,83]},
+    jlA:{...R,H:[60,84],S:[60,56],FN:[76,104],FF:[42,104],WN:[66,82],WF:[55,82]},
+    jlAir:{...R,H:[60,58],S:[60,30],FN:[66,98],FF:[54,98],WN:[82,46],WF:[38,46]},
+    jlB:{...R,H:[60,84],S:[60,56],FN:[42,104],FF:[76,104],WN:[55,82],WF:[66,82]},
+    kneeA:{...R,H:[60,58],S:[60,30],FN:[70,80],FF:[59,102],WN:[50,50],WF:[74,40]},
+    kneeB:{...R,H:[60,58],S:[60,30],FN:[61,102],FF:[70,80],WN:[74,40],WF:[50,50]},
+    // 앞모습 — N은 화면 오른쪽 팔다리, F는 왼쪽
+    fStand:{kn:-1,kf:1,en:-1,ef:1,H:[60,62],S:[60,34],FN:[64,104],FF:[56,104],WN:[65,61],WF:[55,61]},
+    fJackOpen:{kn:-1,kf:1,en:-1,ef:1,H:[60,60],S:[60,32],FN:[80,102],FF:[40,102],WN:[84,8],WF:[36,8]},
+    fCrouch:{kn:-1,kf:1,en:-1,ef:1,H:[60,80],S:[60,53],FN:[68,104],FF:[52,104],WN:[72,80],WF:[48,80]},
+    fStar:{kn:-1,kf:1,en:-1,ef:1,H:[60,54],S:[60,26],FN:[86,92],FF:[34,92],WN:[88,4],WF:[32,4]},
+    fWideUp:{kn:-1,kf:1,en:1,ef:-1,H:[60,63],S:[60,35],FN:[76,104],FF:[44,104],WN:[63,50],WF:[57,50]},
+    fWideLow:{kn:-1,kf:1,en:1,ef:-1,H:[60,84],S:[60,56],FN:[78,104],FF:[42,104],WN:[63,71],WF:[57,71]},
+    fSideStand:{kn:-1,kf:1,en:1,ef:-1,H:[60,62],S:[60,34],FN:[66,104],FF:[54,104],WN:[63,49],WF:[57,49]},
+    fSideR:{kn:-1,kf:1,en:1,ef:-1,H:[80,84],S:[76,57],FN:[92,104],FF:[40,104],WN:[80,71],WF:[72,71]},
+    fSideL:{kn:-1,kf:1,en:1,ef:-1,H:[40,84],S:[44,57],FN:[80,104],FF:[28,104],WN:[48,71],WF:[40,71]},
+    // 엎드린 옆모습 (머리가 왼쪽)
+    plankHigh:{...L,H:[59,84],S:[33,74],FN:[100,104],FF:[98,104],WN:[33,104],WF:[31,104]},
+    plankHigh2:{...L,H:[59,82.5],S:[33,73.5],FN:[100,104],FF:[98,104],WN:[33,104],WF:[31,104]},
+    pushLow:{...L,H:[57,98],S:[29,93],FN:[100,104],FF:[98,104],WN:[33,104],WF:[31,104]},
+    tapN:{...L,H:[59,83],S:[33,74],FN:[100,104],FF:[98,104],WN:[40,80],WF:[31,104]},
+    tapF:{...L,H:[59,83],S:[33,74],FN:[100,104],FF:[98,104],WN:[33,104],WF:[40,80]},
+    kneePushUp:{...L,H:[59.5,92],S:[36,77],FN:[94,88],FF:[92,89],WN:[36,104],WF:[34,104]},
+    kneePushLow:{...L,H:[56,100],S:[29,95],FN:[93,90],FF:[91,91],WN:[36,104],WF:[34,104]},
+    elbowPlank:{...L,en:-1,ef:-1,H:[57,95.5],S:[29.5,90],FN:[100,104],FF:[98,104],WN:[16,104],WF:[14,104]},
+    elbowPlank2:{...L,en:-1,ef:-1,H:[57,94],S:[29.5,89.5],FN:[100,104],FF:[98,104],WN:[16,104],WF:[14,104]},
+    climbA:{...L,en:1,ef:1,H:[58,82],S:[32,73],FN:[60,99],FF:[100,104],WN:[33,104],WF:[31,104]},
+    climbB:{...L,en:1,ef:1,H:[58,82],S:[32,73],FN:[100,104],FF:[60,99],WN:[33,104],WF:[31,104]},
+    crossA:{...L,en:1,ef:1,H:[58,82],S:[32,73],FN:[52,97],FF:[100,104],WN:[33,104],WF:[31,104]},
+    crossB:{...L,en:1,ef:1,H:[58,82],S:[32,73],FN:[100,104],FF:[52,97],WN:[33,104],WF:[31,104]},
+    // 누운 옆모습 (머리가 왼쪽)
+    crunchDown:{kn:-1,kf:-1,en:1,ef:1,H:[62,96],S:[34,96],FN:[88,104],FF:[86,104],WN:[60,92],WF:[59,93]},
+    crunchUp:{kn:-1,kf:-1,en:1,ef:1,H:[62,96],S:[40,79],FN:[88,104],FF:[86,104],WN:[66,80],WF:[65,81]},
+    legDown:{kn:-1,kf:-1,en:1,ef:1,H:[60,96],S:[32,96],FN:[104,96],FF:[102,97],WN:[58,97],WF:[58,98]},
+    legUp:{kn:-1,kf:-1,en:1,ef:1,H:[60,96],S:[32,96],FN:[75,55],FF:[73,56],WN:[58,97],WF:[58,98]},
+    // 버피 (왼쪽을 봄)
+    bStand:{...L,H:[60,60],S:[60,32],FN:[60,104],FF:[58,104],WN:[54,58],WF:[64,58]},
+    bSquat:{...L,en:1,ef:1,H:[62,82],S:[40,70],FN:[60,104],FF:[58,104],WN:[38,98],WF:[40,98]},
+    bPlank:{...L,H:[64,86],S:[38,76],FN:[106,104],FF:[104,104],WN:[38,104],WF:[36,104]},
+    bPushLow:{...L,H:[62,98],S:[34,94],FN:[106,104],FF:[104,104],WN:[38,104],WF:[36,104]},
+    bJump:{...L,H:[60,52],S:[60,24],FN:[60,96],FF:[58,96],WN:[54,0],WF:[66,0]},
+  };
+  return P;
+})();
+/* 운동마다: 장면(자세 이름·시간 비율)과 한 바퀴 시간(초), 앞모습 여부, 작은 글씨 */
+const EXANIM=(()=>{
+  const f=(...xs)=>xs.map(([t,p])=>({t,p}));
+  return {
+    squat:{d:2.4,f:f([0,"stand"],[.5,"squatLow"],[1,"stand"])},
+    widesquat:{d:2.6,front:1,label:"발 넓게",f:f([0,"fWideUp"],[.5,"fWideLow"],[1,"fWideUp"])},
+    squathold:{d:1.6,label:"⏱ 버티기",f:f([0,"squatLow"],[.5,"squatLow2"],[1,"squatLow"])},
+    jumpsquat:{d:2.0,label:"점프!",f:f([0,"stand"],[.3,"squatLow"],[.5,"squatAir"],[.7,"squatLow"],[1,"stand"])},
+    lunge:{d:2.4,f:f([0,"lungeUp"],[.5,"lungeLow"],[1,"lungeUp"])},
+    revlunge:{d:2.8,label:"◀ 뒤로 딛기",f:f([0,"stand"],[.45,"revLow"],[.6,"revLow"],[1,"stand"])},
+    jumplunge:{d:1.8,label:"점프하며 발 바꾸기",f:f([0,"jlA"],[.25,"jlAir"],[.5,"jlB"],[.75,"jlAir"],[1,"jlA"])},
+    sidelunge:{d:3.2,front:1,label:"옆으로",f:f([0,"fSideStand"],[.25,"fSideR"],[.5,"fSideStand"],[.75,"fSideL"],[1,"fSideStand"])},
+    jack:{d:1.2,front:1,f:f([0,"fStand"],[.5,"fJackOpen"],[1,"fStand"])},
+    starjump:{d:1.8,front:1,label:"별 모양 점프",f:f([0,"fStand"],[.3,"fCrouch"],[.5,"fStar"],[.7,"fCrouch"],[1,"fStand"])},
+    highknee:{d:0.8,f:f([0,"kneeA"],[.5,"kneeB"],[1,"kneeA"])},
+    mtclimber:{d:0.8,f:f([0,"climbA"],[.5,"climbB"],[1,"climbA"])},
+    crossmt:{d:0.9,label:"무릎 → 반대쪽",f:f([0,"crossA"],[.5,"crossB"],[1,"crossA"])},
+    pushup:{d:2.2,f:f([0,"plankHigh"],[.5,"pushLow"],[1,"plankHigh"])},
+    widepushup:{d:2.2,label:"손 넓게 ↔",f:f([0,"plankHigh"],[.5,"pushLow"],[1,"plankHigh"])},
+    diamondpushup:{d:2.2,label:"손 모아 ◆",f:f([0,"plankHigh"],[.5,"pushLow"],[1,"plankHigh"])},
+    pushupknee:{d:2.2,label:"무릎 대고",f:f([0,"kneePushUp"],[.5,"kneePushLow"],[1,"kneePushUp"])},
+    plank:{d:3,label:"⏱ 버티기",f:f([0,"elbowPlank"],[.5,"elbowPlank2"],[1,"elbowPlank"])},
+    highplank:{d:3,label:"⏱ 팔 펴고 버티기",f:f([0,"plankHigh"],[.5,"plankHigh2"],[1,"plankHigh"])},
+    shouldertap:{d:1.6,label:"⏱ 어깨 톡톡",f:f([0,"plankHigh"],[.25,"tapN"],[.5,"plankHigh"],[.75,"tapF"],[1,"plankHigh"])},
+    crunch:{d:1.8,f:f([0,"crunchDown"],[.5,"crunchUp"],[1,"crunchDown"])},
+    legraise:{d:2.6,f:f([0,"legDown"],[.5,"legUp"],[1,"legDown"])},
+    burpee:{d:3.2,f:f([0,"bStand"],[.2,"bSquat"],[.38,"bPlank"],[.56,"bSquat"],[.76,"bJump"],[1,"bStand"])},
+    pushburpee:{d:4.2,label:"엎드려 푸쉬업 한 번",f:f([0,"bStand"],[.15,"bSquat"],[.3,"bPlank"],[.45,"bPushLow"],[.6,"bPlank"],[.72,"bSquat"],[.86,"bJump"],[1,"bStand"])},
+  };
+})();
+/* 움직이는 그림(SVG 글자). still을 주면 그 장면에서 멈춘 그림을 준다. */
+function exerciseAnim(k,still){
+  const A=EXANIM[k]; if(!A)return typeof exerciseArt==="function"?exerciseArt(k):"";
+  const C="#5B51E8", O="#FF9F1C", r1=v=>Math.round(v*10)/10;
+  const frames=still==null?A.f:[A.f[Math.max(0,Math.min(A.f.length-1,still))]];
+  const poses=frames.map(fr=>exaPose(EXA_P[fr.p]));
+  const kt=frames.map(fr=>fr.t).join(";"), spl=frames.slice(1).map(()=>".42 0 .58 1").join(";");
+  const an=(attr,vals)=>(poses.length<2||vals.every(v=>Math.abs(v-vals[0])<0.05))?"":
+    `<animate attributeName="${attr}" values="${vals.map(r1).join(";")}" keyTimes="${kt}" dur="${A.d}s" repeatCount="indefinite" calcMode="spline" keySplines="${spl}"/>`;
+  const bone=(a,b,col,far)=>{
+    const X1=poses.map(p=>p[a][0]),Y1=poses.map(p=>p[a][1]),X2=poses.map(p=>p[b][0]),Y2=poses.map(p=>p[b][1]);
+    return `<line x1="${r1(X1[0])}" y1="${r1(Y1[0])}" x2="${r1(X2[0])}" y2="${r1(Y2[0])}" stroke="${col}" stroke-width="3.8" stroke-linecap="round"${far&&!A.front?' opacity=".42"':""}>`
+      +an("x1",X1)+an("y1",Y1)+an("x2",X2)+an("y2",Y2)+`</line>`;
+  };
+  const HX=poses.map(p=>p.head[0]), HY=poses.map(p=>p.head[1]);
+  const body=bone("S","EF",O,1)+bone("EF","WF",O,1)+bone("H","KF",C,1)+bone("KF","FF",C,1)
+    +bone("S","H",C)+bone("H","KN",C)+bone("KN","FN",C)+bone("S","EN",O)+bone("EN","WN",O)
+    +`<circle cx="${r1(HX[0])}" cy="${r1(HY[0])}" r="8" fill="${C}">${an("cx",HX)}${an("cy",HY)}</circle>`;
+  const label=A.label?`<text x="60" y="14" font-size="10.5" font-weight="700" fill="${O}" text-anchor="middle">${A.label}</text>`:"";
+  return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${k} 동작 그림">`
+    +`<rect width="120" height="120" rx="16" fill="#F3F1FD"/><line x1="6" y1="105" x2="114" y2="105" stroke="#D9D5F4" stroke-width="2"/>`
+    +body+label+`</svg>`;
+}
+
+/* ---------- 진화하면 새 운동이 열린다 (2026-09-17) ----------
+   선생님 요청: 진화(레벨업)할 때마다 새 운동이 하나씩 열린다. 원래 있던 13가지는 잠그지 않는다 —
+   학생 대부분이 이미 쓰고 있어서 잠그면 쓰던 운동을 갑자기 빼앗게 된다.
+   공통과제를 내는 화면과 교사 로그인 기기에서는 모두 열려 있다. */
+const EX_UNLOCK=true;      // 문제가 생기면 false — 모든 운동이 열린다
+const EVO_CARDS=true;      // 진화할 때 카드 뽑기 연출 — 문제가 생기면 false
+const UNLOCK_LV={revlunge:1,highplank:2,widesquat:3,crossmt:4,widepushup:5,squathold:6,
+  starjump:7,jumplunge:8,shouldertap:9,diamondpushup:10,pushburpee:11};
+const EX_GROUPS=[
+  ["하체",["squat","lunge","sidelunge","jumpsquat","revlunge","widesquat","squathold","jumplunge"]],
+  ["상체",["pushup","pushupknee","widepushup","diamondpushup"]],
+  ["코어",["crunch","legraise","plank","highplank","shouldertap"]],
+  ["유산소",["jack","highknee","mtclimber","burpee","crossmt","starjump","pushburpee"]]];
+let recordsReady=false;    // 서버 기록을 처음 한 번 다 받았나 — 덜 받은 기록으로 진화를 착각하지 않게
+function myLevelIdx(){ try{ return levelIndex(shownPts()); }catch(e){ return shownLevel||0; } }
+function exLocked(k){
+  if(!EX_UNLOCK||!(k in UNLOCK_LV))return false;
+  if(typeof isTeacher==="function"&&isTeacher())return false;
+  return myLevelIdx()<UNLOCK_LV[k];
+}
+function unlockName(k){ const l=LEVELS[UNLOCK_LV[k]]; return l?l[2].replace(/^Lv\.\d+\s*/,""):""; }
+function newExUnlockedUpTo(idx){
+  return Object.keys(UNLOCK_LV).filter(k=>UNLOCK_LV[k]<=idx).sort((a,b)=>UNLOCK_LV[a]-UNLOCK_LV[b]);
+}
+/* 운동 고르는 목록 — lock이면 아직 안 열린 운동에 🔒와 열리는 단계를, 열린 새 운동에는 ✨를 붙인다 */
+function exOptionsHTML(lock){
+  return EX_GROUPS.map(([g,ks])=>`<optgroup label="${g}">`+ks.map(k=>{
+    const t=EXNAME[k]+(EX[k]&&EX[k].type==="hold"?" (시간)":"");
+    const lab=(lock&&exLocked(k))?`🔒 ${t} · ${unlockName(k)}`:((k in UNLOCK_LV)?`✨ ${t}`:t);
+    return `<option value="${k}">${lab}</option>`;
+  }).join("")+`</optgroup>`).join("");
+}
+/* 학생 운동 설계·계획서는 잠금을 보이고, 공통과제 목록은 모두 연다.
+   같은 내용이면 다시 그리지 않는다 — 수업 중 기록이 들어올 때마다 열어 둔 목록이 닫히지 않게. */
+function renderExOptions(){
+  [["addEx",true],["pcExAdd",true],["tAddEx",false]].forEach(([id,lock])=>{
+    const sel=$(id); if(!sel)return;
+    const html=exOptionsHTML(lock);
+    if(sel.dataset.h===html)return;
+    const v=sel.value; sel.innerHTML=html; sel.dataset.h=html;
+    if(v&&EXNAME[v])sel.value=v;
+  });
+  renderExPreview();
+}
+/* 운동 설계에서 고른 운동의 움직이는 자세를 바로 보여 준다 */
+function renderExPreview(){
+  const sel=$("addEx"), box=$("exPreview"); if(!sel||!box)return;
+  const k=sel.value;
+  if(!EXNAME[k]){ box.style.display="none"; return; }
+  box.style.display="flex";
+  if(box.dataset.k!==k){ $("expArt").innerHTML=exerciseAnim(k); box.dataset.k=k; }
+  $("expName").textContent=EXNAME[k];
+  $("expTip").textContent=EXTIP[k]||"";
+  $("expCam").textContent=SIDE_VIEW[k]?"📐 옆모습이 카메라에 보이게":"📱 앞모습이 카메라에 보이게";
+  const locked=exLocked(k);
+  box.classList.toggle("locked",locked);
+  $("expLock").textContent=locked?`🔒 ${unlockName(k)} 단계로 진화하면 열려요`:"";
+  const add=$("addBtn"); if(add)add.disabled=locked;
 }
 
 /* ---------- sequence builder ---------- */
@@ -1842,7 +2128,9 @@ $("addBtn").addEventListener("click",()=>{
   if(!confirmTaskBreak())return;
   // 동작은 4~8가지 — 8을 넘으면 한 동작을 한 번도 못 하고 끝나는 구성이 나온다
   if(seq.length>=8){ $("planAddMsg").innerHTML='<span class="err">동작은 최대 8가지까지 넣을 수 있어요.</span>'; return; }
-  seq.push($("addEx").value); renderSeq();
+  const k=$("addEx").value;
+  if(exLocked(k)){ $("planAddMsg").innerHTML='<span class="err">🔒 '+unlockName(k)+' 단계로 진화하면 열려요 — 운동을 더 해서 진화해 보세요!</span>'; return; }
+  seq.push(k); renderSeq();
 });
 document.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click",()=>{
   if(!confirmTaskBreak())return;
@@ -2804,7 +3092,7 @@ renderSeq();
 /* ---------- 미니 운동설계 (배틀·공통과제 화면 내장) ---------- */
 function setupMiniDesigner(o){ // o={sel,add,copy,list,work,rest,rounds,diff,onChange?}
   const st={seq:[...seq]};
-  $(o.sel).innerHTML=$("addEx").innerHTML; // 운동 목록 재사용
+  { const h=exOptionsHTML(false); $(o.sel).innerHTML=h; $(o.sel).dataset.h=h; }  // 공통과제는 모든 운동을 낼 수 있다 (진화 잠금 없음)
   function render(){
     const el=$(o.list); el.innerHTML="";
     st.seq.forEach((k,i)=>{
@@ -2923,25 +3211,126 @@ function refreshProfile(opts){
   const idx=levelIndex(pts), cur=LEVELS[idx];
   $("avatarEmoji").textContent=cur[1]; $("levelName").textContent=cur[2];
   $("totalPts").textContent=pts+" P";
-  if(!(opts&&opts.silent) && idx>shownLevel && shownLevel>0){
-    celebrateLevelUp(cur);
-  }
+  /* 레벨이 오르면 카드 뽑기로 축하한다 — 운동 직후 심박을 잰 뒤에 뜨도록 줄을 세워 둔다(진화 카드 참고).
+     진화하면 열리는 운동도 목록에 바로 반영한다. */
+  try{ checkEvolution(idx); maybeShowEvo(); renderExOptions(); }catch(e){}
   shownLevel=idx;
 }
-function celebrateLevelUp(lv){
-  const o=$("levelupOverlay");
-  $("luEmoji").textContent=lv[1];
-  $("luName").textContent=lv[2];
-  o.style.display="flex"; o.classList.remove("show"); void o.offsetWidth; o.classList.add("show");
-  spawnConfetti();
-  // 축하 팡파레
-  [0,120,240,420].forEach((d,i)=>setTimeout(()=>beep([660,880,1046,1318][i],.18,.2),d));
-  clearTimeout(celebrateLevelUp._t);
-  celebrateLevelUp._t=setTimeout(()=>{o.classList.remove("show"); setTimeout(()=>o.style.display="none",400);},3600);
+/* ---------- 진화 카드 뽑기 (2026-09-17) ----------
+   선생님 요청: 레벨업을 게임 캐릭터 카드 뽑듯이. 뒷면 카드가 빛나며 흔들리다가, 누르면 뒤집혀 새 아바타가 나온다.
+   진화로 새 운동이 열렸으면 그 운동 카드를 한 장 더 뒤집는다(움직이는 자세 그림).
+   운동 직후에는 심박부터 재야 하므로, 심박을 잰 뒤(또는 3분이 지난 뒤)·운동 중이 아닐 때 띄운다. */
+const EVO_KEY="tabataEvo";
+let evoQueue=[], evoShowing=false, evoCur=null, evoTimers=[];
+function evoId(){
+  const sid=String(($("stuId")&&$("stuId").value)||"").replace(/[^0-9]/g,"");
+  const me=myKey();
+  return sid?("s"+sid):((me.name&&me.cls)?("n"+me.name+"|"+me.cls):"");
 }
-$("levelupOverlay") && $("levelupOverlay").addEventListener("click",()=>{
-  const o=$("levelupOverlay"); o.classList.remove("show"); setTimeout(()=>o.style.display="none",400);
-});
+function evoLoad(){ try{ return JSON.parse(localStorage.getItem(EVO_KEY)||"{}")||{}; }catch(e){ return {}; } }
+function evoSave(all){ try{ localStorage.setItem(EVO_KEY,JSON.stringify(all)); }catch(e){} }
+/* 레벨이 오르면 카드를 줄 세운다.
+   이 기기에서 처음 보는 학생이면 지금 레벨을 기준으로 삼고, 이미 열린 새 운동 카드만 한 번 보여 준다. */
+function checkEvolution(idx){
+  if(!EVO_CARDS||!recordsReady)return;
+  const id=evoId(); if(!id)return;
+  const all=evoLoad(), rec=all[id];
+  if(!rec){
+    all[id]={lv:idx}; evoSave(all);
+    newExUnlockedUpTo(idx).forEach(k=>evoQueue.push({kind:"ex",k,intro:true}));
+    return;
+  }
+  if(idx>rec.lv){
+    if(!evoQueue.some(q=>q.kind==="level"&&q.lv===idx&&q.id===id)){
+      evoQueue.push({kind:"level",lv:idx,from:rec.lv,id});
+      Object.keys(UNLOCK_LV).filter(k=>UNLOCK_LV[k]>rec.lv&&UNLOCK_LV[k]<=idx)
+        .sort((a,b)=>UNLOCK_LV[a]-UNLOCK_LV[b]).slice(-3)
+        .forEach(k=>evoQueue.push({kind:"ex",k}));
+    }
+  }
+}
+/* 선생님 요청: 레벨업이 된 운동을 마치고 성찰까지 제출했을 때 카드를 뒤집는다 — 성찰 제출의 보상이다.
+   성찰을 안 내고 앱을 닫으면 다음에 앱을 열었을 때 보여 준다(뒤집기 전에는 단계를 기억하지 않으므로). */
+function evoSafe(){
+  if(running||document.hidden)return false;
+  if(typeof ppgStream!=="undefined"&&ppgStream)return false;       // 카메라로 심박을 재는 중
+  for(const id of ["hrConfirmOverlay","pulseOverlay","unlockOverlay","pfOverlay","qrOverlay","rfDocOverlay"]){
+    const el=$(id); if(el&&el.style.display&&el.style.display!=="none")return false;
+  }
+  if(typeof lastRec!=="undefined"&&lastRec&&sessionEndAt){
+    if(!lastRec.hr&&Date.now()-sessionEndAt<3*60*1000)return false;          // 운동 직후 심박부터
+    if(!(typeof myLogsLocal!=="undefined"&&myLogsLocal&&myLogsLocal[lastRec.id]))return false;   // 이번 운동 성찰을 낸 뒤에
+  }
+  return true;
+}
+function maybeShowEvo(){ if(!evoShowing&&evoQueue.length&&evoSafe())showNextEvo(); }
+setInterval(()=>{ try{ maybeShowEvo(); }catch(e){} },2000);
+function showNextEvo(){
+  const item=evoQueue.shift(); if(!item)return;
+  evoShowing=true; evoCur=item;
+  evoTimers.forEach(clearTimeout); evoTimers=[];
+  const o=$("levelupOverlay"), stage=$("evoStage"), front=$("evoFront");
+  stage.className="evo-stage charging";
+  $("evoBtns").innerHTML="";
+  if(item.kind==="level"){
+    const lv=LEVELS[item.lv], prev=LEVELS[Math.max(0,Math.min(item.from,item.lv-1))];
+    const stars=Math.min(5,1+Math.floor(item.lv/2.2));
+    $("evoHead").textContent="어? 아바타가 빛나요…!";
+    front.innerHTML=`<div class="evo-stars">${"★".repeat(stars)}</div><div class="evo-emoji">${lv[1]}</div>`
+      +`<div class="evo-name">${lv[2]}</div><div class="evo-sub">${prev[1]} → ${lv[1]} 진화!</div>`;
+  } else {
+    $("evoHead").textContent=item.intro?"🎁 새 운동 카드가 도착했어요":"🔓 새 운동 카드!";
+    front.innerHTML=`<div class="evo-new">NEW</div><div class="evo-art">${exerciseAnim(item.k)}</div>`
+      +`<div class="evo-name">${EXNAME[item.k]}</div><div class="evo-sub">${unlockName(item.k)} 단계 운동</div>`;
+  }
+  $("evoTap").textContent="카드를 눌러 뒤집기!";
+  o.style.display="flex"; o.classList.remove("show"); void o.offsetWidth; o.classList.add("show");
+  document.body.classList.add("fs-lock");
+  // 기 모으는 소리 — 점점 높아진다
+  [0,280,560,840].forEach((d,i)=>evoTimers.push(setTimeout(()=>beep([392,494,587,698][i],.1,.12),d)));
+  evoTimers.push(setTimeout(()=>stage.classList.add("hot"),1600));
+  evoTimers.push(setTimeout(()=>flipEvo(),7000));      // 안 누르면 저절로 뒤집는다
+  stage.onclick=()=>flipEvo();
+}
+function flipEvo(){
+  const stage=$("evoStage"), item=evoCur;
+  if(!item||stage.classList.contains("revealed"))return;
+  evoTimers.forEach(clearTimeout); evoTimers=[];
+  stage.classList.remove("charging","hot"); stage.classList.add("revealed");
+  $("evoTap").textContent="";
+  spawnConfetti();
+  [0,120,240,420].forEach((d,i)=>evoTimers.push(setTimeout(()=>beep([660,880,1046,1318][i],.18,.2),d+350)));
+  if(item.kind==="level"){
+    $("evoHead").textContent="🎉 진화 성공!";
+    // 카드를 본 순간 이 학생의 진화 단계를 남긴다 (보기 전에 앱을 닫으면 다음에 다시 보여 준다)
+    const all=evoLoad(); if(item.id&&(!all[item.id]||all[item.id].lv<item.lv)){ all[item.id]={lv:item.lv}; evoSave(all); }
+  } else $("evoHead").textContent="🔓 새 운동이 열렸어요!";
+  const next=evoQueue.length&&evoQueue[0].kind==="ex";
+  const btns=$("evoBtns");
+  btns.innerHTML=next
+    ?`<button class="btn btn-go" id="evoNext" style="padding:12px 26px;font-size:17px">다음 카드 ▶</button>`
+    :`<button class="btn btn-go" id="evoOk" style="padding:12px 26px;font-size:17px">확인</button>`
+      +(item.kind==="ex"?`<button class="btn btn-teal" id="evoTry" style="padding:12px 20px;font-size:17px">운동 설계에서 보기</button>`:"");
+  if(next)$("evoNext").addEventListener("click",()=>{ evoShowing=false; showNextEvo(); });
+  else {
+    $("evoOk").addEventListener("click",()=>closeEvo());
+    const tr=$("evoTry");
+    if(tr)tr.addEventListener("click",()=>{
+      const k=item.k; closeEvo(); goPage("pgSetup");
+      const sel=$("addEx"); if(sel){ sel.value=k; renderExPreview(); }
+      const box=$("exPreview"); if(box)try{ box.scrollIntoView({behavior:"smooth",block:"center"}); }catch(e){}
+    });
+  }
+}
+/* requeue: 아직 안 뒤집은 카드는 다음에 다시 보여 준다 (예: 카드가 뜬 채로 운동이 시작될 때) */
+function closeEvo(requeue){
+  const o=$("levelupOverlay"), stage=$("evoStage");
+  if(requeue&&evoCur&&stage&&!stage.classList.contains("revealed"))evoQueue.unshift(evoCur);
+  evoTimers.forEach(clearTimeout); evoTimers=[];
+  o.classList.remove("show"); setTimeout(()=>{ o.style.display="none"; },350);
+  document.body.classList.remove("fs-lock");
+  evoShowing=false; evoCur=null;
+}
 /* ---------- toast (비차단 알림) ---------- */
 function toast(msg,kind,emoji){
   const box=$("toastBox"); if(!box)return;
@@ -3365,7 +3754,7 @@ function procHold(lm,def){
   if(!poseOK(def,lm)){ $("fb").textContent=POSE_MSG[def.pose]; badMs=0; holdJudgeMs=0; return; }
   if(ang>=def.lo&&ang<=def.hi){
     holdMs+=dt; holdJudgeMs+=dt; badMs=0;
-    const dev=Math.min(Math.abs(ang-180),25);
+    const dev=Math.min(Math.abs(ang-(def.target||180)),25);   // 기마 자세처럼 굽혀 버티는 동작은 target 둘레
     const acc=Math.round(100-dev*2.2); // 5단계 기준 상향: 몸이 굽을수록 급격히 감점
     roundAccSum+=acc*dt; roundAccN+=dt;
     $("repN").textContent=(holdMs/1000).toFixed(1);
@@ -3933,7 +4322,8 @@ let log=[]; // per-round {ex,reps,acc,type,hold}
 /* 엎드리거나 누워서 하는 동작은 정면에서 팔·몸통 각도가 겹쳐 보여 카운트가 잘 안 된다.
    런지는 서서 하지만 무릎이 얼마나 깊게 내려가는지(앞뒤 움직임)가 핵심이라 정면보다
    측면에서 훨씬 잘 잡힌다. 해당 동작 차례가 되면 옆으로 서라고 크게 안내한다. */
-const SIDE_VIEW={pushup:1,pushupknee:1,plank:1,crunch:1,legraise:1,burpee:1,lunge:1};
+const SIDE_VIEW={pushup:1,pushupknee:1,plank:1,crunch:1,legraise:1,burpee:1,lunge:1,
+  revlunge:1,highplank:1,widepushup:1,squathold:1,jumplunge:1,shouldertap:1,diamondpushup:1,pushburpee:1};
 let sideTipTimer=null;
 function showSideTip(ex,ms){
   const el=$("sideTip"); if(!el)return;
@@ -4895,7 +5285,9 @@ $("gradeCsv").addEventListener("click",()=>{
    운동·휴식 시간과 라운드도 학생이 스스로 정한다 — 체력에 따라 정해 주지 않는다.  */
 const EX_PART={squat:"하체",lunge:"하체",sidelunge:"하체",jumpsquat:"하체",
   pushup:"상체",pushupknee:"상체", crunch:"코어",legraise:"코어",plank:"코어",
-  jack:"유산소",highknee:"유산소",mtclimber:"유산소",burpee:"유산소"};
+  jack:"유산소",highknee:"유산소",mtclimber:"유산소",burpee:"유산소",
+  revlunge:"하체",widesquat:"하체",squathold:"하체",jumplunge:"하체",widepushup:"상체",diamondpushup:"상체",
+  highplank:"코어",shouldertap:"코어",crossmt:"유산소",starjump:"유산소",pushburpee:"유산소"};
 // 유연성은 13개 동작 중 해당 운동이 없어 선택지에서 뺐다.
 // (이미 저장된 계획이 있을 수 있으므로 표시용 이름은 남겨 둔다)
 const GOAL_LABEL={fat:"체중 감량",end:"근지구력 증가",car:"심폐지구력 증가",
@@ -5042,11 +5434,12 @@ function renderExNotes(){
 // 계획서 안에서 동작을 더한다
 function bindExAdd(){
   const sel=$("pcExAdd");
-  if(sel.options.length)return;
-  const src=$("addEx");
-  sel.innerHTML=src.innerHTML;   // 운동 설계 탭의 목록을 그대로 쓴다
+  if(sel.dataset.bound)return;
+  sel.dataset.bound="1";
+  { const h=exOptionsHTML(true); sel.innerHTML=h; sel.dataset.h=h; }   // 운동 설계 탭과 같은 목록 (아직 안 열린 운동은 🔒)
   $("pcExAddBtn").addEventListener("click",()=>{
     if(pcSeq.length>=8){alert("동작은 최대 8가지까지 넣을 수 있어요.");return;}
+    if(exLocked(sel.value)){alert("🔒 "+unlockName(sel.value)+" 단계로 진화하면 열려요");return;}
     pcSeq.push(sel.value); pcExNotes.push({why:"",care:""});
     renderExNotes(); renderPlanDocCfg(); renderPlanProg();
   });
@@ -5683,7 +6076,7 @@ $("rfDocSave").addEventListener("click",()=>{
   msg.textContent="저장 중…";
   fmod.set(reflectRef(me,"logs/"+rfDocKey),entry)
     .then(()=>{ $("rfDocOverlay").style.display="none";
-      toast(`성찰 일지를 저장했습니다 (${filled}/4)`,"good","✍️"); })
+      toast(`성찰 일지를 저장했습니다 (${filled}/4)`,"good","✍️"); setTimeout(()=>{ try{ maybeShowEvo(); }catch(e){} },600); })
     .catch(e=>{ msg.innerHTML='<span class="err">'+reflectErr(e)+'</span>'; });
 });
 // 운동을 마치면 결과 화면의 성찰 버튼을 새 세션용으로 되돌린다
@@ -7062,6 +7455,7 @@ function finish(){
 
 /* ---------- start/stop ---------- */
 async function start(opts){
+  if(evoShowing)closeEvo(true);   // 진화 카드가 떠 있으면 운동 화면을 가리지 않게 접는다 (안 뒤집은 카드는 나중에)
   // 배틀 동시 시작처럼 이미 확인을 마친 자동 시작은 확인창을 건너뛴다(그래야 양쪽이 같은 순간에 출발한다)
   const auto=!!(opts&&opts.auto===true);
   /* 카메라 없이 할지는 시작할 때 정한다. 그냥 [시작]을 누르면 늘 카메라부터 다시 시도하고
@@ -8844,6 +9238,8 @@ function attachFbListeners(){
     snap.forEach(c=>{ const v=c.val(); ids.add((v&&v.id)||c.key); });
     if(pruneDeletedRecords(ids))flushStats();
   },{onlyOnce:true});
+  // 서버 기록을 처음 한 번 다 받았다 — 이제 레벨이 올랐는지(진화 카드) 판단해도 된다
+  onValue(ref(fdb,"records"),()=>{ recordsReady=true; refreshProfile({silent:true}); },{onlyOnce:true});
   let taskSyncedOnce=false;
   onValue(ref(fdb,"assignments"),snap=>{
     const prevIds=Object.keys(assignments);
@@ -9278,6 +9674,10 @@ $("boardCtrlGo")&&$("boardCtrlGo").addEventListener("click",()=>sendControlBoard
 
 loadAll();
 try{ shownLevel=levelIndex(shownPts()); }catch(e){ shownLevel=levelIndex(totalPts); }
+// 서버에 못 붙는 기기는 이 기기 기록으로 판단한다 (진화 카드)
+setTimeout(()=>{ if(!fdb&&!recordsReady){ recordsReady=true; refreshProfile({silent:true}); } },8000);
+try{ renderExOptions(); }catch(e){}
+if($("addEx"))$("addEx").addEventListener("change",renderExPreview);
 refreshClassUI();
 refreshProfile({silent:true});
 renderTasks();
