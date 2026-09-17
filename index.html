@@ -1788,8 +1788,8 @@ const EX={
   lunge:{type:"rep",joints:[[24,26,28],[23,25,27]],down:110,up:165,perfect:95,
     pose:"stand",travelPt:"hip",travelMin:0.04,
     good:"안정적인 런지!",shallow:"무릎을 더 낮추기"},
-  jack:{type:"jack",pose:"stand",good:"리듬 좋아요!",shallow:"팔을 머리 위까지!"},
-  plank:{type:"hold",joints:[[12,24,28],[11,23,27]],lo:150,hi:200,minVis:0.22,pose:"flat",
+  jack:{type:"jack",pose:"stand",upright3d:true,good:"리듬 좋아요!",shallow:"팔을 머리 위까지!"},
+  plank:{type:"hold",joints:[[12,24,28],[11,23,27]],lo:150,hi:200,minVis:0.22,pose:"flat",armSupport:true,
     good:"곧게 유지 중!",bad:"엉덩이 높이 맞추기"},
   /* 크런치·윗몸 일으키기는 고정 각도로 재면 안 된다.
      어깨-골반-무릎 각도는 '무릎을 얼마나 굽혔는지'에 따라 누워 있을 때부터 크게 다르다
@@ -1827,8 +1827,8 @@ const EX={
   jumpsquat:{type:"rep",joints:[[24,26,28],[23,25,27]],down:115,up:155,perfect:95,
     pose:"stand",travelPt:"hip",travelMin:0.05,
     good:"파워풀한 점프!",shallow:"더 깊게 앉았다 점프"},
-  highknee:{type:"knee",pose:"stand",good:"무릎 높이 최고!",shallow:"무릎을 허리까지!"},
-  mtclimber:{type:"knee",pose:"flat",good:"빠른 템포 좋아요!",shallow:"무릎을 가슴쪽으로 더"},
+  highknee:{type:"knee",pose:"stand",upright3d:true,good:"무릎 높이 최고!",shallow:"무릎을 허리까지!"},
+  mtclimber:{type:"knee",pose:"flat",armSupport:true,good:"빠른 템포 좋아요!",shallow:"무릎을 가슴쪽으로 더"},
   burpee:{type:"burpee",good:"완벽한 버피!",shallow:"점프까지 완전히!",minVis:0.28},
   /* ---------- 진화하면 열리는 새 운동 (2026-09-17) ----------
      채점이 검증된 기존 동작의 판정을 그대로 쓰는 변형 동작이다 — 손 모양·반대쪽 무릎처럼
@@ -1837,24 +1837,24 @@ const EX={
   revlunge:{type:"rep",joints:[[24,26,28],[23,25,27]],down:110,up:165,perfect:95,
     pose:"stand",travelPt:"hip",travelMin:0.04,
     good:"안정적인 런지!",shallow:"무릎을 더 낮추기"},
-  highplank:{type:"hold",joints:[[12,24,28],[11,23,27]],lo:150,hi:200,minVis:0.22,pose:"flat",
+  highplank:{type:"hold",joints:[[12,24,28],[11,23,27]],lo:150,hi:200,minVis:0.22,pose:"flat",armSupport:true,
     good:"곧게 유지 중!",bad:"엉덩이 높이 맞추기"},
   widesquat:{type:"rep",joints:[[24,26,28],[23,25,27]],down:100,up:160,perfect:85,
     pose:"stand",travelPt:"hip",travelMin:0.05,sym:true,form:"squat",
     good:"좋은 깊이!",shallow:"조금 더 깊게 앉기"},
-  crossmt:{type:"knee",pose:"flat",good:"빠른 템포 좋아요!",shallow:"무릎을 반대쪽 가슴으로 더"},
+  crossmt:{type:"knee",pose:"flat",armSupport:true,good:"빠른 템포 좋아요!",shallow:"무릎을 반대쪽 가슴으로 더"},
   widepushup:{type:"rep",joints:[[12,14,16],[11,13,15]],down:95,up:155,perfect:80,minVis:0.22,
     pose:"flat",travelPt:"shoulder",travelMin:0.03,sym:true,form:"line",
     good:"가슴까지 OK!",shallow:"팔꿈치 더 굽히기"},
   // 허벅지가 바닥과 나란하면 무릎이 90도 남짓 — 그 둘레(target)에서 멀어질수록 정확도를 깎는다
   squathold:{type:"hold",joints:[[24,26,28],[23,25,27]],lo:50,hi:125,target:95,pose:"stand",
     good:"좋아요, 그대로 버티기!",bad:"허벅지가 바닥과 나란하게 앉기"},
-  starjump:{type:"jack",pose:"stand",good:"별처럼 쫙!",shallow:"팔을 머리 위까지!"},
+  starjump:{type:"jack",pose:"stand",upright3d:true,good:"별처럼 쫙!",shallow:"팔을 머리 위까지!"},
   // 점프스쿼트와 같은 까닭으로 빠르게 뛰는 동작은 최소 시간을 낮추고, 착지 후 완전히 펴지 않아도 인정한다
   jumplunge:{type:"rep",joints:[[24,26,28],[23,25,27]],down:115,up:155,perfect:100,minRepMs:300,
     pose:"stand",travelPt:"hip",travelMin:0.04,
     good:"파워풀한 점프 런지!",shallow:"더 낮게 내려갔다 점프"},
-  shouldertap:{type:"hold",joints:[[12,24,28],[11,23,27]],lo:150,hi:200,minVis:0.22,pose:"flat",
+  shouldertap:{type:"hold",joints:[[12,24,28],[11,23,27]],lo:150,hi:200,minVis:0.22,pose:"flat",armSupport:true,
     good:"흔들림 없이 좋아요!",bad:"엉덩이 높이 맞추기"},
   diamondpushup:{type:"rep",joints:[[12,14,16],[11,13,15]],down:95,up:155,perfect:80,minVis:0.22,
     pose:"flat",travelPt:"shoulder",travelMin:0.03,sym:true,form:"line",
@@ -3230,14 +3230,18 @@ function evoId(){
 function evoLoad(){ try{ return JSON.parse(localStorage.getItem(EVO_KEY)||"{}")||{}; }catch(e){ return {}; } }
 function evoSave(all){ try{ localStorage.setItem(EVO_KEY,JSON.stringify(all)); }catch(e){} }
 /* 레벨이 오르면 카드를 줄 세운다.
-   이 기기에서 처음 보는 학생이면 지금 레벨을 기준으로 삼고, 이미 열린 새 운동 카드만 한 번 보여 준다. */
+   이 기기에서 처음 보는 학생 — 진화 카드가 생기기 전에 이미 진화한 학생이 많다(선생님 요청) — 은
+   놓친 진화 카드(지금 단계)와 지금까지 열린 새 운동 카드를 받는다. 단계는 카드를 뒤집을 때 기억한다. */
 function checkEvolution(idx){
   if(!EVO_CARDS||!recordsReady)return;
   const id=evoId(); if(!id)return;
   const all=evoLoad(), rec=all[id];
   if(!rec){
-    all[id]={lv:idx}; evoSave(all);
-    newExUnlockedUpTo(idx).forEach(k=>evoQueue.push({kind:"ex",k,intro:true}));
+    if(idx<1){ all[id]={lv:0}; evoSave(all); return; }
+    if(!evoQueue.some(q=>q.kind==="level"&&q.id===id)){
+      evoQueue.push({kind:"level",lv:idx,from:idx-1,id,catchup:true});
+      newExUnlockedUpTo(idx).forEach(k=>evoQueue.push({kind:"ex",k}));
+    }
     return;
   }
   if(idx>rec.lv){
@@ -3250,17 +3254,17 @@ function checkEvolution(idx){
   }
 }
 /* 선생님 요청: 레벨업이 된 운동을 마치고 성찰까지 제출했을 때 카드를 뒤집는다 — 성찰 제출의 보상이다.
-   성찰을 안 내고 앱을 닫으면 다음에 앱을 열었을 때 보여 준다(뒤집기 전에는 단계를 기억하지 않으므로). */
+   성찰을 안 내면 다음에 운동하고 성찰을 낼 때 보여 준다(뒤집기 전에는 단계를 기억하지 않으므로). */
 function evoSafe(){
   if(running||document.hidden)return false;
   if(typeof ppgStream!=="undefined"&&ppgStream)return false;       // 카메라로 심박을 재는 중
   for(const id of ["hrConfirmOverlay","pulseOverlay","unlockOverlay","pfOverlay","qrOverlay","rfDocOverlay"]){
     const el=$(id); if(el&&el.style.display&&el.style.display!=="none")return false;
   }
-  if(typeof lastRec!=="undefined"&&lastRec&&sessionEndAt){
-    if(!lastRec.hr&&Date.now()-sessionEndAt<3*60*1000)return false;          // 운동 직후 심박부터
-    if(!(typeof myLogsLocal!=="undefined"&&myLogsLocal&&myLogsLocal[lastRec.id]))return false;   // 이번 운동 성찰을 낸 뒤에
-  }
+  // 이 앱에서 운동을 마치고, 심박을 재고, 그 운동의 성찰까지 낸 뒤에만 — 앱을 열자마자 뜨지 않는다
+  if(typeof lastRec==="undefined"||!lastRec)return false;
+  if(!lastRec.hr&&sessionEndAt&&Date.now()-sessionEndAt<3*60*1000)return false;          // 운동 직후 심박부터
+  if(!(typeof myLogsLocal!=="undefined"&&myLogsLocal&&myLogsLocal[lastRec.id]))return false;   // 이번 운동 성찰을 낸 뒤에
   return true;
 }
 function maybeShowEvo(){ if(!evoShowing&&evoQueue.length&&evoSafe())showNextEvo(); }
@@ -3275,7 +3279,7 @@ function showNextEvo(){
   if(item.kind==="level"){
     const lv=LEVELS[item.lv], prev=LEVELS[Math.max(0,Math.min(item.from,item.lv-1))];
     const stars=Math.min(5,1+Math.floor(item.lv/2.2));
-    $("evoHead").textContent="어? 아바타가 빛나요…!";
+    $("evoHead").textContent=item.catchup?"🎁 그동안 진화한 카드가 도착했어요":"어? 아바타가 빛나요…!";
     front.innerHTML=`<div class="evo-stars">${"★".repeat(stars)}</div><div class="evo-emoji">${lv[1]}</div>`
       +`<div class="evo-name">${lv[2]}</div><div class="evo-sub">${prev[1]} → ${lv[1]} 진화!</div>`;
   } else {
@@ -3442,7 +3446,31 @@ function torsoDir(lm){
   };
 }
 const POSE_MSG={stand:"일어서서 몸 전체가 보이게 해주세요", flat:"엎드리거나 누운 자세가 보이게 해주세요", floor:"등을 대고 누운 자세가 보이게 해주세요"};
+/* ---------- 누워서 하는 편법 막기 (2026-09-17) ----------
+   선생님: 마운틴클라이머·점핑잭 등을 바닥에 누워서 하는 학생이 생겼다.
+   ① 서서 하는 유산소(점핑잭·스타 점프·하이니): 폰을 바닥에 두고 발을 폰 쪽으로 누우면 화면에서는 몸통이
+      세로로 보여 '서 있음'을 통과했다 → 3차원 좌표(카메라 기준)로 몸통이 실제로 서 있는지 본다.
+   ② 엎드려 버티는 동작(마운틴클라이머·플랭크): 바닥에 누워도 몸통이 가로라 통과했다 →
+      손목이나 팔꿈치가 어깨보다 충분히 아래에 있어 몸을 받치고 있는지 본다.
+   관절이 잘 안 보이거나 3차원 좌표가 없는 기기에서는 막지 않는다(판단 보류). 끄려면 CHEAT_GUARD=false. */
+const CHEAT_GUARD=true;
+let lastPoseMsg="";   // 자세가 안 맞을 때 띄울 구체적인 까닭 (없으면 POSE_MSG)
+function upright3d(lm){
+  const w=curWorld;
+  if(!w||!w[11]||!w[12]||!w[23]||!w[24])return true;
+  if(Math.min(lm[11].visibility,lm[12].visibility,lm[23].visibility,lm[24].visibility)<0.5)return true;
+  const dx=(w[11].x+w[12].x-w[23].x-w[24].x)/2, dy=(w[11].y+w[12].y-w[23].y-w[24].y)/2, dz=(w[11].z+w[12].z-w[23].z-w[24].z)/2;
+  return Math.abs(dy)>Math.hypot(dx,dz)*0.8;     // 몸통이 수직에서 50도 안쪽 — 폰이 조금 기울어도 서 있으면 통과
+}
+function armSupported(lm){
+  const s=midPt(lm[11],lm[12]), h=midPt(lm[23],lm[24]);
+  const torso=Math.hypot(s.x-h.x,s.y-h.y); if(torso<0.03)return true;
+  const drops=[[15,11],[16,12],[13,11],[14,12]].filter(([j])=>lm[j]&&lm[j].visibility>=0.3).map(([j,sh])=>lm[j].y-lm[sh].y);
+  if(!drops.length)return true;                   // 팔이 안 보이면 판단 보류
+  return Math.max(...drops)>torso*0.3;            // 팔꿈치 플랭크(위팔 길이)도 넉넉히 넘는다
+}
 function poseOK(def,lm){
+  lastPoseMsg="";
   if(!def.pose)return true;
   if(def.pose==="floor"){
     // 크런치는 상체를 살짝만 마는 경우도, 윗몸 일으키기처럼 상체를 완전히 세우는 경우도
@@ -3459,7 +3487,10 @@ function poseOK(def,lm){
   }
   const t=torsoDir(lm);
   if(t.vis<0.25)return true;          // 몸통이 안 보이면 판단 보류
-  return def.pose==="stand"?t.upright:t.flat;
+  if(!(def.pose==="stand"?t.upright:t.flat))return false;
+  if(CHEAT_GUARD&&def.upright3d&&!upright3d(lm)){ lastPoseMsg="누워서 하지 말고 일어서서 해 주세요"; return false; }
+  if(CHEAT_GUARD&&def.armSupport&&!armSupported(lm)){ lastPoseMsg="손이나 팔꿈치로 바닥을 짚고 몸을 받쳐 주세요"; return false; }
+  return true;
 }
 /* 이동량을 잴 기준점의 세로 위치 */
 function travelY(lm,def){
@@ -3508,7 +3539,7 @@ let repDownT=0, yLo=0, yHi=0;   // 한 번 하는 동안의 시작 시각과 기
 /* 운동 중에는 "옆으로 돌아 주세요"라고 하지 않는다 — 이미 엎드린 뒤라 돌 수가 없고,
    옆으로 서라는 안내는 휴식 시간에 미리 하기 때문이다. */
 function sightMsg(){ $("fb").textContent="카메라에 몸이 다 보이게 해주세요"; }
-function resetRound(){repState="up";minAng=180;jackState="closed";jackQ=0;kneeUp={l:false,r:false};kneeQ={l:0,r:0};burpeePhase="stand";roundReps=0;roundAccSum=0;roundAccN=0;holdMs=0;holdJudgeMs=0;badMs=0;roundJ={p:0,g:0,gd:0,o:0,b:0};lastT=performance.now();lastRepT=0;repDownT=0;yLo=yHi=0;adaptRest=0;updateJCount();}
+function resetRound(){repState="up";minAng=180;jackState="closed";jackQ=0;kneeUp={l:false,r:false};kneeQ={l:0,r:0};burpeePhase="stand";burpeeBase=null;roundReps=0;roundAccSum=0;roundAccN=0;holdMs=0;holdJudgeMs=0;badMs=0;roundJ={p:0,g:0,gd:0,o:0,b:0};lastT=performance.now();lastRepT=0;repDownT=0;yLo=yHi=0;adaptRest=0;updateJCount();}
 function updateJCount(){
   const el=$("jCount"); el.style.display="block";
   el.innerHTML=(combo>=3?`<span class="jcombo">${combo} COMBO</span>`:"")
@@ -3574,7 +3605,7 @@ function curlAccuracy(rest,min,def){
 function procRep(lm,def){
   const {ang,vis}=bestSide(lm,def.joints);
   if(vis<(def.minVis??0.4)||ang==null){sightMsg();return;}
-  if(!poseOK(def,lm)){ $("fb").textContent=POSE_MSG[def.pose]; repState="up"; minAng=180; return; }
+  if(!poseOK(def,lm)){ $("fb").textContent=lastPoseMsg||POSE_MSG[def.pose]; repState="up"; minAng=180; return; }
   const y=travelY(lm,def);
   /* 적응형 동작은 문턱값을 그 학생의 '누워 있을 때 각도'에서 뽑아 쓴다.
      쉬는 자세에서 본 가장 큰 각도를 기준으로 삼되, 한 번 잡은 기준이 요동치지 않도록
@@ -3626,7 +3657,7 @@ function procRep(lm,def){
   }
 }
 function procJack(lm){
-  if(!poseOK(EX.jack,lm)){ $("fb").textContent=POSE_MSG.stand; jackState="closed"; jackQ=0; return; }
+  if(!poseOK(EX.jack,lm)){ $("fb").textContent=lastPoseMsg||POSE_MSG.stand; jackState="closed"; jackQ=0; return; }
   const nose=lm[0],lw=lm[15],rw=lm[16],la=lm[27],ra=lm[28],ls=lm[11],rs=lm[12];
   const armsUp=lw.y<nose.y&&rw.y<nose.y;
   const armsHigh=lw.y<nose.y-0.06&&rw.y<nose.y-0.06;
@@ -3653,7 +3684,7 @@ let kneeUp={l:false,r:false}, kneeQ={l:0,r:0};   // 마운틴클라이머는 다
 // 무릎 올리기 계열 (하이니·마운틴클라이머): 좌우 무릎이 번갈아 골반 높이까지 올라오는 횟수
 function procKnee(lm,def){
   // 하이니는 서서, 마운틴클라이머는 엎드려서 하는 동작이라 몸통 방향이 맞아야 인정한다
-  if(!poseOK(def,lm)){ $("fb").textContent=POSE_MSG[def.pose]; jackState="closed"; jackQ=0; return; }
+  if(!poseOK(def,lm)){ $("fb").textContent=lastPoseMsg||POSE_MSG[def.pose]; jackState="closed"; jackQ=0; return; }
   const lh=lm[23],rh=lm[24],lk=lm[25],rk=lm[26];
   let lUp,rUp,lHigh,rHigh;
   if(def.pose==="flat"){
@@ -3719,7 +3750,45 @@ function procKnee(lm,def){
 }
 // 버피: 서기(무릎 곧게) → 엎드림(어깨가 골반 아래로) 순환 1회
 let burpeePhase="stand";
+/* 버피 판정 v2 (2026-09-17) — 학생들이 "버피 채점이 잘 안 된다"고 했다. 예전 판정의 약점 두 가지:
+   ① 엎드림을 '몸통이 가로인가'로만 봤다 — 폰을 앞에 두고 하면 누운 몸통이 짧게 찍혀 가로로 보이지 않는다.
+   ② 다리가 안 보이면 그 프레임을 통째로 건너뛰었다 — 엎드리면 무릎·발이 가려지기 쉽다.
+   이제 엎드림은 '몸통이 가로'이거나 '선 자세보다 어깨가 몸통 길이의 1.2배 넘게 내려감'이면 인정하고
+   (스쿼트만으로는 그만큼 내려가지 않는다), 다리는 '다시 섰는지' 볼 때만 필요하다. 끄려면 BURPEE_V2=false. */
+const BURPEE_V2=true;
+let burpeeBase=null;   // 선 자세의 어깨 높이·몸통 길이 {shY, torso} — 앞에서 찍어도 '얼마나 내려갔나'를 잰다
 function procBurpee(lm,def){
+  if(!BURPEE_V2)return procBurpeeV1(lm,def);
+  const s=midPt(lm[11],lm[12]), h=midPt(lm[23],lm[24]);
+  const t=torsoDir(lm);
+  const {ang:kneeAng,vis}=bestSide(lm,[[24,26,28],[23,25,27]]);
+  const legsSeen=vis>=(def.minVis??0.35)&&kneeAng!=null;
+  const standing=legsSeen&&kneeAng>150&&t.upright;
+  if(standing&&t.vis>=0.25){
+    const torso=h.y-s.y;
+    burpeeBase=burpeeBase?{shY:burpeeBase.shY*0.8+s.y*0.2, torso:burpeeBase.torso*0.8+torso*0.2}:{shY:s.y, torso};
+  }
+  const dropped=!!burpeeBase&&burpeeBase.torso>0.04&&(s.y-burpeeBase.shY)>burpeeBase.torso*1.2;
+  const down=t.vis>=0.25&&(t.flat||dropped);
+  if(burpeePhase==="stand"&&down){ burpeePhase="down"; return; }
+  if(burpeePhase==="down"&&standing){
+    const now=performance.now();
+    if(now-lastRepT<REP_DEBOUNCE_MS)return;
+    lastRepT=now;
+    burpeePhase="stand"; roundReps++;
+    const acc= kneeAng>170?100:kneeAng>160?86:72;
+    roundAccSum+=acc; roundAccN++;
+    $("repN").textContent=roundReps;
+    $("accN").textContent=Math.round(roundAccSum/roundAccN)+"%";
+    $("fb").textContent=acc>=95?def.good:def.shallow;
+    judge(acc);
+    return;
+  }
+  if(burpeePhase==="down"){ $("fb").textContent="일어나서 점프!"; return; }
+  if(!legsSeen)sightMsg();
+}
+// 예전 판정 (BURPEE_V2=false일 때)
+function procBurpeeV1(lm,def){
   const ls=lm[11],rs=lm[12],lh=lm[23],rh=lm[24];
   const shY=(ls.y+rs.y)/2, hipY=(lh.y+rh.y)/2;
   // 오른쪽 다리만 보던 것을 다른 자세들처럼 양쪽 중 더 잘 보이는 다리로 판정(측면 각도에 따라 한쪽이 가려질 수 있음)
@@ -3751,7 +3820,7 @@ function procHold(lm,def){
   const {ang,vis}=bestSide(lm,def.joints);
   if(vis<(def.minVis??0.35)||ang==null){sightMsg();return;}
   // 서 있어도 어깨–골반–발목이 일직선이라 '완벽한 플랭크'로 인정되던 문제를 막는다
-  if(!poseOK(def,lm)){ $("fb").textContent=POSE_MSG[def.pose]; badMs=0; holdJudgeMs=0; return; }
+  if(!poseOK(def,lm)){ $("fb").textContent=lastPoseMsg||POSE_MSG[def.pose]; badMs=0; holdJudgeMs=0; return; }
   if(ang>=def.lo&&ang<=def.hi){
     holdMs+=dt; holdJudgeMs+=dt; badMs=0;
     const dev=Math.min(Math.abs(ang-(def.target||180)),25);   // 기마 자세처럼 굽혀 버티는 동작은 target 둘레
