@@ -326,6 +326,23 @@
   .ex-preview .exp-cam{font-size:12.5px; color:var(--muted); margin-top:4px;}
   .ex-preview .exp-lock{font-size:13.5px; font-weight:800; color:var(--gold); margin-top:4px;}
   .ex-preview.locked .exp-art{filter:grayscale(1); opacity:.55;}
+  /* ---------- 과제 카드의 운동 미리보기 줄 · 크게 보기 (2026-09-18) ---------- */
+  .tc-ex{display:flex; gap:6px; overflow-x:auto; padding:8px 2px 2px; margin-top:4px; -webkit-overflow-scrolling:touch;
+    flex:1 1 100%; min-width:0; max-width:100%;}   /* 과제 카드(가로 배치) 안에서 한 줄을 차지하고, 넘치면 줄 안에서 옆으로 넘긴다 */
+  .tc-ex:empty{display:none;}
+  .tcx{flex:0 0 auto; width:66px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:4px 3px 5px;
+    cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px; font:inherit; color:inherit;}
+  .tcx-art{width:54px; height:54px; display:block;}
+  .tcx-art svg{width:100%; height:100%; display:block;}
+  .tcx-nm{font-size:10.5px; line-height:1.2; font-weight:700; max-width:60px; text-align:center; overflow:hidden;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;}
+  .ex-sheet{position:fixed; inset:0; z-index:10005; background:rgba(20,22,48,.72); display:flex; align-items:center; justify-content:center; padding:20px;}
+  .exs-card{background:var(--panel); border-radius:20px; padding:16px; width:min(340px,100%); max-width:100%; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.3);}
+  .exs-art{width:min(220px,70vw); aspect-ratio:1; margin:0 auto; max-width:100%;}
+  .exs-art svg{width:100%; height:100%; display:block;}
+  .exs-name{font-weight:800; font-size:20px; margin-top:8px;}
+  .exs-tip{font-size:15px; line-height:1.5; margin-top:4px;}
+  .exs-cam{font-size:13px; color:var(--muted); margin-top:6px;}
   /* 어느 렌즈를 덮어야 하는지 그림으로 알려 주는 안내.
      기종마다 카메라 위치가 달라 특정 위치를 짚을 수 없으므로, 위치 대신 '불이 켜진 곳 옆'이라는
      원리만 그림으로 보여주고, 정확히 맞았는지는 아래 실시간 ✅ 표시가 확인해 준다. */
@@ -1027,7 +1044,16 @@
         <button class="btn btn-teal btn-sm" id="tAddBtn">+ 추가</button>
         <button class="btn btn-stop btn-sm" id="tCopyBtn">📥 운동 설계 탭에서 가져오기</button>
       </div>
+      <div class="ex-preview" id="tExPreview" style="display:none">
+        <div class="exp-art" id="tExpArt"></div>
+        <div style="min-width:0">
+          <div class="exp-name" id="tExpName"></div>
+          <div class="exp-tip" id="tExpTip"></div>
+          <div class="exp-cam" id="tExpCam"></div>
+        </div>
+      </div>
       <div class="seqlist" id="tSeqList"></div>
+      <div class="tc-ex" id="tSeqStrip"></div>
       <div class="row" style="margin-bottom:0;align-items:flex-end">
         <div class="field"><label>운동(초)</label><input type="number" id="tWorkSec" value="20" min="10" max="60"></div>
         <div class="field"><label>휴식(초)</label><input type="number" id="tRestSec" value="10" min="5" max="60"></div>
@@ -1351,6 +1377,16 @@
   </section>
 </div>
 
+<!-- 운동 자세 크게 보기 — 내 과제·공통과제 내기의 작은 그림을 누르면 뜬다 -->
+<div id="exSheet" class="ex-sheet" style="display:none" role="dialog" aria-label="운동 자세">
+  <div class="exs-card">
+    <div class="exs-art" id="exSheetArt"></div>
+    <div class="exs-name" id="exSheetName"></div>
+    <div class="exs-tip" id="exSheetTip"></div>
+    <div class="exs-cam" id="exSheetCam"></div>
+    <button class="btn btn-go" id="exSheetClose" style="width:100%;padding:12px;margin-top:12px">닫기</button>
+  </div>
+</div>
 <div id="levelupOverlay" role="dialog" aria-label="진화 카드">
   <div id="confetti"></div>
   <div class="evo-head" id="evoHead"></div>
@@ -1846,8 +1882,11 @@ const EX={
   widepushup:{type:"rep",joints:[[12,14,16],[11,13,15]],down:95,up:155,perfect:80,minVis:0.22,
     pose:"flat",travelPt:"shoulder",travelMin:0.03,sym:true,form:"line",
     good:"가슴까지 OK!",shallow:"팔꿈치 더 굽히기"},
-  // 허벅지가 바닥과 나란하면 무릎이 90도 남짓 — 그 둘레(target)에서 멀어질수록 정확도를 깎는다
-  squathold:{type:"hold",joints:[[24,26,28],[23,25,27]],lo:50,hi:125,target:95,pose:"stand",
+  /* 기마 자세: 발을 넓게 벌리고 무릎을 바깥으로 — 앞모습에서 무릎 각도가 잘 보인다.
+     9/18 수업에서 47건 중 16건이 40초 중 12초도 못 잡혔다. 옆으로 서면 상체를 숙여 '서 있음'에서 떨어지고
+     (upRatio로 50도 가까이 숙여도 인정), 무릎을 앞으로 내밀고 앞에서 찍으면 각도가 펴져 보였다(hi 135).
+     인정 범위 안에서는 감점을 완만하게(slope) — 가장 낮아도 OK가 뜨게 한다. */
+  squathold:{type:"hold",joints:[[24,26,28],[23,25,27]],lo:50,hi:135,target:100,slope:1.6,upRatio:0.6,pose:"stand",
     good:"좋아요, 그대로 버티기!",bad:"허벅지가 바닥과 나란하게 앉기"},
   starjump:{type:"jack",pose:"stand",upright3d:true,good:"별처럼 쫙!",shallow:"팔을 머리 위까지!"},
   // 점프스쿼트와 같은 까닭으로 빠르게 뛰는 동작은 최소 시간을 낮추고, 착지 후 완전히 펴지 않아도 인정한다
@@ -1882,7 +1921,7 @@ const EXTIP={
   widesquat:"발을 어깨보다 넓게, 발끝은 바깥으로 두고 앉기",
   crossmt:"엎드려 무릎을 반대쪽 팔꿈치 쪽으로 번갈아 당기기",
   widepushup:"손을 어깨보다 넓게 짚고 팔굽혀펴기",
-  squathold:"허벅지가 바닥과 나란하게 앉은 채로 버티기",
+  squathold:"발을 넓게 벌리고 무릎을 바깥으로 — 허벅지가 바닥과 나란하게 버티기",
   starjump:"웅크렸다가 팔·다리를 별 모양으로 쫙 벌리며 점프",
   jumplunge:"런지로 내려갔다가 점프하며 앞뒤 발 바꾸기",
   shouldertap:"팔 펴고 버티며 한 손씩 반대쪽 어깨 톡",
@@ -1957,6 +1996,8 @@ const EXA_P=(()=>{
     fStar:{kn:-1,kf:1,en:-1,ef:1,H:[60,54],S:[60,26],FN:[86,92],FF:[34,92],WN:[88,4],WF:[32,4]},
     fWideUp:{kn:-1,kf:1,en:1,ef:-1,H:[60,63],S:[60,35],FN:[76,104],FF:[44,104],WN:[63,50],WF:[57,50]},
     fWideLow:{kn:-1,kf:1,en:1,ef:-1,H:[60,84],S:[60,56],FN:[78,104],FF:[42,104],WN:[63,71],WF:[57,71]},
+    fHorse:{kn:-1,kf:1,en:1,ef:-1,H:[60,86],S:[60,58],FN:[84,104],FF:[36,104],WN:[64,72],WF:[56,72]},
+    fHorse2:{kn:-1,kf:1,en:1,ef:-1,H:[60,87.5],S:[60,59.5],FN:[84,104],FF:[36,104],WN:[64,73.5],WF:[56,73.5]},
     fSideStand:{kn:-1,kf:1,en:1,ef:-1,H:[60,62],S:[60,34],FN:[66,104],FF:[54,104],WN:[63,49],WF:[57,49]},
     fSideR:{kn:-1,kf:1,en:1,ef:-1,H:[80,84],S:[76,57],FN:[92,104],FF:[40,104],WN:[80,71],WF:[72,71]},
     fSideL:{kn:-1,kf:1,en:1,ef:-1,H:[40,84],S:[44,57],FN:[80,104],FF:[28,104],WN:[48,71],WF:[40,71]},
@@ -1994,7 +2035,7 @@ const EXANIM=(()=>{
   return {
     squat:{d:2.4,f:f([0,"stand"],[.5,"squatLow"],[1,"stand"])},
     widesquat:{d:2.6,front:1,label:"발 넓게",f:f([0,"fWideUp"],[.5,"fWideLow"],[1,"fWideUp"])},
-    squathold:{d:1.6,label:"⏱ 버티기",f:f([0,"squatLow"],[.5,"squatLow2"],[1,"squatLow"])},
+    squathold:{d:1.6,front:1,label:"⏱ 버티기",f:f([0,"fHorse"],[.5,"fHorse2"],[1,"fHorse"])},
     jumpsquat:{d:2.0,label:"점프!",f:f([0,"stand"],[.3,"squatLow"],[.5,"squatAir"],[.7,"squatLow"],[1,"stand"])},
     lunge:{d:2.4,f:f([0,"lungeUp"],[.5,"lungeLow"],[1,"lungeUp"])},
     revlunge:{d:2.8,label:"◀ 뒤로 딛기",f:f([0,"stand"],[.45,"revLow"],[.6,"revLow"],[1,"stand"])},
@@ -2084,7 +2125,7 @@ function renderExOptions(){
     const v=sel.value; sel.innerHTML=html; sel.dataset.h=html;
     if(v&&EXNAME[v])sel.value=v;
   });
-  renderExPreview();
+  renderExPreview(); renderTaskExPreview();
 }
 /* 운동 설계에서 고른 운동의 움직이는 자세를 바로 보여 준다 */
 function renderExPreview(){
@@ -2100,6 +2141,46 @@ function renderExPreview(){
   box.classList.toggle("locked",locked);
   $("expLock").textContent=locked?`🔒 ${unlockName(k)} 단계로 진화하면 열려요`:"";
   const add=$("addBtn"); if(add)add.disabled=locked;
+}
+
+/* ---------- 운동 미리보기 줄 · 크게 보기 (2026-09-18) ----------
+   운동 설계의 움직이는 그림이 인기가 좋아(선생님), 내 과제의 공통·자율 실천 과제와 공통과제 내기에서도
+   구성된 운동을 작은 움직이는 그림으로 보여 준다. 여러 개가 한꺼번에 돌면 폰이 느려지므로
+   화면에 보이는 것만 움직이고, 누르면 크게 본다. */
+function exStripHTML(seq){
+  const ks=[...new Set((seq||[]).filter(k=>EXNAME[k]))];     // 같은 운동은 한 번만
+  return ks.map(k=>`<button type="button" class="tcx" data-exk="${k}" aria-label="${EXNAME[k]} 자세 크게 보기">`
+    +`<span class="tcx-art">${exerciseAnim(k)}</span><span class="tcx-nm">${EXNAME[k]}</span></button>`).join("");
+}
+let exStripIO=null;
+function wireExStrip(el){
+  if(!el)return;
+  el.querySelectorAll("[data-exk]").forEach(b=>b.addEventListener("click",e=>{ e.stopPropagation(); openExSheet(b.dataset.exk); }));
+  if(typeof IntersectionObserver==="undefined")return;       // 못 쓰는 기기는 그냥 움직이게 둔다
+  if(!exStripIO)exStripIO=new IntersectionObserver(es=>es.forEach(en=>{
+    try{ if(en.isIntersecting)en.target.unpauseAnimations(); else en.target.pauseAnimations(); }catch(_){}
+  }));
+  el.querySelectorAll("svg").forEach(s=>{ try{ s.pauseAnimations(); }catch(_){} exStripIO.observe(s); });
+}
+function openExSheet(k){
+  if(!EXNAME[k])return;
+  $("exSheetArt").innerHTML=exerciseAnim(k);
+  $("exSheetName").textContent=EXNAME[k];
+  $("exSheetTip").textContent=EXTIP[k]||"";
+  $("exSheetCam").textContent=SIDE_VIEW[k]?"📐 옆모습이 카메라에 보이게":"📱 앞모습이 카메라에 보이게";
+  $("exSheet").style.display="flex";
+}
+function closeExSheet(){ const s=$("exSheet"); if(s){ s.style.display="none"; $("exSheetArt").innerHTML=""; } }
+/* 공통과제 내기: 고른 운동의 움직이는 자세 (교사 화면이라 잠금 없음) */
+function renderTaskExPreview(){
+  const sel=$("tAddEx"), box=$("tExPreview"); if(!sel||!box)return;
+  const k=sel.value;
+  if(!EXNAME[k]){ box.style.display="none"; return; }
+  box.style.display="flex";
+  if(box.dataset.k!==k){ $("tExpArt").innerHTML=exerciseAnim(k); box.dataset.k=k; }
+  $("tExpName").textContent=EXNAME[k];
+  $("tExpTip").textContent=EXTIP[k]||"";
+  $("tExpCam").textContent=SIDE_VIEW[k]?"📐 옆모습이 카메라에 보이게":"📱 앞모습이 카메라에 보이게";
 }
 
 /* ---------- sequence builder ---------- */
@@ -2280,14 +2361,18 @@ function renderTasks(){
 
   const me=myKey();
   // 카드 하나를 만든다. 제목을 누르면 운동 구성이 펼쳐져 목록이 길어지지 않는다.
-  const card=(icon,title,meta,detail)=>{
+  const card=(icon,title,meta,detail,seq)=>{
     const d=document.createElement("div"); d.className="task-card";
     const h=document.createElement("button"); h.className="tc-head"; h.type="button";
     h.innerHTML=`<span class="tt">${icon} ${title}<span class="tc-meta">${meta}</span></span><span class="arw">▾</span>`;
     const body=document.createElement("div"); body.className="tc-body"; body.innerHTML=detail;
     h.addEventListener("click",()=>{ h.classList.toggle("open"); body.classList.toggle("open"); });
     const btns=document.createElement("div"); btns.className="tc-btns";
-    d.append(h,body,btns); tc.appendChild(d);
+    // 구성된 운동을 작은 움직이는 그림으로 — 누르면 크게 본다 (공통·자율 실천 과제)
+    const strip=(seq&&seq.length)?document.createElement("div"):null;
+    if(strip){ strip.className="tc-ex"; strip.innerHTML=exStripHTML(seq); }
+    d.append(...[h,strip,body,btns].filter(Boolean)); tc.appendChild(d);
+    if(strip)wireExStrip(strip);
     return {card:d, btns, add(txt,cls,fn,title2){
       const b=document.createElement("button"); b.className="btn "+cls+" btn-sm"; b.textContent=txt;
       if(title2)b.title=title2; b.addEventListener("click",fn); btns.appendChild(b); return b; }};
@@ -2327,7 +2412,7 @@ function renderTasks(){
                 : '<span class="ord num" style="background:var(--bad);color:#fff">보충</span> ';
       const meta=`부여 ${given||a.created||"–"} · `+(done?`<b style="color:var(--good)">실행 ${String(done.date).slice(0,10)}</b>`
         :`<b style="color:var(--bad)">아직 안 함</b>`);
-      const c=card("📋",badge+escHtml(taskLabel(a)),meta,cfgLine(a.seq,a.work,a.rest,a.rounds));
+      const c=card("📋",badge+escHtml(taskLabel(a)),meta,cfgLine(a.seq,a.work,a.rest,a.rounds),a.seq);
       c.add(done?"다시 하기":(isToday?"이 과제 하기":"보충하기"),"btn-go",()=>applyAssignment(id));
     });
   } else {
@@ -2390,7 +2475,7 @@ function renderTasks(){
       +`${p.last?` · 마지막 ${p.last}`:""} · `
       +(p.submitted?`<b style="color:var(--good)">📤 계획서 제출함</b>`:`계획서 미제출`);
     const c=card("🌱",p.name||"내 운동",meta,cfgLine(p.seq,p.work,p.rest,p.rounds)
-      +`<br><span style="color:var(--muted)">만든 날 ${p.made||"–"}</span>`);
+      +`<br><span style="color:var(--muted)">만든 날 ${p.made||"–"}</span>`,p.seq);
     c.add("혼자","btn-go",()=>{
       applyPlan(p); currentPlanId=p.id;
       clearTask(); currentBattle=null; updateModeBadge();
@@ -3110,6 +3195,7 @@ function setupMiniDesigner(o){ // o={sel,add,copy,list,work,rest,rounds,diff,onC
     if(!st.seq.length)el.innerHTML='<span class="hint">아직 운동이 없습니다 — 위에서 추가하세요.</span>';
     // 동작 수가 바뀌면 라운드 수도 같이 맞춘다 — 학생 쪽 renderSeq()의 clampRounds()와 동일한 방식.
     if(o.pick)setRepeatFor(st.seq,o.rounds,o.pick,repeatXFor(st.seq,o.rounds));
+    if(o.strip&&$(o.strip)){ $(o.strip).innerHTML=exStripHTML(st.seq); wireExStrip($(o.strip)); }   // 짠 구성을 그림으로
     if(o.onChange)o.onChange();
   }
   $(o.add).addEventListener("click",()=>{ if(st.seq.length<12){st.seq.push($(o.sel).value);render();} });
@@ -3144,7 +3230,7 @@ function setupMiniDesigner(o){ // o={sel,add,copy,list,work,rest,rounds,diff,onC
 }
 let taskDesigner=null;
 taskDesigner=setupMiniDesigner({sel:"tAddEx",add:"tAddBtn",copy:"tCopyBtn",list:"tSeqList",
-  work:"tWorkSec",rest:"tRestSec",rounds:"tRounds",diff:"tDifficulty",pick:"tRepeatPick"});
+  work:"tWorkSec",rest:"tRestSec",rounds:"tRounds",diff:"tDifficulty",pick:"tRepeatPick",strip:"tSeqStrip"});
 
 /* ---------- gamification ---------- */
 let totalPts=0;   // 이 기기에 쌓아 둔 점수 — 이제는 아래 스위치를 껐을 때만 화면에 쓴다
@@ -3258,7 +3344,7 @@ function checkEvolution(idx){
 function evoSafe(){
   if(running||document.hidden)return false;
   if(typeof ppgStream!=="undefined"&&ppgStream)return false;       // 카메라로 심박을 재는 중
-  for(const id of ["hrConfirmOverlay","pulseOverlay","unlockOverlay","pfOverlay","qrOverlay","rfDocOverlay"]){
+  for(const id of ["hrConfirmOverlay","pulseOverlay","unlockOverlay","pfOverlay","qrOverlay","rfDocOverlay","exSheet"]){
     const el=$(id); if(el&&el.style.display&&el.style.display!=="none")return false;
   }
   // 이 앱에서 운동을 마치고, 심박을 재고, 그 운동의 성찰까지 낸 뒤에만 — 앱을 열자마자 뜨지 않는다
@@ -3469,6 +3555,10 @@ function armSupported(lm){
   if(!drops.length)return true;                   // 팔이 안 보이면 판단 보류
   return Math.max(...drops)>torso*0.3;            // 팔꿈치 플랭크(위팔 길이)도 넉넉히 넘는다
 }
+function uprightBy(lm,ratio){
+  const s=midPt(lm[11],lm[12]), h=midPt(lm[23],lm[24]);
+  return Math.abs(s.y-h.y)>Math.abs(s.x-h.x)*ratio && s.y<h.y;
+}
 function poseOK(def,lm){
   lastPoseMsg="";
   if(!def.pose)return true;
@@ -3487,7 +3577,9 @@ function poseOK(def,lm){
   }
   const t=torsoDir(lm);
   if(t.vis<0.25)return true;          // 몸통이 안 보이면 판단 보류
-  if(!(def.pose==="stand"?t.upright:t.flat))return false;
+  // upRatio: 상체를 숙이고 버티는 동작(기마 자세)은 더 기울어도 '서 있음'으로 본다
+  const up=def.upRatio?uprightBy(lm,def.upRatio):t.upright;
+  if(!(def.pose==="stand"?up:t.flat))return false;
   if(CHEAT_GUARD&&def.upright3d&&!upright3d(lm)){ lastPoseMsg="누워서 하지 말고 일어서서 해 주세요"; return false; }
   if(CHEAT_GUARD&&def.armSupport&&!armSupported(lm)){ lastPoseMsg="손이나 팔꿈치로 바닥을 짚고 몸을 받쳐 주세요"; return false; }
   return true;
@@ -3824,7 +3916,7 @@ function procHold(lm,def){
   if(ang>=def.lo&&ang<=def.hi){
     holdMs+=dt; holdJudgeMs+=dt; badMs=0;
     const dev=Math.min(Math.abs(ang-(def.target||180)),25);   // 기마 자세처럼 굽혀 버티는 동작은 target 둘레
-    const acc=Math.round(100-dev*2.2); // 5단계 기준 상향: 몸이 굽을수록 급격히 감점
+    const acc=Math.round(100-dev*(def.slope||2.2)); // 5단계 기준 상향: 몸이 굽을수록 급격히 감점 (기마 자세는 완만하게)
     roundAccSum+=acc*dt; roundAccN+=dt;
     $("repN").textContent=(holdMs/1000).toFixed(1);
     $("accN").textContent=Math.round(roundAccSum/roundAccN)+"%";
@@ -4392,7 +4484,7 @@ let log=[]; // per-round {ex,reps,acc,type,hold}
    런지는 서서 하지만 무릎이 얼마나 깊게 내려가는지(앞뒤 움직임)가 핵심이라 정면보다
    측면에서 훨씬 잘 잡힌다. 해당 동작 차례가 되면 옆으로 서라고 크게 안내한다. */
 const SIDE_VIEW={pushup:1,pushupknee:1,plank:1,crunch:1,legraise:1,burpee:1,lunge:1,
-  revlunge:1,highplank:1,widepushup:1,squathold:1,jumplunge:1,shouldertap:1,diamondpushup:1,pushburpee:1};
+  revlunge:1,highplank:1,widepushup:1,jumplunge:1,shouldertap:1,diamondpushup:1,pushburpee:1};
 let sideTipTimer=null;
 function showSideTip(ex,ms){
   const el=$("sideTip"); if(!el)return;
@@ -9747,6 +9839,9 @@ try{ shownLevel=levelIndex(shownPts()); }catch(e){ shownLevel=levelIndex(totalPt
 setTimeout(()=>{ if(!fdb&&!recordsReady){ recordsReady=true; refreshProfile({silent:true}); } },8000);
 try{ renderExOptions(); }catch(e){}
 if($("addEx"))$("addEx").addEventListener("change",renderExPreview);
+if($("tAddEx"))$("tAddEx").addEventListener("change",renderTaskExPreview);
+if($("exSheetClose"))$("exSheetClose").addEventListener("click",closeExSheet);
+if($("exSheet"))$("exSheet").addEventListener("click",e=>{ if(e.target.id==="exSheet")closeExSheet(); });
 refreshClassUI();
 refreshProfile({silent:true});
 renderTasks();
