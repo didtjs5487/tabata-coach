@@ -1900,6 +1900,16 @@ const EX={
     good:"가슴까지 OK!",shallow:"팔꿈치 더 굽히기"},
   pushburpee:{type:"burpee",good:"완벽한 버피!",shallow:"점프까지 완전히!",minVis:0.28},
 };
+/* 플랭크 숄더탭 (2026-09-22) — 새 운동으로 처음 과제를 낸 날 학생들이 어려워했다.
+   같은 학생의 예전 플랭크와 견주면 인정된 시간이 중앙값 37.5초 → 30.9초(25명), 3분의 1은 10초 넘게 줄었다.
+   ① 좌우 중 '더 굽은 쪽' 선을 보는 규칙(bestSide — 한 발씩 드는 레그레이즈용)이라, 손을 드는 쪽 어깨가
+      들릴 때마다 그쪽 선이 뽑혀 시계가 멈췄다 → 숄더탭은 '더 곧은 쪽'(바닥을 짚고 받치는 쪽) 선을 본다.
+   ② 손이 어깨를 치는 순간 어깨가 가려지거나 선이 잠깐 흐트러진다 → 바로 전까지 잘 버텼으면 0.9초까지는
+      시계를 멈추지 않는다(그보다 길게 무너지면 예전처럼 멈추고, 1.5초면 MISS).
+   ③ 인정 범위 안에서는 감점을 완만하게(기마 자세와 같은 1.6), 엉덩이가 조금 들려도(145도) 버티기로 본다.
+   엎드림·팔로 받치기 같은 자세 성립 조건은 그대로다. 끄려면 TAP_HOLD_V2=false. */
+const TAP_HOLD_V2=true;
+if(TAP_HOLD_V2)Object.assign(EX.shouldertap,{lo:145,slope:1.6,side:"straight",graceMs:900});
 
 /* ---------- 운동 자세 그래픽 (SVG) + 팁 ---------- */
 const EXTIP={
@@ -3503,6 +3513,18 @@ function bestSide(lm,joints){
   }
   return bestAng!=null?{ang:bestAng,vis:bestVis}:{ang:fbAng,vis:fbVis};
 }
+/* 버티는 동안 좌우가 번갈아 흐트러지는 동작(숄더탭)은 더 곧은 쪽 — 바닥을 짚고 몸을 받치는 쪽 — 선을 본다.
+   한쪽만 보이면 그쪽을, 둘 다 잘 안 보이면 bestSide와 같이 그나마 더 잘 보이는 쪽을 쓴다. */
+function straightSide(lm,joints){
+  let best=null;
+  for(const [a,b,c] of joints){
+    const v=Math.min(lm[a].visibility,lm[b].visibility,lm[c].visibility);
+    if(v<0.15)continue;
+    const ang=jointAngle(lm,a,b,c);
+    if(ang!=null&&(!best||ang>best.ang))best={ang,vis:v};
+  }
+  return best||bestSide(lm,joints);
+}
 
 /* ---------- 자세가 성립하는지 확인 ----------
    각도 하나만 보면 앉아서 무릎만 폈다 굽혀도 스쿼트로, 서 있기만 해도 완벽한 플랭크로
@@ -3621,7 +3643,7 @@ function formPenalty(lm,def){
 /* ---------- rep/hold engines ---------- */
 let repState,minAng,jackState,jackQ=0;
 let adaptRest=0;   // 적응형 동작(크런치)에서 '누워 있을 때의 각도' — 라운드마다 새로 잡는다
-let roundReps=0,roundAccSum=0,roundAccN=0,holdMs=0,holdJudgeMs=0,badMs=0,lastT=0;
+let roundReps=0,roundAccSum=0,roundAccN=0,holdMs=0,holdJudgeMs=0,badMs=0,lastT=0,holdGoodT=0;
 let roundJ={p:0,g:0,gd:0,o:0,b:0};
 // 랜드마크가 순간적으로 튀면 문턱값을 두 번 왔다갔다 하며 같은 반복이 중복 카운트될 수 있어
 // 방금 카운트한 반복 이후 최소 시간(REP_DEBOUNCE_MS) 안에는 다음 카운트를 인정하지 않는다.
@@ -3631,7 +3653,7 @@ let repDownT=0, yLo=0, yHi=0;   // 한 번 하는 동안의 시작 시각과 기
 /* 운동 중에는 "옆으로 돌아 주세요"라고 하지 않는다 — 이미 엎드린 뒤라 돌 수가 없고,
    옆으로 서라는 안내는 휴식 시간에 미리 하기 때문이다. */
 function sightMsg(){ $("fb").textContent="카메라에 몸이 다 보이게 해주세요"; }
-function resetRound(){repState="up";minAng=180;jackState="closed";jackQ=0;kneeUp={l:false,r:false};kneeQ={l:0,r:0};burpeePhase="stand";burpeeBase=null;roundReps=0;roundAccSum=0;roundAccN=0;holdMs=0;holdJudgeMs=0;badMs=0;roundJ={p:0,g:0,gd:0,o:0,b:0};lastT=performance.now();lastRepT=0;repDownT=0;yLo=yHi=0;adaptRest=0;updateJCount();}
+function resetRound(){repState="up";minAng=180;jackState="closed";jackQ=0;kneeUp={l:false,r:false};kneeQ={l:0,r:0};burpeePhase="stand";burpeeBase=null;roundReps=0;roundAccSum=0;roundAccN=0;holdMs=0;holdJudgeMs=0;badMs=0;holdGoodT=0;roundJ={p:0,g:0,gd:0,o:0,b:0};lastT=performance.now();lastRepT=0;repDownT=0;yLo=yHi=0;adaptRest=0;updateJCount();}
 function updateJCount(){
   const el=$("jCount"); el.style.display="block";
   el.innerHTML=(combo>=3?`<span class="jcombo">${combo} COMBO</span>`:"")
@@ -3909,11 +3931,14 @@ function procBurpeeV1(lm,def){
 }
 function procHold(lm,def){
   const now=performance.now(),dt=now-lastT; lastT=now;
-  const {ang,vis}=bestSide(lm,def.joints);
-  if(vis<(def.minVis??0.35)||ang==null){sightMsg();return;}
+  const {ang,vis}=def.side==="straight"?straightSide(lm,def.joints):bestSide(lm,def.joints);
+  // 숄더탭: 바로 전까지 잘 버텼다면 손이 어깨를 치는 짧은 순간(graceMs)은 시계를 멈추지 않는다
+  const bridge=!!(def.graceMs&&holdGoodT&&now-holdGoodT<def.graceMs);
+  if(vis<(def.minVis??0.35)||ang==null){ if(bridge){ holdMs+=dt; $("repN").textContent=(holdMs/1000).toFixed(1); return; } sightMsg();return;}
   // 서 있어도 어깨–골반–발목이 일직선이라 '완벽한 플랭크'로 인정되던 문제를 막는다
-  if(!poseOK(def,lm)){ $("fb").textContent=lastPoseMsg||POSE_MSG[def.pose]; badMs=0; holdJudgeMs=0; return; }
+  if(!poseOK(def,lm)){ $("fb").textContent=lastPoseMsg||POSE_MSG[def.pose]; badMs=0; holdJudgeMs=0; holdGoodT=0; return; }
   if(ang>=def.lo&&ang<=def.hi){
+    holdGoodT=now;
     holdMs+=dt; holdJudgeMs+=dt; badMs=0;
     const dev=Math.min(Math.abs(ang-(def.target||180)),25);   // 기마 자세처럼 굽혀 버티는 동작은 target 둘레
     const acc=Math.round(100-dev*(def.slope||2.2)); // 5단계 기준 상향: 몸이 굽을수록 급격히 감점 (기마 자세는 완만하게)
@@ -3923,6 +3948,7 @@ function procHold(lm,def){
     $("fb").textContent=def.good;
     if(holdJudgeMs>=1000){holdJudgeMs-=1000; judge(acc);} // 1초 유지마다 판정
   } else {
+    if(bridge){ holdMs+=dt; badMs+=dt; $("repN").textContent=(holdMs/1000).toFixed(1); return; }
     $("fb").textContent=def.bad;
     badMs+=dt; holdJudgeMs=0;
     if(badMs>=1500){badMs=0; judge(50);} // 자세가 무너진 채 1.5초 → MISS
