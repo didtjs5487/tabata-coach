@@ -1256,11 +1256,12 @@
 
       <details class="collapsible" style="margin-top:12px">
         <summary>👤 학생 한 명 추가 (전학생)</summary>
-        <div class="hint" style="margin:8px 0">학번을 넣으면 반과 번호가 자동으로 정해집니다. 같은 번호가 이미 있으면 그 자리를 바꿉니다.</div>
+        <div class="hint" style="margin:8px 0">학번을 넣으면 반과 번호가 자동으로 정해집니다. 같은 번호가 이미 있으면 그 자리를 바꿉니다. 전입일부터 낸 과제로 평가합니다.</div>
         <div class="row" style="align-items:flex-end">
           <div class="field"><label>학번</label><input type="text" id="oneStuId" placeholder="10327" maxlength="5" inputmode="numeric" style="width:100px"></div>
           <div class="field"><label>이름</label><input type="text" id="oneStuName" placeholder="홍길동" style="width:130px"></div>
           <div class="field"><label>성별</label><select id="oneStuSex"><option value="">선택</option><option value="남">남</option><option value="여">여</option></select></div>
+          <div class="field"><label>전입일 <span style="font-weight:400;color:var(--muted)">(비우면 오늘)</span></label><input type="date" id="oneStuJoin"></div>
           <button class="btn btn-teal btn-sm" id="oneStuAdd">추가</button>
           <span class="hint" id="oneStuMsg"></span>
         </div>
@@ -2324,6 +2325,28 @@ function pastDeadline(){
 function taskGivenAt(a,cls){
   return (a&&a.classes&&typeof a.classes[cls]==="string")?a.classes[cls]:((a&&a.created)||"");
 }
+/* 전입생 (2026-09-23) — 선생님: "명렬에 새로 입력된 날짜로부터 부여된 과제 갯수로 평가되었으면 좋겠어".
+   '학생 한 명 추가(전학생)'로 들어온 학생은 명렬표에 들어온 날(joined)을 남긴다. 그날보다 먼저 그 반에 낸
+   공통과제는 그 학생에게는 없던 과제로 본다 — 성적의 배정 차시(분모)·학생의 보충 목록·과제 현황표에서 뺀다.
+   처음부터 명렬표에 있던 학생은 joined가 없어 예전처럼 모든 과제로 평가한다. 끄려면 JOIN_DATE=false. */
+const JOIN_DATE=true;
+function joinedOf(cls,name){
+  if(!JOIN_DATE)return "";
+  const st=(rosters[cls]||[]).find(x=>x.name===name);
+  return (st&&st.joined)?String(st.joined).slice(0,10):"";
+}
+// 이 과제가 이 학생의 평가 대상인가 — 명렬표에 들어온 날(그날 포함) 이후에 낸 과제만
+function afterJoin(given,joined){
+  return !JOIN_DATE||!joined||!given||String(given).slice(0,10)>=String(joined).slice(0,10);
+}
+// 명렬표를 다시 붙여 넣어도 전입일은 남긴다 (같은 번호·같은 이름일 때)
+function keepJoined(oldList,newList){
+  (newList||[]).forEach(x=>{
+    const o=(oldList||[]).find(y=>String(y.no)===String(x.no)&&y.name===x.name);
+    if(o&&o.joined&&!x.joined)x.joined=o.joined;
+  });
+  return newList;
+}
 // 한 반이 받은 과제를 낸 순서대로 세우고 1부터 차시 번호를 붙인다
 function classLessons(cls){
   return Object.entries(assignments)
@@ -2363,7 +2386,9 @@ function renderTasks(){
   const tc=$("taskCards"); tc.innerHTML="";
   const myCls=myKey().cls;
   const ids=Object.keys(assignments);
-  const mine=ids.filter(id=>taskHasClass(assignments[id],myCls));
+  // 전입생은 명렬표에 들어온 날부터 낸 과제만 보인다 — 그 전 과제는 보충할 것도 아니다
+  const myJoin=joinedOf(myCls,myKey().name);
+  const mine=ids.filter(id=>taskHasClass(assignments[id],myCls)&&afterJoin(taskGivenAt(assignments[id],myCls),myJoin));
   const tag=document.createElement("div"); tag.className="step-tag";
   tag.textContent="STEP 0 · 무엇을 할까요?";
   tc.appendChild(tag);
@@ -2706,18 +2731,21 @@ function boardForClass(tsCls){
     records.filter(r=>r.taskId===x.id&&r.cls===tsCls)
       .sort((a,b)=>String(a.date).localeCompare(String(b.date)))
       .forEach(r=>{ if(!first[r.name])first[r.name]=r; });
-    const doneList=roster.filter(st=>first[st.name]);
+    // 전입생은 명렬표에 들어오기 전에 낸 과제에서는 빠진다(그래도 했다면 제출로 보인다)
+    const who=roster.filter(st=>first[st.name]||afterJoin(given,st.joined||""));
+    const preN=roster.length-who.length, tot=who.length;
+    const doneList=who.filter(st=>first[st.name]);
     /* 안 한 학생을 둘로 가른다 — 몸이 안 좋아 자가진단에 체크한 학생과, 아무것도 안 한 학생.
        기준은 '그 반에 이 과제를 낸 날'에 체크가 있었는지다. */
-    const rest=roster.filter(st=>!first[st.name]);
+    const rest=who.filter(st=>!first[st.name]);
     /* 인정은 교사가 한다 — 이름을 눌러 표시한 학생만 '건강 사유'로 간다.
        학생이 앱에서 자가진단에 체크한 것은 옆에 🩹로 귀띔만 한다. */
     const sickList=rest.filter(st=>isExcused(tsCls,x.id,st.name));
     const todoList=rest.filter(st=>!isExcused(tsCls,x.id,st.name));
     const done=doneList.length;
     needSum+=todoList.length; sickSum+=sickList.length;
-    const pct=total?Math.round(done/total*100):0;
-    const col=done===0?"var(--bad)":(done>=total?"var(--good)":"var(--work)");
+    const pct=tot?Math.round(done/tot*100):0;
+    const col=done===0?"var(--bad)":(done>=tot?"var(--good)":"var(--work)");
     const nameStr=list=>list.length
       ? list.map(st=>`<span style="white-space:nowrap">${st.no}&nbsp;${escHtml(st.name)}</span>`).join(" · ")
       : "<span style='opacity:.6'>없음</span>";
@@ -2728,8 +2756,8 @@ function boardForClass(tsCls){
             style="white-space:nowrap;cursor:pointer;border:1px solid var(--line);border-radius:6px;padding:1px 6px;display:inline-block;margin:1px 0">${st.no}&nbsp;${escHtml(st.name)}${(!on&&given&&healthNoteOn(tsCls,st.name,given))?" 🩹":""}${on?" ✓":""}</span>`).join(" ")
       : "<span style='opacity:.6'>없음</span>";
     const head=`${isToday(x)?'<span class="ord num" style="background:var(--work);color:#fff">오늘</span> ':""}<b style="cursor:pointer;text-decoration:underline dotted" data-ts="${x.id}" data-cls="${tsCls}" title="자세한 기록 보기">${x.no}차시 · ${escHtml(taskLabel(x.a))}</b>
-        <span class="hint">${given?given:""}</span>
-        <b class="num" style="margin-left:auto;color:${col};font-size:17px">${done}/${total}</b>`;
+        <span class="hint">${given?given:""}${preN?` · 전입 전 ${preN}명 제외`:""}</span>
+        <b class="num" style="margin-left:auto;color:${col};font-size:17px">${done}/${tot}</b>`;
     /* 과제 하나로 할 일은 셋뿐이다 — 낼 반 고치기 · 같은 구성으로 다시 내기 · 지우기.
        예전에는 위쪽 '등록된 공통과제' 목록에 같은 일이 또 있어서 한 과제를 두 군데서 손댔다.
        전원 완료로 접힌 카드에도 넣는다 — 몇 명이 이미 해 버린 뒤에 잘못 나간 걸 알아채기도 한다. */
@@ -2824,16 +2852,18 @@ function renderTaskRows(){
       const r=done[s.name];
       const tr=document.createElement("tr");
       const sick=!r&&isExcused(cls,id,s.name);
+      const pre=!r&&!afterJoin(givenFor(cls),s.joined||"");
       tr.innerHTML=r
         ?`<td class="num">${s.no}</td><td>${s.name}</td><td>${shortCls(cls)}</td>${cell(r)}`
-        :`<td class="num">${s.no}</td><td>${s.name}</td><td>${shortCls(cls)}</td><td colspan="5" style="color:${sick?"var(--gold)":"var(--muted)"}">${sick?"건강 사유 — 선생님 확인(제외)":"미완료"}</td>`;
+        :`<td class="num">${s.no}</td><td>${s.name}</td><td>${shortCls(cls)}</td><td colspan="5" style="color:${sick?"var(--gold)":"var(--muted)"}">${pre?"전입 전 과제 — 평가 제외":sick?"건강 사유 — 선생님 확인(제외)":"미완료"}</td>`;
       if(tb)tb.appendChild(tr);
     });
     const list=Object.values(done);
     const on=list.filter(r=>String(r.date).slice(0,10)===givenFor(cls)).length;
     const sickN=rosters[cls].filter(st=>!done[st.name]&&isExcused(cls,id,st.name)).length;
-    if(cnt)cnt.textContent=`${shortCls(cls)}반 — ${list.length}/${rosters[cls].length}명 완료 (당일 ${on} · 보충 ${list.length-on})`
-      +(sickN?` · 건강 사유 ${sickN}명`:"");
+    const preN=rosters[cls].filter(st=>!done[st.name]&&!afterJoin(givenFor(cls),st.joined||"")).length;
+    if(cnt)cnt.textContent=`${shortCls(cls)}반 — ${list.length}/${rosters[cls].length-preN}명 완료 (당일 ${on} · 보충 ${list.length-on})`
+      +(sickN?` · 건강 사유 ${sickN}명`:"")+(preN?` · 전입 전 ${preN}명 제외`:"");
     return;
   }
   const rs=records.filter(r=>r.taskId===id);
@@ -4932,7 +4962,7 @@ $("rosterAdd").addEventListener("click",()=>{
   if(!c){alert("반 이름을 입력하세요 (예: 1-3)");return;}
   const list=parseRoster($("rosterPaste").value);
   if(!list.length){alert("명렬표 내용을 붙여넣어 주세요.");return;}
-  rosters[c]=list;
+  rosters[c]=keepJoined(rosters[c],list);
   $("rosterCount").textContent=`${c}반 ${list.length}명 등록 완료`;
   $("rosterPaste").value=""; refreshClassUI(); saveAll(); pushRoster(c);
 });
@@ -4950,16 +4980,27 @@ $("oneStuAdd").addEventListener("click",()=>{
   const list=rosters[c];
   const idx=list.findIndex(s=>parseInt(s.no,10)===key.no);
   const before=idx>=0?list[idx].name:null;
-  if(idx>=0) list[idx]={no:String(key.no), name, sex};
+  /* 전입일 — 새로 들어온 학생은 칸에 넣은 날(비우면 오늘)부터 낸 과제로 평가한다.
+     이미 있는 번호를 고칠 때(이름 오타 등)는 칸을 비워 두면 전입일을 건드리지 않는다.
+     이미 들어와 있던 전입생은 전입일을 넣고 같은 학번으로 다시 추가하면 된다. */
+  const jIn=($("oneStuJoin")&&$("oneStuJoin").value)||"";
+  const old=idx>=0?list[idx]:null;
+  const joined=!JOIN_DATE?"":(jIn||(old?(old.joined||""):todayStr()));
+  const entry={no:String(key.no), name, sex:sex||(old&&old.name===name?(old.sex||""):"")};
+  if(joined)entry.joined=joined;
+  if(idx>=0) list[idx]=entry;
   else {
-    list.push({no:String(key.no), name, sex});
+    list.push(entry);
     list.sort((a,b)=>parseInt(a.no,10)-parseInt(b.no,10)); // 명렬표는 번호순 유지
   }
   refreshClassUI(); saveAll(); pushRoster(c);
-  msg.innerHTML=before
+  const jTxt=joined?` · <b>${joined}</b>부터 낸 과제로 평가`:"";
+  msg.innerHTML=(before===name
+    ? `<b style="color:var(--good)">${shortCls(c)}반 ${key.no}번 ${name}</b>`
+    : before
     ? `<b style="color:var(--good)">${shortCls(c)}반 ${key.no}번을 ${before} → ${name}(으)로 바꿨습니다.</b>`
-    : `<b style="color:var(--good)">${shortCls(c)}반 ${key.no}번 ${name} 추가 완료 (현재 ${list.length}명)</b>`;
-  $("oneStuId").value=""; $("oneStuName").value=""; $("oneStuSex").value="";
+    : `<b style="color:var(--good)">${shortCls(c)}반 ${key.no}번 ${name} 추가 완료 (현재 ${list.length}명)</b>`)+jTxt;
+  $("oneStuId").value=""; $("oneStuName").value=""; $("oneStuSex").value=""; if($("oneStuJoin"))$("oneStuJoin").value="";
 });
 $("bulkRosterAdd").addEventListener("click",()=>{
   const text=$("bulkRosterPaste").value;
@@ -4971,7 +5012,7 @@ $("bulkRosterAdd").addEventListener("click",()=>{
     return;
   }
   let total=0;
-  names.forEach(c=>{ rosters[c]=parsed[c]; total+=parsed[c].length; pushRoster(c); });
+  names.forEach(c=>{ rosters[c]=keepJoined(rosters[c],parsed[c]); total+=parsed[c].length; pushRoster(c); });
   let msg=`${names.join(", ")} — 총 ${names.length}개 반 ${total}명 등록 완료`;
   const excludedNames=Object.keys(excluded);
   if(excludedNames.length){
@@ -5356,7 +5397,10 @@ const PRACTICE_STEPS={4:20,3:16,2:12,1:8,0:4};
 function practiceScore(name,cls){
   const all=records.filter(r=>r.name===name&&String(r.cls)===String(cls))
     .sort((a,b)=>String(a.date).localeCompare(String(b.date)));
-  const mine=classLessons(cls); // 이 반에 배정된 차시들 (낸 순서대로 1,2,3…)
+  const joined=joinedOf(cls,name);
+  const lessons=classLessons(cls); // 이 반에 배정된 차시들 (낸 순서대로 1,2,3…)
+  const mine=lessons.filter(x=>afterJoin(x.when,joined)); // 전입생은 명렬표에 들어온 날부터 낸 것만
+  const preJoin=lessons.length-mine.length;
   const assigned=mine.length;
   let done=0,onTime=0,late=0,excusedN=0;
   mine.forEach(x=>{
@@ -5429,7 +5473,7 @@ function practiceScore(name,cls){
   return {n,assigned,done,onTime,late,dil,acc:avgAcc,rate,selfGood,
     excusedN,exUsed,exLimit,exOver,allExcused,denom, noCamN, accN:qs.length,
     gain:gainPct,first,last,items,met,score,base,accBonus,accB1:b1,accB2:b2,
-    nAll:all.length, skippedFirst:!!firstRec, firstRec};
+    nAll:all.length, skippedFirst:!!firstRec, firstRec, joined, preJoin};
 }
 // 전 학급 성적을 반마다 시트(탭)로 나눠 엑셀 파일 하나로 내보낸다.
 // 구글 드라이브에 올리면 탭이 그대로 살아있는 스프레드시트로 열린다.
@@ -5444,7 +5488,7 @@ $("gradeCsv").addEventListener("click",()=>{
     "배정차시","이수차시","건강제외","제외적용","당일","보충","이수율(%)",
     "세션수",`심박달성(≥${rubric.hr})`,"심박달성률(%)","평균정확도(%)","질적자율실천",
     "초기평균","최근평균","향상률(%)","최고점수","퍼펙트그레이트율(%)","최근심박","누적P","최근수행일",
-    "㉰수시성찰(회)","㉰마무리성찰"];
+    "㉰수시성찰(회)","㉰마무리성찰","전입일","전입전과제(제외)"];
   const sheets=cs.map(c=>({
     name:c,
     rows:[head].concat((rosters[c]||[]).map(s=>{
@@ -5455,7 +5499,7 @@ $("gradeCsv").addEventListener("click",()=>{
         g.n, g.dil, g.n?Math.round(g.dil/g.n*100):"", g.n?g.acc:"", g.selfGood,
         g.first!=null?g.first:"", g.last!=null?g.last:"", g.gain!=null?g.gain:"",
         st?num(st.best):"", (st&&st.gRate!=null)?num(st.gRate):"", st?st.hr:"", st?num(st.pts):0, st?st.date:"",
-        logCount(rf), hasFinal(rf)?"작성":"미작성"];
+        logCount(rf), hasFinal(rf)?"작성":"미작성", g.joined||"", g.preJoin||""];
     }))
   }));
   const a=document.createElement("a");
@@ -5854,7 +5898,7 @@ function showStuDetail(cls,name){
 
   let h=`<div class="stu-detail"><div class="sd-sum">`
     +line(st.task,"📋","공통과제", g.assigned
-        ?`${g.done}/${g.assigned}차시 이수${g.exUsed?` (건강 제외 ${g.exUsed}회 → ${g.done}/${g.denom})`:""}`
+        ?`${g.done}/${g.assigned}차시 이수${g.exUsed?` (건강 제외 ${g.exUsed}회 → ${g.done}/${g.denom})`:""}${g.joined?` · 전입 ${g.joined} 이후`:""}`
         :"배정된 과제 없음")
     +line(st.self,"🏃","자율 실천", st.selfN?`${st.selfN}회 (전체 세션 ${g.n}회)`:"기록 없음")
     +line(st.plan,"📝","계획서", st.best?`제출 · 서술 ${planWrote(st.best)}/5칸`:"미제출")
