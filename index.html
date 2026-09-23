@@ -739,11 +739,12 @@
     <h3>내 과제</h3>
     <div id="taskCards"></div>
 
-    <!-- 앱이 안 되는 것을 학생이 그 자리에서 알릴 수 있게 한다 — 수업 중 바로 확인해 고치기 위함 -->
-    <div class="step-box" style="margin-top:20px">
-      <div style="font-weight:800;font-size:16px">🛠 앱이 이상해요 (선생님께 알리기)</div>
-      <div class="hint" style="margin:2px 0 8px">안 되는 것을 적어 주세요 — <b>선생님만</b> 봅니다</div>
-      <textarea id="rpText" rows="3" style="width:100%;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:14px;resize:vertical" placeholder="예: 크런치를 했는데 횟수가 안 올라가요 / 심박 측정에서 화면이 멈춰요"></textarea>
+    <!-- 앱 문제 & 질문하기 (2026-09-23) — 앱이 안 되는 것뿐 아니라 잘 모르는 개념·궁금한 것을 묻고
+         선생님이 답글을 달아 준다. 학생과 소통하는 창구다. 글과 답글은 선생님과 그 학생만 본다. -->
+    <div class="step-box" style="margin-top:20px" id="qaBox">
+      <div style="font-weight:800;font-size:16px">💬 앱 문제 &amp; 질문하기</div>
+      <div class="hint" style="margin:2px 0 8px">앱이 안 되는 것, 잘 모르는 개념, 궁금한 것 — 무엇이든 적어 주세요. <b>선생님만</b> 보고 답글을 달아 줍니다</div>
+      <textarea id="rpText" rows="3" style="width:100%;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;font-size:14px;resize:vertical" placeholder="예: 심박수 120이면 왜 중강도예요? / 크런치를 했는데 횟수가 안 올라가요"></textarea>
       <div class="row" style="margin:8px 0 0">
         <button class="btn btn-go btn-sm" id="rpSend">📨 보내기</button>
         <span class="hint" id="rpMsg"></span>
@@ -1197,9 +1198,9 @@
     </details>
 
     <details class="collapsible" id="rpAdminBox">
-    <summary>🛠 학생이 알린 앱 문제 <span id="rpCount" style="color:var(--bad);font-weight:800"></span></summary>
-    <div class="hint" style="margin:10px 0 8px">학생이 <b>내 과제</b> 탭에서 보낸 것입니다. 어떤 기기에서 생긴 일인지 함께 표시됩니다.
-      확인한 것은 <b>[확인함]</b>을 누르면 목록에서 사라집니다(잘못 눌렀으면 바로 되돌릴 수 있습니다).</div>
+    <summary>💬 앱 문제 &amp; 질문 <span id="rpCount" style="color:var(--bad);font-weight:800"></span></summary>
+    <div class="hint" style="margin:10px 0 8px">학생이 <b>내 과제</b> 탭에서 보낸 앱 문제와 질문입니다. <b>답글</b>을 달면 그 학생의 폰에만 보입니다.
+      다 본 것은 <b>[확인함]</b>으로 목록에서 지웁니다(잘못 눌렀으면 바로 되돌릴 수 있고, 보낸 답글은 학생에게 남습니다).</div>
     <div class="row" style="margin:0 0 8px">
       <button class="btn btn-stop btn-sm" id="rpReload">🔄 다시 불러오기</button>
       <span class="hint" id="rpAdminMsg"></span>
@@ -7799,10 +7800,15 @@ $("camFlip")&&$("camFlip").addEventListener("click",flipWorkoutCam);
 $("camFlipFs")&&$("camFlipFs").addEventListener("click",flipWorkoutCam);
 $("camRefresh")&&$("camRefresh").addEventListener("click",refreshWorkoutCam);
 
-/* ---------- 🛠 앱 문제 알리기 ----------
+/* ---------- 💬 앱 문제 & 질문하기 ----------
    학생이 그 자리에서 알리고 교사가 수업 중 바로 확인할 수 있게 한다.
    재현하려면 '누가 어떤 기기에서'가 꼭 필요하므로 이름과 기기 정보를 함께 담는다.
-   내가 보낸 것은 이 기기에 남겨 두 번 보내지 않게 하고, 읽기는 교사만 한다. */
+   내가 보낸 것은 이 기기에 남겨 두 번 보내지 않게 하고, 읽기는 교사만 한다.
+   2026-09-23 — 앱 문제뿐 아니라 잘 모르는 개념·궁금한 것을 묻는 소통 창구로 넓히고, 선생님이 답글을 단다.
+   답글은 answers/{질문번호}에 둔다. 질문번호는 추측할 수 없는 무작위 값이고 그 학생의 기기에만 남으므로,
+   다른 학생은 답글을 찾을 수 없다(규칙: answers 전체 목록은 못 읽고, 번호를 아는 한 건만 읽힌다).
+   끄려면 QNA_REPLY=false (예전처럼 보내기만). */
+const QNA_REPLY=true;
 const RP_KEY="tabataReports";
 let myReports=[];
 try{ myReports=JSON.parse(localStorage.getItem(RP_KEY)||"[]"); }catch(e){}
@@ -7812,30 +7818,60 @@ function deviceInfo(){
   const br=/SamsungBrowser/i.test(ua)?"삼성인터넷":/Edg/i.test(ua)?"엣지":/Chrome/i.test(ua)?"크롬":/Firefox/i.test(ua)?"파이어폭스":/Safari/i.test(ua)?"사파리":"기타";
   return {os,br,scr:`${screen.width}x${screen.height}`,ua:ua.slice(0,160),det:lastDetectErr||""};   // 마지막 자세 인식 오류(있으면)
 }
+// 추측할 수 없는 질문 번호 — 이 번호를 아는 기기만 답글을 읽는다
+function newQid(){
+  const a=new Uint8Array(12);
+  try{ crypto.getRandomValues(a); }catch(e){ for(let i=0;i<a.length;i++)a[i]=Math.floor(Math.random()*256); }
+  return Date.now().toString(36)+"-"+[...a].map(b=>b.toString(36).padStart(2,"0")).join("");
+}
+const QA_BUBBLE="margin-top:6px;padding:8px 10px;border-radius:10px;background:var(--panel);border-left:3px solid var(--primary);white-space:pre-wrap";
 function renderMyReports(){
   const el=$("rpMine"); if(!el)return;
-  el.innerHTML=myReports.length
-    ? `보낸 것 ${myReports.length}건 — `+myReports.slice(-3).map(r=>`<b>${escHtml(String(r.date||"").slice(5,16))}</b>`).join(", ")
-    : "";
+  if(!myReports.length){ el.innerHTML=""; return; }
+  const list=myReports.slice().reverse().slice(0,10);
+  el.innerHTML=`<div style="font-weight:700;margin:6px 0 2px;color:var(--ink)">내 질문 ${myReports.length}개</div>`
+    +list.map(r=>`<div style="margin:8px 0;padding-top:6px;border-top:1px solid var(--line)">
+      <span class="hint">${escHtml(String(r.date||"").slice(5,16))}</span>
+      <div style="white-space:pre-wrap;color:var(--ink)">${escHtml(r.text||"")}</div>
+      ${r.reply?`<div style="${QA_BUBBLE}">💬 <b>선생님</b> <span class="hint">${escHtml(String(r.replyDate||"").slice(5,16))}</span><br>${escHtml(r.reply)}</div>`
+        :(QNA_REPLY&&r.id?'<div class="hint" style="margin-top:4px">답글을 기다리는 중</div>':"")}
+    </div>`).join("");
+}
+/* 내가 보낸 질문마다 답글 자리를 지켜본다. 답글이 새로 오면 한 번 알려 준다. */
+const qaWatching={};
+function watchAnswers(){
+  if(!fdb||!QNA_REPLY)return;
+  myReports.forEach(r=>{
+    if(!r.id||qaWatching[r.id])return;
+    qaWatching[r.id]=true;
+    fmod.onValue(fmod.ref(fdb,"answers/"+r.id),snap=>{
+      const v=snap.val(); if(!v||!v.text)return;
+      const isNew=r.reply!==v.text;
+      r.reply=v.text; r.replyDate=v.date||"";
+      try{ localStorage.setItem(RP_KEY,JSON.stringify(myReports)); }catch(e){}
+      renderMyReports();
+      if(isNew)toast("선생님이 답글을 달았어요 — 내 과제 탭 맨 아래에서 보세요","good","💬");
+    },()=>{ delete qaWatching[r.id]; });   // 규칙이 아직 없으면 조용히 넘어간다(다음에 다시 본다)
+  });
 }
 if($("rpSend"))$("rpSend").addEventListener("click",()=>{
   const msg=$("rpMsg"), txt=($("rpText").value||"").trim();
-  if(!txt){msg.innerHTML='<span class="err">무엇이 안 되는지 적어 주세요.</span>';return;}
+  if(!txt){msg.innerHTML='<span class="err">무엇이든 적어 주세요.</span>';return;}
   const me=myKey();
   if(!me.name){msg.innerHTML='<span class="err">운동 설계 탭에서 학번을 먼저 입력하세요.</span>';return;}
   const d=deviceInfo();
-  const rep={name:me.name,cls:me.cls,text:txt,date:nowStamp(),
+  const id=newQid();
+  const rep={name:me.name,cls:me.cls,text:txt,date:nowStamp(),v:2,
     os:d.os,br:d.br,scr:d.scr,ua:d.ua,det:d.det,
     where:(document.querySelector("nav button.on")||{}).textContent||""};
-  myReports.push({date:rep.date,text:txt});
+  myReports.push({id,date:rep.date,text:txt});
   try{ localStorage.setItem(RP_KEY,JSON.stringify(myReports)); }catch(e){}
   $("rpText").value=""; renderMyReports();
   if(!fdb){ msg.innerHTML='<b style="color:var(--good)">이 기기에 저장했습니다 — 인터넷이 연결되면 다시 보내주세요.</b>'; return; }
   msg.textContent="보내는 중…";
-  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   fmod.set(fmod.ref(fdb,"reports/"+id),rep)
-    .then(()=>{ msg.innerHTML='<b style="color:var(--good)">보냈습니다 — 선생님이 확인합니다 ✔</b>';
-      toast("선생님께 전달했습니다","good","🛠"); })
+    .then(()=>{ msg.innerHTML='<b style="color:var(--good)">보냈습니다 — 선생님이 확인하고 답글을 달아 줍니다 ✔</b>'; watchAnswers();
+      toast("선생님께 전달했습니다","good","💬"); })
     .catch(()=>{ msg.innerHTML='<span class="err">전송 실패 — 인터넷을 확인하세요.</span>'; });
 });
 renderMyReports();
@@ -7845,8 +7881,37 @@ const reports={};
 /* [확인함]을 누르면 목록에서 바로 사라진다(서버에서도 지운다).
    수업 중 잘못 눌러 학생 의견을 잃지 않도록, 방금 지운 것 하나는 되돌릴 수 있게 남겨 둔다. */
 let lastRemovedReport=null;
+/* 답글 칸. 목록은 새 글이 올 때마다 다시 그려지므로, 쓰던 답글을 잠시 맡아 두었다가 되살린다. */
+const qaDrafts={};
+function qaReplyHTML(k,r){
+  if(!QNA_REPLY||r.v!==2)return "";
+  const val=qaDrafts[k]!==undefined?qaDrafts[k]:(r.reply||"");
+  return `<div style="margin-top:8px">`
+    +(r.reply?`<div style="${QA_BUBBLE};margin-bottom:6px">💬 <b>보낸 답글</b> <span class="hint">${escHtml(String(r.replyDate||"").slice(5,16))}</span><br>${escHtml(r.reply)}</div>`:"")
+    +`<textarea data-rt="${k}" rows="2" style="width:100%;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px;font-family:inherit;font-size:14px;resize:vertical" placeholder="답글을 적으세요 — 이 학생만 봅니다">${escHtml(val)}</textarea>`
+    +`<div class="row" style="margin:6px 0 0"><button class="btn btn-go btn-sm" data-rs="${k}">💬 답글 ${r.reply?"고쳐 보내기":"보내기"}</button></div></div>`;
+}
+function sendQaReply(k){
+  const r=reports[k]; if(!r)return;
+  const ta=document.querySelector(`#rpList textarea[data-rt="${k}"]`);
+  const txt=((ta&&ta.value)||"").trim();
+  if(!txt){ toast("답글을 적어 주세요","bad","💬"); return; }
+  if(!fdb){ toast("서버에 연결되어 있지 않습니다","bad","💬"); return; }
+  const ans={text:txt,date:nowStamp()};
+  fmod.set(fmod.ref(fdb,"answers/"+k),ans).then(()=>{
+    delete qaDrafts[k];
+    r.reply=txt; r.replyDate=ans.date;
+    fmod.update(fmod.ref(fdb,"reports/"+k),{reply:txt,replyDate:ans.date}).catch(()=>{});
+    renderReports();
+    toast("답글을 보냈습니다 — 이 학생만 봅니다","good","💬");
+  }).catch(()=>{
+    const m=$("rpAdminMsg"); if(m)m.innerHTML='<span class="err">답글을 못 보냈습니다 — Firebase 규칙에 answers를 추가해 게시해 주세요.</span>';
+    toast("답글을 못 보냈습니다 — Firebase 규칙을 확인해 주세요","bad","💬");
+  });
+}
 function renderReports(){
   const box=$("rpList"); if(!box)return;
+  box.querySelectorAll("textarea[data-rt]").forEach(ta=>{ qaDrafts[ta.dataset.rt]=ta.value; });
   const ks=Object.keys(reports).sort((a,b)=>String(reports[b].date).localeCompare(String(reports[a].date)));
   const cnt=$("rpCount"); if(cnt)cnt.textContent=ks.length?`· ${ks.length}건`:"";
   const undo=lastRemovedReport
@@ -7866,6 +7931,7 @@ function renderReports(){
         ${r.trace?'<span class="ord num" style="background:var(--primary);color:#fff">측정 신호 있음</span>':""}
       </div>
       <div style="margin-top:6px;white-space:pre-wrap">${escHtml(r.text||"")}</div>
+      ${qaReplyHTML(k,r)}
       <div class="row" style="margin:8px 0 0"><button class="btn btn-teal btn-sm" data-rp="${k}">✔ 확인함 (목록에서 지우기)</button>
         ${r.trace?`<button class="btn btn-go btn-sm" data-tr="${k}">📈 측정 신호 내려받기</button>`:""}</div>
     </div>`;
@@ -7884,6 +7950,7 @@ function renderReports(){
     a.click(); URL.revokeObjectURL(a.href);
     toast("신호 파일을 내려받았습니다","good","📈");
   }));
+  box.querySelectorAll("button[data-rs]").forEach(b=>b.addEventListener("click",()=>sendQaReply(b.dataset.rs)));
   box.querySelectorAll("button[data-rp]").forEach(b=>b.addEventListener("click",()=>{
     const k=b.dataset.rp, r=reports[k];
     if(!r)return;
@@ -9513,6 +9580,7 @@ function attachFbListeners(){
   attachHealth();    // 건강 자가진단 체크 (교사만 읽힌다)
   attachExcused();   // 교사가 표시한 건강 사유 제외
   attachNotices();   // 선생님이 보낸 알림 (학생도 읽는다)
+  watchAnswers();    // 내가 보낸 질문에 달린 답글 (번호를 아는 이 기기만 읽는다)
   // 채점 기준은 서버 값을 따른다 — 교사 기기마다 학생 점수가 달라지지 않게
   onValue(ref(fdb,"rubric"),snap=>{
     const v=snap.val(); if(!v)return;
