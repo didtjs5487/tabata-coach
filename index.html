@@ -354,6 +354,9 @@
   .ex-collect .ec-set.g i.on{background:#E3A300;}
   .ex-collect .ec-set em{font-style:normal; font-weight:800; font-size:12.5px; font-variant-numeric:tabular-nums; margin-left:2px;}
   .ex-collect .ec-nx{color:var(--muted); font-size:12.5px;}
+  .ex-collect.mine-col{background:var(--panel3); border-radius:12px; padding:10px 14px; margin:0 0 4px;}
+  .ex-collect.mine-col>b{flex-basis:100%;}
+  .ex-collect.mine-col .ec-nx{flex-basis:100%; color:var(--gold); font-weight:800; font-size:13.5px;}
   /* ---------- 과제 카드의 운동 미리보기 줄 · 크게 보기 (2026-09-18) ---------- */
   .tc-ex{display:flex; gap:6px; overflow-x:auto; padding:8px 2px 2px; margin-top:4px; -webkit-overflow-scrolling:touch;
     flex:1 1 100%; min-width:0; max-width:100%;}   /* 과제 카드(가로 배치) 안에서 한 줄을 차지하고, 넘치면 줄 안에서 옆으로 넘긴다 */
@@ -984,6 +987,8 @@
       <div class="kpi"><div class="v num" style="color:var(--good)" id="mineDil">0</div><div class="k">성실 수행</div></div>
       <div class="kpi"><div class="v num" style="color:var(--gold)" id="mineBattle">–</div><div class="k">결투 전적</div></div>
     </div>
+    <!-- 새 운동 모으기 — 실버·골드 빈칸과 골드까지 남은 단계 (2026-09-24) -->
+    <div class="ex-collect mine-col" id="mineCollect" style="display:none"></div>
     <div class="trend-row" id="mineTrendRow" style="display:none">
       <div><div class="hint">직전 세션 대비</div><div class="trend-delta" id="mineDelta">–</div></div>
       <div style="flex:1;min-width:200px"><div class="hint" id="mineRank" style="margin-bottom:4px"></div><canvas id="mineSpark" width="420" height="64"></canvas></div>
@@ -2202,20 +2207,24 @@ function tierGoalText(idx){
   if(!c.next)return `🏆 새 운동 ${c.sN+c.gN}가지를 모두 모았어요!`;
   const left=c.firstGold?UNLOCK_LV[c.firstGold]-idx:0;
   if(left===1)return "🥈 실버 완성! 다음 진화부터 🥇 골드";
-  if(left>1)return `🥇 골드 운동까지 앞으로 ${left}단계 — ${unlockName(c.firstGold)} 단계부터 열려요`;
+  if(left>1)return `🥇 골드까지 앞으로 ${left}단계 — ${unlockName(c.firstGold)}부터 열려요`;
   return `🥇 골드 ${c.g}/${c.gN} — 다음 골드는 ${unlockName(c.next)} 단계`;
 }
-/* 운동 설계 — 새 운동 모으기 줄 (빈칸까지 보여 골드를 채우고 싶게). 교사 기기는 모두 열려 있어 숨긴다 */
+/* 새 운동 모으기 줄 (빈칸까지 보여 골드를 채우고 싶게). 교사 기기는 모두 열려 있어 숨긴다.
+   운동 설계에는 다음에 열릴 운동을, 내 기록에는 골드까지 남은 거리를 붙인다(내 기록은 2026-09-24 선생님: "그거 좋은 생각이네"). */
 function renderExCollect(){
-  const box=$("exCollect"); if(!box)return;
-  if(!EX_TIER_GOAL||!EX_UNLOCK||(typeof isTeacher==="function"&&isTeacher())){ box.style.display="none"; return; }
-  const c=exCollect(myLevelIdx());
+  const hide=!EX_TIER_GOAL||!EX_UNLOCK||(typeof isTeacher==="function"&&isTeacher());
+  const idx=hide?0:myLevelIdx(), c=hide?null:exCollect(idx);
   const set=(n,of,t)=>`<span class="ec-set ${t==="gold"?"g":"s"}" aria-label="${TIER_TXT[t][1]} ${n}/${of}">${TIER_TXT[t][0]}`
     +Array.from({length:of},(_,i)=>`<i${i<n?' class="on"':""}></i>`).join("")+`<em>${n}/${of}</em></span>`;
-  const nx=c.next?`다음 ${tierMark(c.next)} ${EXNAME[c.next]} · ${unlockName(c.next)} 단계`:"🏆 모두 모았어요!";
-  const html=`<b>새 운동 모으기</b>${set(c.s,c.sN,"silver")}${set(c.g,c.gN,"gold")}<span class="ec-nx">${nx}</span>`;
-  if(box.dataset.h!==html){ box.innerHTML=html; box.dataset.h=html; }
-  box.style.display="";
+  [["exCollect",()=>c.next?`다음 ${tierMark(c.next)} ${EXNAME[c.next]} · ${unlockName(c.next)} 단계`:"🏆 모두 모았어요!"],
+   ["mineCollect",()=>tierGoalText(idx)]].forEach(([id,tail])=>{
+    const box=$(id); if(!box)return;
+    if(hide){ box.style.display="none"; return; }
+    const html=`<b>새 운동 모으기</b>${set(c.s,c.sN,"silver")}${set(c.g,c.gN,"gold")}<span class="ec-nx">${tail()}</span>`;
+    if(box.dataset.h!==html){ box.innerHTML=html; box.dataset.h=html; }
+    box.style.display="";
+  });
 }
 function newExUnlockedUpTo(idx){
   return Object.keys(UNLOCK_LV).filter(k=>UNLOCK_LV[k]<=idx).sort((a,b)=>UNLOCK_LV[a]-UNLOCK_LV[b]);
@@ -7534,6 +7543,7 @@ function deleteStudentRecords(name,cls){
 }
 function renderMine(){
   try{renderPfMine();}catch(e){}
+  try{renderExCollect();}catch(e){}          // 새 운동 모으기 (실버·골드)
   const name=($("stuName").value||"").trim(), cls=($("stuClass").value||"").trim();
   const rs=records.filter(r=>r.name===name&&String(r.cls)===cls);
   $("mineCount").textContent=rs.length;
