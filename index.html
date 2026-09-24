@@ -357,6 +357,24 @@
   .ex-collect.mine-col{background:var(--panel3); border-radius:12px; padding:10px 14px; margin:0 0 4px;}
   .ex-collect.mine-col>b{flex-basis:100%;}
   .ex-collect.mine-col .ec-nx{flex-basis:100%; color:var(--gold); font-weight:800; font-size:13.5px;}
+  /* ① 내 정보 — 내 캐릭터 카드 (2026-09-24) */
+  .me-card{display:flex; flex-direction:column; gap:8px; background:var(--panel3); border-radius:14px; padding:10px 14px; margin-top:10px;}
+  .me-card .mc-row{display:flex; gap:12px; align-items:center;}
+  .me-card .mc-ava{font-size:42px; line-height:1; flex:0 0 auto;}
+  .me-card .mc-rk-cap{font-size:12px; font-weight:700; color:var(--muted);}
+  .me-card .mc-ranks{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:-4px;}
+  .me-card .mc-rk{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:6px 4px; text-align:center; display:flex; flex-direction:column; gap:1px;}
+  .me-card .mc-rk span{font-size:11.5px; color:var(--muted); word-break:keep-all;}
+  .me-card .mc-rk b{font-size:16px; color:var(--ink); font-variant-numeric:tabular-nums; word-break:keep-all;}
+  .me-card .mc-main{flex:1; min-width:0; display:flex; flex-direction:column; gap:5px;}
+  .me-card .mc-top{display:flex; align-items:baseline; gap:8px;}
+  .me-card .mc-top b{font-size:16px;}
+  .me-card .mc-pts{margin-left:auto; font-weight:800; color:var(--primary); font-variant-numeric:tabular-nums;}
+  .me-card .mc-bar{height:8px; border-radius:99px; background:var(--line); overflow:hidden;}
+  .me-card .mc-bar i{display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,var(--primary),var(--gold));}
+  .me-card .mc-next{font-size:12.5px; color:var(--muted); word-break:keep-all;}
+  .me-card .mc-next b{color:var(--ink);}
+  .ex-collect.mc-col{margin:0;}
   /* ---------- 과제 카드의 운동 미리보기 줄 · 크게 보기 (2026-09-18) ---------- */
   .tc-ex{display:flex; gap:6px; overflow-x:auto; padding:8px 2px 2px; margin-top:4px; -webkit-overflow-scrolling:touch;
     flex:1 1 100%; min-width:0; max-width:100%;}   /* 과제 카드(가로 배치) 안에서 한 줄을 차지하고, 넘치면 줄 안에서 옆으로 넘긴다 */
@@ -646,6 +664,8 @@
       <button class="btn btn-stop btn-sm" id="stuIdReset" style="display:none;align-self:flex-end">🔄 다른 사람</button>
       <span class="hint" id="stuIdHint" style="align-self:center"></span>
     </div>
+    <!-- 내 캐릭터 — 레벨·다음 진화·새 운동 모으기 (2026-09-24) -->
+    <div class="me-card" id="meCard" style="display:none"></div>
     <!-- 공간이 좁아 둘씩 짝을 지어 한 폰을 나눠 쓴다. 매번 학번을 다시 치지 않도록
          이 폰을 쓴 학생을 기억해 두고 한 번에 바꿀 수 있게 한다. -->
     <div id="pairBox" style="display:none;margin-top:8px">
@@ -2210,21 +2230,90 @@ function tierGoalText(idx){
   if(left>1)return `🥇 골드까지 앞으로 ${left}단계 — ${unlockName(c.firstGold)}부터 열려요`;
   return `🥇 골드 ${c.g}/${c.gN} — 다음 골드는 ${unlockName(c.next)} 단계`;
 }
-/* 새 운동 모으기 줄 (빈칸까지 보여 골드를 채우고 싶게). 교사 기기는 모두 열려 있어 숨긴다.
-   운동 설계에는 다음에 열릴 운동을, 내 기록에는 골드까지 남은 거리를 붙인다(내 기록은 2026-09-24 선생님: "그거 좋은 생각이네"). */
+/* ① 내 정보 — 내 캐릭터 카드 (2026-09-24 선생님: "운동설계에 내 정보에 표시되면 좋지 않을까? 레벨, 캐릭터, 등",
+   "자율실천 설계 안에 새 운동 모으기 내용이 너무 많아서 지저분해 빼버리고 내 정보에 표시되도록").
+   학번을 넣으면 캐릭터·레벨·점수, 다음 진화까지 남은 점수(막대), 새 운동 모으기(실버·골드)를 한 카드에 보여 주고,
+   자율 실천 설계 안의 모으기 줄은 숨긴다. 끄려면 ME_CARD=false — 카드 없이 예전처럼 [+ 추가] 아래 모으기 줄. */
+const ME_CARD=true;
+/* 실버 몇 칸·골드 몇 칸 — 빈칸까지 보여 골드를 채우고 싶게 */
+function collectDots(c){
+  const set=(n,of,t)=>`<span class="ec-set ${t==="gold"?"g":"s"}" aria-label="${TIER_TXT[t][1]} ${n}/${of}">${TIER_TXT[t][0]}`
+    +Array.from({length:of},(_,i)=>`<i${i<n?' class="on"':""}></i>`).join("")+`<em>${n}/${of}</em></span>`;
+  return set(c.s,c.sN,"silver")+set(c.g,c.gN,"gold");
+}
+/* 새 운동 모으기 줄. 교사 기기는 모두 열려 있어 숨긴다.
+   내 기록에는 골드까지 남은 거리를 붙인다(2026-09-24 선생님: "그거 좋은 생각이네"). 운동 설계에서는 내 정보 카드가 맡는다. */
 function renderExCollect(){
   const hide=!EX_TIER_GOAL||!EX_UNLOCK||(typeof isTeacher==="function"&&isTeacher());
   const idx=hide?0:myLevelIdx(), c=hide?null:exCollect(idx);
-  const set=(n,of,t)=>`<span class="ec-set ${t==="gold"?"g":"s"}" aria-label="${TIER_TXT[t][1]} ${n}/${of}">${TIER_TXT[t][0]}`
-    +Array.from({length:of},(_,i)=>`<i${i<n?' class="on"':""}></i>`).join("")+`<em>${n}/${of}</em></span>`;
   [["exCollect",()=>c.next?`다음 ${tierMark(c.next)} ${EXNAME[c.next]} · ${unlockName(c.next)} 단계`:"🏆 모두 모았어요!"],
    ["mineCollect",()=>tierGoalText(idx)]].forEach(([id,tail])=>{
     const box=$(id); if(!box)return;
-    if(hide){ box.style.display="none"; return; }
-    const html=`<b>새 운동 모으기</b>${set(c.s,c.sN,"silver")}${set(c.g,c.gN,"gold")}<span class="ec-nx">${tail()}</span>`;
+    if(hide||(id==="exCollect"&&ME_CARD)){ box.style.display="none"; return; }
+    const html=`<b>새 운동 모으기</b>${collectDots(c)}<span class="ec-nx">${tail()}</span>`;
     if(box.dataset.h!==html){ box.innerHTML=html; box.dataset.h=html; }
     box.style.display="";
   });
+  renderMeCard();
+}
+/* 명렬 전체에서 내 순위 — 진화(점수 P)·한 번 운동 최고 점수·운동 횟수
+   (2026-09-24 선생님: "명렬에 입력된 모든 학생들 중에서 현재 순위", "진화순위, 정확도 순위, 운동 횟수 순위",
+   "정확도 보다 한번 운동시 최고득점이 좋겠어").
+   점수는 myPoints와 같은 규칙으로 센다(기록에 학번이 있으면 학번, 없으면 이름·반 / 결투 보상 포함) — 카드의 P와 순위가 어긋나지 않게.
+   같은 값이면 같은 등수(공동). 다른 학생의 이름은 보이지 않고 내 등수만. 명렬에 없는 학생은 순위를 매기지 않는다.
+   끄려면 ME_RANKS=false — 순위 칸만 빠진다. */
+const ME_RANKS=true;
+function myRanks(){
+  const raw=String(($("stuId")&&$("stuId").value)||"").replace(/\D/g,"");
+  if(!stuIdToKey(raw))return null;
+  const people=[], bySid={}, byNm={};
+  Object.entries(rosters).forEach(([cls,list])=>{
+    const m=/^(\d)-(\d+)$/.exec(cls); if(!m||!Array.isArray(list))return;
+    list.forEach(s=>{
+      const no=parseInt(s.no,10); if(isNaN(no))return;
+      const p={sid:m[1]+m[2].padStart(2,"0")+String(no).padStart(2,"0"), name:String(s.name||"").trim(), cls, pts:0, best:0, n:0};
+      people.push(p); bySid[p.sid]=p; byNm[p.name+"|"+cls]=p;
+    });
+  });
+  const me=bySid[raw]; if(!me)return null;
+  const seen=new Set();
+  records.forEach(r=>{
+    if(!r||(r.id&&seen.has(r.id)))return;
+    const p=r.sid?bySid[String(r.sid)]:byNm[String(r.name||"").trim()+"|"+String(r.cls)];
+    if(!p)return;
+    if(r.id)seen.add(r.id);
+    p.pts+=+r.pts||0; p.n++; p.best=Math.max(p.best,+r.score||0);
+  });
+  Object.values(battles).forEach(b=>{
+    if(!b||b.status!=="done")return;
+    [b.ch,b.op].forEach(x=>{ const p=x&&byNm[x.name+"|"+String(x.cls)]; if(p)p.pts+=battleReward(b,{name:p.name,cls:p.cls}); });
+  });
+  if(!me.n)return {total:people.length, none:true};
+  const rk=f=>{ const v=f(me); let above=0, same=0;
+    people.forEach(p=>{ const w=f(p); if(w>v)above++; else if(w===v&&p!==me)same++; });
+    return {rank:above+1, tie:same>0}; };
+  return {total:people.length, pts:rk(p=>p.pts), best:rk(p=>p.best), n:rk(p=>p.n)};
+}
+function renderMeCard(){
+  const box=$("meCard"); if(!box)return;
+  const me=typeof myKey==="function"?myKey():{};
+  if(!ME_CARD||!me.name||(typeof isTeacher==="function"&&isTeacher())){ box.style.display="none"; return; }
+  let pts=0; try{ pts=Math.round(+shownPts()||0); }catch(e){}
+  const idx=levelIndex(pts), cur=LEVELS[idx], nx=LEVELS[idx+1];
+  const pct=nx?Math.max(0,Math.min(100,Math.round((pts-cur[0])/(nx[0]-cur[0])*100))):100;
+  const next=nx?`다음 진화 ${nx[1]} ${nx[2].replace(/^Lv\.\d+\s*/,"")}까지 <b>${nx[0]-pts} P</b>`:"🏆 최고 단계예요!";
+  const col=(EX_TIER_GOAL&&EX_UNLOCK)?`<div class="ex-collect mc-col">${collectDots(exCollect(idx))}</div>`:"";
+  // 순위는 서버 기록을 다 받은 뒤에만 — 덜 받은 기록으로 등수를 잘못 보이지 않게. 첫 운동 전에는 비워 둔다.
+  let rk=null; try{ rk=(ME_RANKS&&recordsReady)?myRanks():null; }catch(e){ rk=null; }
+  const cell=(lab,r)=>`<div class="mc-rk"><span>${lab}</span><b>${r.tie?"공동 ":""}${r.rank}등</b></div>`;
+  const ranks=(rk&&!rk.none)?`<div class="mc-rk-cap">🏅 명렬 ${rk.total}명 중 내 순위</div>`
+    +`<div class="mc-ranks">${cell("진화",rk.pts)}${cell("한 번 최고 점수",rk.best)}${cell("운동 횟수",rk.n)}</div>`:"";
+  const html=`<div class="mc-row"><div class="mc-ava">${cur[1]}</div><div class="mc-main">`
+    +`<div class="mc-top"><b>${cur[2]}</b><span class="mc-pts">${pts} P</span></div>`
+    +`<div class="mc-bar" role="img" aria-label="다음 진화까지 ${pct}%"><i style="width:${pct}%"></i></div>`
+    +`<div class="mc-next">${next}</div>${col}</div></div>${ranks}`;
+  if(box.dataset.h!==html){ box.innerHTML=html; box.dataset.h=html; }
+  box.style.display="";
 }
 function newExUnlockedUpTo(idx){
   return Object.keys(UNLOCK_LV).filter(k=>UNLOCK_LV[k]<=idx).sort((a,b)=>UNLOCK_LV[a]-UNLOCK_LV[b]);
