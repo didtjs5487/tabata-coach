@@ -454,6 +454,7 @@
   .stage-row{display:flex; align-items:center; gap:10px; background:var(--panel3); border:1px solid var(--line);
     border-radius:10px; padding:8px 12px; opacity:1; transition:opacity .2s;}
   .stage-row.offline{opacity:.4;}
+  .stage-row.body-alert{background:rgba(244,91,105,.14); border-color:var(--bad);}   /* 운동 후 몸이 힘들다고 한 학생 (선생님 화면에만) */
   .stage-row .no{font-family:"Barlow Condensed"; font-weight:700; color:var(--muted); min-width:22px; text-align:right;}
   .stage-row .nm{min-width:76px; font-weight:600;}
   .stage-dots{display:flex; gap:5px; margin-left:auto;}
@@ -848,6 +849,17 @@
     <!-- STEP 3 · 운동 후 심박수 (항상 표시 — 심박수→운동→심박수 순서) -->
     <div id="hrStep3">
       <div class="step-tag" style="margin-top:20px">STEP 3 · 운동 후 심박수</div>
+      <!-- 운동 직후 몸 상태 (2026-09-24) — 타바타 뒤 호흡곤란을 호소한 학생이 있었다 -->
+      <div id="bodyCheck" style="display:none;margin:6px 0 0;padding:12px;border-radius:12px;background:var(--panel);border:1px solid var(--line)">
+        <div style="font-weight:800">🫁 몸은 괜찮나요?</div>
+        <div class="hint" style="margin:2px 0 8px">숨쉬기 힘들거나 어지러우면 <b>[힘들어요]</b>를 누르세요 — 선생님께 바로 알려집니다</div>
+        <div class="row" style="margin:0;flex-wrap:wrap">
+          <button class="btn btn-go btn-sm" id="bcOk">😊 괜찮아요</button>
+          <button class="btn btn-stop btn-sm" id="bcBad">😮‍💨 힘들어요</button>
+          <button class="btn btn-teal btn-sm" id="bcBetter" style="display:none">🙂 괜찮아졌어요</button>
+        </div>
+        <div id="bcMsg" style="margin-top:8px"></div>
+      </div>
       <div id="hrNeed" style="display:none;margin:6px 0 0;padding:10px 12px;border-radius:12px;background:rgba(244,91,105,.14);border:1px solid rgba(244,91,105,.45);font-weight:800;color:#F45B69">
         ❤️ 아직 운동 후 심박수를 안 쟀어요 — 지금 재야 성실 수행으로 인정되고, 바로 성찰 일지가 열립니다.
       </div>
@@ -874,6 +886,8 @@
         <div class="kpi"><div class="v num c2" id="hrPct">–</div><div class="k">최대심박 대비</div></div>
         <div class="kpi"><div class="v num c3" id="hrZone">–</div><div class="k">운동 강도 판정</div></div>
       </div>
+      <div id="hrEnough" style="display:none;flex-basis:100%;margin-top:8px;padding:10px 12px;border-radius:12px;background:rgba(46,196,182,.12);border:1px solid rgba(46,196,182,.45);font-weight:700;color:var(--good)">
+        ✅ 이미 충분해요 — 더 올릴 필요 없어요. 천천히 걸으며 숨을 고르세요.</div>
       </div>
     </div>
 
@@ -1003,6 +1017,7 @@
 
   <!-- ================= ADMIN / LEARNING CENTER ================= -->
   <section class="page" id="pgAdmin">
+    <div id="bodyAlertBar" style="display:none;margin:0 0 10px;padding:12px 14px;border-radius:12px;background:rgba(244,91,105,.14);border:2px solid var(--bad);color:var(--ink);font-size:15px;line-height:1.6"></div>
     <div class="row" style="margin:0 0 6px;align-items:center">
       <span class="hint" id="saveStatusLine" style="font-weight:600">저장 상태 확인 중…</span>
       <button class="btn btn-teal btn-sm" id="csvBtn" title="지금까지의 모든 수행 기록을 CSV로 받습니다">⬇ 백업 CSV</button>
@@ -2075,7 +2090,8 @@ const EXANIM=(()=>{
 /* 움직이는 그림(SVG 글자). still을 주면 그 장면에서 멈춘 그림을 준다. */
 function exerciseAnim(k,still){
   const A=EXANIM[k]; if(!A)return typeof exerciseArt==="function"?exerciseArt(k):"";
-  const C="#5B51E8", O="#FF9F1C", r1=v=>Math.round(v*10)/10;
+  const T=typeof exTierPal==="function"?exTierPal(k):null;      // 진화로 여는 운동은 실버·골드
+  const C=T?T.C:"#5B51E8", O=T?T.O:"#FF9F1C", r1=v=>Math.round(v*10)/10;
   const frames=still==null?A.f:[A.f[Math.max(0,Math.min(A.f.length-1,still))]];
   const poses=frames.map(fr=>exaPose(EXA_P[fr.p]));
   const kt=frames.map(fr=>fr.t).join(";"), spl=frames.slice(1).map(()=>".42 0 .58 1").join(";");
@@ -2090,10 +2106,11 @@ function exerciseAnim(k,still){
   const body=bone("S","EF",O,1)+bone("EF","WF",O,1)+bone("H","KF",C,1)+bone("KF","FF",C,1)
     +bone("S","H",C)+bone("H","KN",C)+bone("KN","FN",C)+bone("S","EN",O)+bone("EN","WN",O)
     +`<circle cx="${r1(HX[0])}" cy="${r1(HY[0])}" r="8" fill="${C}">${an("cx",HX)}${an("cy",HY)}</circle>`;
-  const label=A.label?`<text x="60" y="14" font-size="10.5" font-weight="700" fill="${O}" text-anchor="middle">${A.label}</text>`:"";
+  const label=A.label?`<text x="60" y="14" font-size="10.5" font-weight="700" fill="${T?T.C:O}" text-anchor="middle">${A.label}</text>`:"";
   return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${k} 동작 그림">`
-    +`<rect width="120" height="120" rx="16" fill="#F3F1FD"/><line x1="6" y1="105" x2="114" y2="105" stroke="#D9D5F4" stroke-width="2"/>`
-    +body+label+`</svg>`;
+    +`<rect width="120" height="120" rx="16" fill="${T?T.bg:"#F3F1FD"}"${T?` stroke="${T.edge}" stroke-width="2.5"`:""}/><line x1="6" y1="105" x2="114" y2="105" stroke="${T?T.ground:"#D9D5F4"}" stroke-width="2"/>`
+    +body+label
+    +(T?`<text x="109" y="117" font-size="11" text-anchor="middle" fill="${T.C}" aria-label="${T.tier==="gold"?"골드":"실버"}">★</text>`:"")+`</svg>`;
 }
 
 /* ---------- 진화하면 새 운동이 열린다 (2026-09-17) ----------
@@ -2115,6 +2132,20 @@ function exLocked(k){
   if(!EX_UNLOCK||!(k in UNLOCK_LV))return false;
   if(typeof isTeacher==="function"&&isTeacher())return false;
   return myLevelIdx()<UNLOCK_LV[k];
+}
+/* 진화로 여는 운동의 그림 색 (2026-09-24 선생님: "새로 열리는 운동 중 절반은 실버, 뒤쪽 절반은 골드").
+   Lv1~6은 실버, Lv7~11은 골드 — 11개라 반으로 딱 나뉘지 않아 골드를 조금 더 귀하게 했다.
+   원래 13가지는 지금 색 그대로다. 끄려면 EX_TIER_COLOR=false.
+   그림은 처음 화면을 그릴 때도 불릴 수 있어, 상수가 아직 준비 전이면 조용히 기본색을 쓴다. */
+const EX_TIER_COLOR=true;
+function exTierPal(k){
+  try{
+    if(!EX_TIER_COLOR)return null;
+    const lv=UNLOCK_LV[k]; if(!lv)return null;
+    return lv>=7
+      ? {tier:"gold",  C:"#B8860B", O:"#E3A300", bg:"#FFF6D8", ground:"#EBD79A", edge:"#E2C15A"}
+      : {tier:"silver",C:"#667085", O:"#98A2B3", bg:"#F2F4F7", ground:"#D0D5DD", edge:"#C0C7D2"};
+  }catch(e){ return null; }
 }
 function unlockName(k){ const l=LEVELS[UNLOCK_LV[k]]; return l?l[2].replace(/^Lv\.\d+\s*/,""):""; }
 function newExUnlockedUpTo(idx){
@@ -5242,6 +5273,37 @@ const STAGE_COLORS=["","#B9A6F0","var(--rest)","var(--work)","var(--purple)","va
 const STAGE_LABELS=["접속","건강체크","운동 전 심박","운동 중","운동 후 심박","완료"];
 const PRESENCE_STALE_MS=120000;
 let presenceData={}, presenceTimer=null, myStage=0;
+/* ---------- 운동 후 안전 (2026-09-24) ----------
+   선생님: "심박수로 평가를 하다 보면 자칫 무리하는 학생이 나올 수 있다 — 실제로 타바타 뒤 호흡곤란을 호소한 학생이 있었다."
+   ① 운동 후 심박이 기준을 넘으면 '이미 충분해요' — 더 올리려고 무리하지 않게.
+   ② 운동이 끝나면 몸 상태를 한 번 묻고, [힘들어요]면 쉬는 법을 보여 주고 선생님 화면 신호등에 🚨를 띄운다
+      (신호등 신호에 실어 보내므로 따로 규칙이 필요 없다). 반 전체가 보는 큰 화면에는 띄우지 않는다.
+   끄려면 SAFETY_AFTER=false. */
+const SAFETY_AFTER=true;
+let bodyAlert="";           // 지금 선생님께 알리고 있는 몸 상태 ("" 이면 없음)
+function showBodyCheck(){
+  const b=$("bodyCheck"); if(!b||!SAFETY_AFTER)return;
+  b.style.display="block";
+  $("bcOk").style.display=""; $("bcBad").style.display=""; $("bcBetter").style.display="none";
+  $("bcMsg").innerHTML="";
+}
+function setBodyAlert(v){
+  bodyAlert=v||"";
+  try{ updatePresence(myStage||4); }catch(e){}
+}
+if($("bcOk"))$("bcOk").addEventListener("click",()=>{ $("bodyCheck").style.display="none"; if(bodyAlert)setBodyAlert(""); });
+if($("bcBad"))$("bcBad").addEventListener("click",()=>{
+  setBodyAlert("숨이 차요");
+  $("bcOk").style.display="none"; $("bcBad").style.display="none"; $("bcBetter").style.display="";
+  $("bcMsg").innerHTML='<div style="padding:10px 12px;border-radius:12px;background:rgba(244,91,105,.12);border:1px solid rgba(244,91,105,.45);color:var(--ink);line-height:1.7">'
+    +'<b style="color:var(--bad)">지금 바로 쉬세요.</b> 앉거나 천천히 걸으면서 코로 들이쉬고 입으로 길게 내쉬세요. 물을 조금씩 마시세요.<br>'
+    +'<b>선생님께 알렸어요.</b> 나아지지 않으면 손을 들어 선생님을 부르세요.</div>';
+});
+if($("bcBetter"))$("bcBetter").addEventListener("click",()=>{
+  setBodyAlert("");
+  $("bcMsg").innerHTML='<span class="hint">다행이에요. 오늘은 천천히 마무리해요.</span>';
+  $("bcBetter").style.display="none";
+});
 function updatePresence(stage){
   if(!fdb||!fmod)return;
   const raw=($("stuId").value||"").replace(/\D/g,"");
@@ -5254,7 +5316,7 @@ function updatePresence(stage){
     // 학생 기기의 시계로 ts를 찍으면, 그 기기 시각이 틀어져 있을 때(흔함) 실제로는 접속
     // 중인데도 교사 화면에서 미접속으로 잘못 보일 수 있다 — 서버 시각으로 찍어 기기별
     // 시계 오차를 없앤다(비교하는 쪽인 교사 기기 시계 하나만 맞으면 되게 만든다).
-    fmod.set(r,{name,stage,ts:fmod.serverTimestamp()}).catch(()=>{});
+    fmod.set(r,Object.assign({name,stage,ts:fmod.serverTimestamp()},bodyAlert?{alert:bodyAlert}:{})).catch(()=>{});
     fmod.onDisconnect(r).remove();
   }catch(e){}
 }
@@ -5298,7 +5360,7 @@ function rankMapFor(cls){
   return map;
 }
 /* 한 반의 신호등 줄들을 만들어 배열로 돌려준다 (작은 표와 큰 현황판이 함께 쓴다) */
-function buildStageRows(c){
+function buildStageRows(c,showAlert){
   const now=Date.now();
   const clsPresence=presenceData[c]||{};
   const byNo={};
@@ -5320,9 +5382,10 @@ function buildStageRows(c){
     const badge=rank?`<span class="rank-badge${rank<=3?` top${rank}`:""}">${medals[rank-1]||rank+"위"}</span>`
       :`<span class="rank-badge none">–</span>`;
     const row=document.createElement("div");
-    row.className="stage-row"+(stale?" offline":"");
+    const alertTxt=(showAlert&&SAFETY_AFTER&&!stale&&p&&p.alert)?String(p.alert):"";
+    row.className="stage-row"+(stale?" offline":"")+(alertTxt?" body-alert":"");
     row.innerHTML=`<span class="no num">${s.no}</span><span class="nm">${s.name}</span>${badge}
-      <div class="stage-dots">${dots}</div><span class="stage-label">${stale?"미접속":STAGE_LABELS[stage]}</span>`;
+      <div class="stage-dots">${dots}</div><span class="stage-label"${alertTxt?' style="color:var(--bad);font-weight:800"':""}>${alertTxt?"🚨 "+escHtml(alertTxt):(stale?"미접속":STAGE_LABELS[stage])}</span>`;
     return row;
   });
 }
@@ -5331,9 +5394,29 @@ function renderStageRows(){
   if(box){
     const c=$("viewClass").value;
     if(!c||!rosters[c])box.innerHTML='<div class="hint">반을 선택하면 표시됩니다.</div>';
-    else{ box.innerHTML=""; buildStageRows(c).forEach(r=>box.appendChild(r)); }
+    else{ box.innerHTML=""; buildStageRows(c,true).forEach(r=>box.appendChild(r)); }
   }
+  renderBodyAlerts();
   renderBoardRows();
+}
+/* 학습센터 맨 위 알림 띠 — 어느 반이든 [힘들어요]를 누른 학생이 있으면 바로 보이게. 새로 생기면 한 번 알린다. */
+const bodyAlertSeen=new Set();
+function renderBodyAlerts(){
+  const bar=$("bodyAlertBar"); if(!bar)return;
+  if(!SAFETY_AFTER){ bar.style.display="none"; return; }
+  const now=Date.now(), list=[];
+  Object.keys(presenceData||{}).forEach(c=>{
+    const cp=presenceData[c]||{};
+    Object.keys(cp).forEach(id=>{
+      const p=cp[id]; if(!p||!p.alert)return;
+      if(now-(+p.ts||0)>PRESENCE_STALE_MS)return;
+      list.push({key:c+"/"+id, cls:c, name:p.name||"", alert:String(p.alert)});
+    });
+  });
+  if(!list.length){ bar.style.display="none"; bar.innerHTML=""; return; }
+  bar.style.display="block";
+  bar.innerHTML="🚨 <b>몸이 힘들다고 한 학생</b> — "+list.map(a=>`${escHtml(shortCls(a.cls))}반 ${escHtml(a.name)} (${escHtml(a.alert)})`).join(" · ");
+  list.forEach(a=>{ if(!bodyAlertSeen.has(a.key)){ bodyAlertSeen.add(a.key); try{ toast(`${shortCls(a.cls)}반 ${a.name} — ${a.alert}`,"bad","🚨"); }catch(e){} } });
 }
 /* 학생용 현황판: 여러 반을 동시에 띄울 수 있다 (한 교사가 두 학급을 합반 수업할 때) */
 let boardClasses=[];
@@ -7685,6 +7768,7 @@ function finish(){
   });
   $("result").style.display="block";
   setTimeout(()=>{try{$("hrStep3").scrollIntoView({behavior:"smooth",block:"start"});}catch(e){}},200); // 운동 직후 STEP 3 심박 측정으로 안내
+  showBodyCheck();            // 운동 직후 몸 상태를 한 번 묻는다
   needPostHr();               // 잴 때까지 빨간 안내와 알림을 띄운다
   addRecord(s); beep(1200,.3);
   refreshProfile();                                   // 방금 남긴 기록까지 더한 점수로 (레벨이 오르면 축하)
@@ -8470,6 +8554,8 @@ function showHr(bpm){
   $("hrZone").textContent=(diligent?"✅ 성실 수행":"미달")+` (${bpm}bpm)`;
   $("hrZone").style.color=diligent?"var(--good)":"var(--bad)";
   $("hrResult").style.display="flex";
+  // 기준만 넘으면 된다 — 심박이 더 높다고 점수가 오르지 않는다. 더 올리려고 무리하지 않게 알려 준다.
+  if($("hrEnough"))$("hrEnough").style.display=(SAFETY_AFTER&&diligent)?"block":"none";
   return {pct,zone,diligent};
 }
 $("hrSave").addEventListener("click",()=>{
