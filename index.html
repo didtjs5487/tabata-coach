@@ -2259,7 +2259,8 @@ function renderExCollect(){
 }
 /* 명렬 전체에서 내 순위 — 진화(점수 P)·한 번 운동 최고 점수·운동 횟수
    (2026-09-24 선생님: "명렬에 입력된 모든 학생들 중에서 현재 순위", "진화순위, 정확도 순위, 운동 횟수 순위",
-   "정확도 보다 한번 운동시 최고득점이 좋겠어").
+   "정확도 보다 한번 운동시 최고득점이 좋겠어" → 칸 이름은 '최고 점수'(내 기록 숫자 칸과 같은 말).
+   더해서 자율 실천 횟수·누적 운동 시간·결투 승리 수 (선생님이 고름). 심박 기준 횟수는 무리를 부를 수 있어 넣지 않았다.
    점수는 myPoints와 같은 규칙으로 센다(기록에 학번이 있으면 학번, 없으면 이름·반 / 결투 보상 포함) — 카드의 P와 순위가 어긋나지 않게.
    같은 값이면 같은 등수(공동). 다른 학생의 이름은 보이지 않고 내 등수만. 명렬에 없는 학생은 순위를 매기지 않는다.
    같은 학년끼리만 매기고 "1학년 258명 중"처럼 부른다(선생님: "명렬 253명이라고 하지 말고 1학년 253명 중").
@@ -2275,7 +2276,7 @@ function myRanks(){
     const m=/^(\d)-(\d+)$/.exec(cls); if(!m||!Array.isArray(list)||m[1]!==grade||RANK_SKIP_CLS.includes(cls))return;
     list.forEach(s=>{
       const no=parseInt(s.no,10); if(isNaN(no))return;
-      const p={sid:m[1]+m[2].padStart(2,"0")+String(no).padStart(2,"0"), name:String(s.name||"").trim(), cls, pts:0, best:0, n:0};
+      const p={sid:m[1]+m[2].padStart(2,"0")+String(no).padStart(2,"0"), name:String(s.name||"").trim(), cls, pts:0, best:0, n:0, self:0, time:0, wins:0};
       people.push(p); bySid[p.sid]=p; byNm[p.name+"|"+cls]=p;
     });
   });
@@ -2287,16 +2288,21 @@ function myRanks(){
     if(!p)return;
     if(r.id)seen.add(r.id);
     p.pts+=+r.pts||0; p.n++; p.best=Math.max(p.best,+r.score||0);
+    if(!r.taskId)p.self++;           // 내 기록의 '자율운동 ○회'와 같은 기준 — 공통과제가 아닌 운동
+    p.time+=+r.time||0;              // 움직인 시간
   });
   Object.values(battles).forEach(b=>{
     if(!b||b.status!=="done")return;
     [b.ch,b.op].forEach(x=>{ const p=x&&byNm[x.name+"|"+String(x.cls)]; if(p)p.pts+=battleReward(b,{name:p.name,cls:p.cls}); });
+    const w=b.winner==="c"?b.ch:b.winner==="o"?b.op:null;          // 결투 승리 (비기면 없음)
+    const pw=w&&byNm[w.name+"|"+String(w.cls)]; if(pw)pw.wins++;
   });
   if(!me.n)return {grade, total:people.length, none:true};
   const rk=f=>{ const v=f(me); let above=0, same=0;
     people.forEach(p=>{ const w=f(p); if(w>v)above++; else if(w===v&&p!==me)same++; });
-    return {rank:above+1, tie:same>0}; };
-  return {grade, total:people.length, pts:rk(p=>p.pts), best:rk(p=>p.best), n:rk(p=>p.n)};
+    return {rank:above+1, tie:same>0, zero:!(v>0)}; };        // 0이면 등수 대신 "–" (결투를 안 한 학생이 모두 "공동 1등"이 되지 않게)
+  return {grade, total:people.length, pts:rk(p=>p.pts), best:rk(p=>p.best), n:rk(p=>p.n),
+    self:rk(p=>p.self), time:rk(p=>p.time), wins:rk(p=>p.wins)};
 }
 /* 선생님 로그인 기기에서도 보인다 — 선생님이 학번을 넣어 학생 화면을 확인할 때 카드가 없어 "표시되지 않는다"고 하셨다(2026-09-24) */
 function renderMeCard(){
@@ -2310,9 +2316,10 @@ function renderMeCard(){
   const col=(EX_TIER_GOAL&&EX_UNLOCK)?`<div class="ex-collect mc-col">${collectTally(exCollect(idx))}</div>`:"";
   // 순위는 서버 기록을 다 받은 뒤에만 — 덜 받은 기록으로 등수를 잘못 보이지 않게. 첫 운동 전에는 비워 둔다.
   let rk=null; try{ rk=(ME_RANKS&&recordsReady)?myRanks():null; }catch(e){ rk=null; }
-  const cell=(lab,r)=>`<div class="mc-rk"><span>${lab}</span><b>${r.tie?"공동 ":""}${r.rank}등</b></div>`;
+  const cell=(lab,r)=>`<div class="mc-rk"><span>${lab}</span><b>${r.zero?"–":(r.tie?"공동 ":"")+r.rank+"등"}</b></div>`;
   const ranks=(rk&&!rk.none)?`<div class="mc-rk-cap">🏅 ${rk.grade}학년 ${rk.total}명 중 내 순위</div>`
-    +`<div class="mc-ranks">${cell("진화",rk.pts)}${cell("한 번 최고 점수",rk.best)}${cell("운동 횟수",rk.n)}</div>`:"";
+    +`<div class="mc-ranks">${cell("진화",rk.pts)}${cell("최고 점수",rk.best)}${cell("운동 횟수",rk.n)}`
+    +`${cell("자율 실천",rk.self)}${cell("운동 시간",rk.time)}${cell("결투 승리",rk.wins)}</div>`:"";
   const html=`<div class="mc-row"><div class="mc-ava">${cur[1]}</div><div class="mc-main">`
     +`<div class="mc-top"><b>${cur[2]}</b><span class="mc-pts">${pts} P</span></div>`
     +`<div class="mc-bar" role="img" aria-label="다음 진화까지 ${pct}%"><i style="width:${pct}%"></i></div>`
