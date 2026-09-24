@@ -5278,11 +5278,13 @@ let presenceData={}, presenceTimer=null, myStage=0;
    ① 운동 후 심박이 기준을 넘으면 '이미 충분해요' — 더 올리려고 무리하지 않게.
    ② 운동이 끝나면 몸 상태를 한 번 묻고, [힘들어요]면 쉬는 법을 보여 주고 선생님 화면 신호등에 🚨를 띄운다
       (신호등 신호에 실어 보내므로 따로 규칙이 필요 없다). 반 전체가 보는 큰 화면에는 띄우지 않는다.
-   끄려면 SAFETY_AFTER=false. */
-const SAFETY_AFTER=true;
+      → 같은 날 선생님이 "이 기능은 없어도 될 듯"이라고 해서 껐다(BODY_CHECK=false). 코드는 남겨 두어 한 줄로 다시 켤 수 있다.
+   ①은 SAFETY_ENOUGH, ②는 BODY_CHECK로 따로 켜고 끈다. */
+const SAFETY_ENOUGH=true;   // ① '이미 충분해요'
+const BODY_CHECK=false;     // ② 운동 직후 몸 상태 묻기 · 선생님 화면 🚨 — 꺼 둠(2026-09-24 선생님)
 let bodyAlert="";           // 지금 선생님께 알리고 있는 몸 상태 ("" 이면 없음)
 function showBodyCheck(){
-  const b=$("bodyCheck"); if(!b||!SAFETY_AFTER)return;
+  const b=$("bodyCheck"); if(!b||!BODY_CHECK)return;
   b.style.display="block";
   $("bcOk").style.display=""; $("bcBad").style.display=""; $("bcBetter").style.display="none";
   $("bcMsg").innerHTML="";
@@ -5382,7 +5384,7 @@ function buildStageRows(c,showAlert){
     const badge=rank?`<span class="rank-badge${rank<=3?` top${rank}`:""}">${medals[rank-1]||rank+"위"}</span>`
       :`<span class="rank-badge none">–</span>`;
     const row=document.createElement("div");
-    const alertTxt=(showAlert&&SAFETY_AFTER&&!stale&&p&&p.alert)?String(p.alert):"";
+    const alertTxt=(showAlert&&BODY_CHECK&&!stale&&p&&p.alert)?String(p.alert):"";
     row.className="stage-row"+(stale?" offline":"")+(alertTxt?" body-alert":"");
     row.innerHTML=`<span class="no num">${s.no}</span><span class="nm">${s.name}</span>${badge}
       <div class="stage-dots">${dots}</div><span class="stage-label"${alertTxt?' style="color:var(--bad);font-weight:800"':""}>${alertTxt?"🚨 "+escHtml(alertTxt):(stale?"미접속":STAGE_LABELS[stage])}</span>`;
@@ -5403,7 +5405,7 @@ function renderStageRows(){
 const bodyAlertSeen=new Set();
 function renderBodyAlerts(){
   const bar=$("bodyAlertBar"); if(!bar)return;
-  if(!SAFETY_AFTER){ bar.style.display="none"; return; }
+  if(!BODY_CHECK){ bar.style.display="none"; return; }
   const now=Date.now(), list=[];
   Object.keys(presenceData||{}).forEach(c=>{
     const cp=presenceData[c]||{};
@@ -8555,7 +8557,7 @@ function showHr(bpm){
   $("hrZone").style.color=diligent?"var(--good)":"var(--bad)";
   $("hrResult").style.display="flex";
   // 기준만 넘으면 된다 — 심박이 더 높다고 점수가 오르지 않는다. 더 올리려고 무리하지 않게 알려 준다.
-  if($("hrEnough"))$("hrEnough").style.display=(SAFETY_AFTER&&diligent)?"block":"none";
+  if($("hrEnough"))$("hrEnough").style.display=(SAFETY_ENOUGH&&diligent)?"block":"none";
   return {pct,zone,diligent};
 }
 $("hrSave").addEventListener("click",()=>{
