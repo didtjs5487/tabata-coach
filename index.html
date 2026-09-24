@@ -314,6 +314,22 @@
   .evo-stars{color:#FFB400; font-size:17px; letter-spacing:2px;}
   .evo-new{position:absolute; top:10px; left:10px; background:#F45B69; color:#fff; font-weight:800; font-size:12px; border-radius:99px; padding:3px 9px;}
   .evo-btns{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; min-height:48px;}
+  /* 새 운동 카드 — 실버·골드 (2026-09-24 선생님: "골드 운동까지 해제하고 싶도록") */
+  .evo-tier{position:absolute; top:10px; right:10px; color:#fff; font-weight:800; font-size:12px; border-radius:99px; padding:3px 9px;}
+  .evo-stage.tier-silver .evo-tier{background:#667085;}
+  .evo-stage.tier-gold .evo-tier{background:#B8860B;}
+  .evo-stage.tier-silver .evo-back{background:linear-gradient(135deg,#667085,#AEB6C4 55%,#EEF1F5);}
+  .evo-stage.tier-gold .evo-back{background:linear-gradient(135deg,#8C6508,#E3A300 55%,#FFE58A);}
+  .evo-stage.tier-silver.charging .evo-back{animation-name:evoGlowS;}
+  @keyframes evoGlowS{50%{box-shadow:0 0 64px rgba(235,240,248,.95), inset 0 0 60px rgba(255,255,255,.5)}}
+  .evo-stage.tier-silver .evo-front{border-color:#C0C7D2; box-shadow:0 0 40px rgba(226,232,240,.9); background:linear-gradient(180deg,#FFFFFF,#EEF1F5);}
+  .evo-stage.tier-gold .evo-front{border-color:#E3A300; box-shadow:0 0 64px rgba(255,200,40,1); background:linear-gradient(180deg,#FFFDF3,#FFEFB8);}
+  .evo-stage.tier-silver .evo-rays{background:repeating-conic-gradient(from 0deg, rgba(226,232,240,.5) 0 10deg, transparent 10deg 30deg);}
+  .evo-stage.tier-silver .evo-name{color:#475467;}
+  .evo-stage.tier-gold .evo-name{color:#8C6508;}
+  .evo-goal{color:#FFE58A; font-weight:700; font-size:15px; text-align:center; line-height:1.5; max-width:340px; word-break:keep-all; text-wrap:balance;}
+  .evo-goal:empty{display:none;}
+  .evo-goal b{font-weight:800; color:#fff;}
   #confetti{position:absolute; inset:0; overflow:hidden; pointer-events:none;}
   #confetti span{position:absolute; top:-16px; border-radius:2px; opacity:.9; animation:confFall linear forwards;}
   @keyframes confFall{to{transform:translateY(105vh) rotate(720deg); opacity:.4}}
@@ -326,6 +342,18 @@
   .ex-preview .exp-cam{font-size:12.5px; color:var(--muted); margin-top:4px;}
   .ex-preview .exp-lock{font-size:13.5px; font-weight:800; color:var(--gold); margin-top:4px;}
   .ex-preview.locked .exp-art{filter:grayscale(1); opacity:.55;}
+  .ex-preview.tier-gold{border-color:#E2C15A;}
+  .ex-preview.locked.tier-gold .exp-art{filter:grayscale(.35); opacity:.8;}      /* 잠겨 있어도 금빛이 비친다 */
+  /* 운동 설계: 새 운동 모으기 — 실버·골드 (2026-09-24) */
+  .ex-collect{display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; margin:8px 0 0; font-size:13px; word-break:keep-all;}
+  .ex-collect .ec-set{display:inline-flex; align-items:center; gap:3px;}
+  .ex-collect .ec-set i{width:9px; height:9px; border-radius:50%; border:2px solid; box-sizing:border-box; display:inline-block;}
+  .ex-collect .ec-set.s i{border-color:#98A2B3;}
+  .ex-collect .ec-set.s i.on{background:#98A2B3;}
+  .ex-collect .ec-set.g i{border-color:#E3A300;}
+  .ex-collect .ec-set.g i.on{background:#E3A300;}
+  .ex-collect .ec-set em{font-style:normal; font-weight:800; font-size:12.5px; font-variant-numeric:tabular-nums; margin-left:2px;}
+  .ex-collect .ec-nx{color:var(--muted); font-size:12.5px;}
   /* ---------- 과제 카드의 운동 미리보기 줄 · 크게 보기 (2026-09-18) ---------- */
   .tc-ex{display:flex; gap:6px; overflow-x:auto; padding:8px 2px 2px; margin-top:4px; -webkit-overflow-scrolling:touch;
     flex:1 1 100%; min-width:0; max-width:100%;}   /* 과제 카드(가로 배치) 안에서 한 줄을 차지하고, 넘치면 줄 안에서 옆으로 넘긴다 */
@@ -662,6 +690,8 @@
         </div>
         <button class="btn btn-teal btn-sm" id="addBtn">+ 추가</button>
       </div>
+      <!-- 새 운동 모으기 — 실버·골드 빈칸까지 보여 골드 운동까지 열고 싶게 (2026-09-24) -->
+      <div class="ex-collect" id="exCollect" style="display:none"></div>
       <!-- 고른 운동의 자세를 움직이는 그림으로 보여 준다 — 이름만으로는 자세를 모르는 학생이 많다 -->
       <div class="ex-preview" id="exPreview" style="display:none">
         <div class="exp-art" id="expArt"></div>
@@ -1411,11 +1441,12 @@
   <div class="evo-stage" id="evoStage">
     <div class="evo-rays"></div>
     <div class="evo-card">
-      <div class="evo-face evo-back"><b>?</b><span>EVOLUTION</span></div>
+      <div class="evo-face evo-back"><b>?</b><span id="evoBackTxt">EVOLUTION</span></div>
       <div class="evo-face evo-front" id="evoFront"></div>
     </div>
   </div>
   <div class="evo-tap" id="evoTap"></div>
+  <div class="evo-goal" id="evoGoal"></div>
   <div class="evo-btns" id="evoBtns"></div>
 </div>
 <!-- 포트폴리오는 앱 안에서 띄운다 — 새 창은 폰에서 팝업 차단에 막힌다 -->
@@ -2121,6 +2152,7 @@ const EX_UNLOCK=true;      // 문제가 생기면 false — 모든 운동이 열
 const EVO_CARDS=true;      // 진화할 때 카드 뽑기 연출 — 문제가 생기면 false
 const UNLOCK_LV={revlunge:1,highplank:2,widesquat:3,crossmt:4,widepushup:5,squathold:6,
   starjump:7,jumplunge:8,shouldertap:9,diamondpushup:10,pushburpee:11};
+const GOLD_FROM=7;         // 이 단계(공작)부터 열리는 운동은 골드, 그 앞은 실버
 const EX_GROUPS=[
   ["하체",["squat","lunge","sidelunge","jumpsquat","revlunge","widesquat","squathold","jumplunge"]],
   ["상체",["pushup","pushupknee","widepushup","diamondpushup"]],
@@ -2138,24 +2170,61 @@ function exLocked(k){
    원래 13가지는 지금 색 그대로다. 끄려면 EX_TIER_COLOR=false.
    그림은 처음 화면을 그릴 때도 불릴 수 있어, 상수가 아직 준비 전이면 조용히 기본색을 쓴다. */
 const EX_TIER_COLOR=true;
+function exTier(k){ const lv=UNLOCK_LV[k]; return !lv?"":(lv>=GOLD_FROM?"gold":"silver"); }
 function exTierPal(k){
   try{
     if(!EX_TIER_COLOR)return null;
-    const lv=UNLOCK_LV[k]; if(!lv)return null;
-    return lv>=7
+    const tier=exTier(k); if(!tier)return null;
+    return tier==="gold"
       ? {tier:"gold",  C:"#B8860B", O:"#E3A300", bg:"#FFF6D8", ground:"#EBD79A", edge:"#E2C15A"}
       : {tier:"silver",C:"#667085", O:"#98A2B3", bg:"#F2F4F7", ground:"#D0D5DD", edge:"#C0C7D2"};
   }catch(e){ return null; }
 }
 function unlockName(k){ const l=LEVELS[UNLOCK_LV[k]]; return l?l[2].replace(/^Lv\.\d+\s*/,""):""; }
+/* 새 운동 모으기 — 실버·골드 (2026-09-24 선생님: "새로운 운동 해금에도 실버, 골드처럼 게임적 동기유발 요소 — 골드 운동까지 해제하고 싶도록").
+   게임의 등급 카드처럼: 열리는 카드가 실버·골드로 다르고(뒷면부터 빛깔이 다르다), 뒤집으면 몇 개를 모았는지와
+   골드까지 몇 단계 남았는지 알려 준다. 운동 설계에도 모은 개수(빈칸 포함)와 다음 운동이 늘 보인다.
+   끄려면 EX_TIER_GOAL=false — 목록은 예전처럼 ✨, 카드는 예전 한 가지 모양. 그림 색은 EX_TIER_COLOR가 따로 맡는다. */
+const EX_TIER_GOAL=true;
+const TIER_TXT={silver:["🥈","실버"],gold:["🥇","골드"]};
+const CONF_PAL={silver:["#D0D5DD","#98A2B3","#F2F4F7","#667085","#FFFFFF","#8B80F9"],gold:["#FFD75A","#E3A300","#B8860B","#FFF1B8","#FFB400","#FFFFFF"]};
+function tierMark(k){ const t=EX_TIER_GOAL?exTier(k):""; return t?TIER_TXT[t][0]:""; }
+/* idx 단계까지 모은 새 운동 — 실버 몇/몇, 골드 몇/몇, 다음에 열릴 운동 */
+function exCollect(idx){
+  const all=Object.keys(UNLOCK_LV).sort((a,b)=>UNLOCK_LV[a]-UNLOCK_LV[b]);
+  const of=t=>all.filter(k=>exTier(k)===t), got=t=>of(t).filter(k=>UNLOCK_LV[k]<=idx).length;
+  return {s:got("silver"), sN:of("silver").length, g:got("gold"), gN:of("gold").length,
+    next:all.find(k=>UNLOCK_LV[k]>idx)||"", firstGold:of("gold")[0]||""};
+}
+/* 카드를 다 뒤집은 뒤 한 줄 — 골드까지 남은 거리 */
+function tierGoalText(idx){
+  const c=exCollect(idx);
+  if(!c.next)return `🏆 새 운동 ${c.sN+c.gN}가지를 모두 모았어요!`;
+  const left=c.firstGold?UNLOCK_LV[c.firstGold]-idx:0;
+  if(left===1)return "🥈 실버 완성! 다음 진화부터 🥇 골드";
+  if(left>1)return `🥇 골드 운동까지 앞으로 ${left}단계 — ${unlockName(c.firstGold)} 단계부터 열려요`;
+  return `🥇 골드 ${c.g}/${c.gN} — 다음 골드는 ${unlockName(c.next)} 단계`;
+}
+/* 운동 설계 — 새 운동 모으기 줄 (빈칸까지 보여 골드를 채우고 싶게). 교사 기기는 모두 열려 있어 숨긴다 */
+function renderExCollect(){
+  const box=$("exCollect"); if(!box)return;
+  if(!EX_TIER_GOAL||!EX_UNLOCK||(typeof isTeacher==="function"&&isTeacher())){ box.style.display="none"; return; }
+  const c=exCollect(myLevelIdx());
+  const set=(n,of,t)=>`<span class="ec-set ${t==="gold"?"g":"s"}" aria-label="${TIER_TXT[t][1]} ${n}/${of}">${TIER_TXT[t][0]}`
+    +Array.from({length:of},(_,i)=>`<i${i<n?' class="on"':""}></i>`).join("")+`<em>${n}/${of}</em></span>`;
+  const nx=c.next?`다음 ${tierMark(c.next)} ${EXNAME[c.next]} · ${unlockName(c.next)} 단계`:"🏆 모두 모았어요!";
+  const html=`<b>새 운동 모으기</b>${set(c.s,c.sN,"silver")}${set(c.g,c.gN,"gold")}<span class="ec-nx">${nx}</span>`;
+  if(box.dataset.h!==html){ box.innerHTML=html; box.dataset.h=html; }
+  box.style.display="";
+}
 function newExUnlockedUpTo(idx){
   return Object.keys(UNLOCK_LV).filter(k=>UNLOCK_LV[k]<=idx).sort((a,b)=>UNLOCK_LV[a]-UNLOCK_LV[b]);
 }
 /* 운동 고르는 목록 — lock이면 아직 안 열린 운동에 🔒와 열리는 단계를, 열린 새 운동에는 ✨를 붙인다 */
 function exOptionsHTML(lock){
   return EX_GROUPS.map(([g,ks])=>`<optgroup label="${g}">`+ks.map(k=>{
-    const t=EXNAME[k]+(EX[k]&&EX[k].type==="hold"?" (시간)":"");
-    const lab=(lock&&exLocked(k))?`🔒 ${t} · ${unlockName(k)}`:((k in UNLOCK_LV)?`✨ ${t}`:t);
+    const t=EXNAME[k]+(EX[k]&&EX[k].type==="hold"?" (시간)":""), m=tierMark(k);
+    const lab=(lock&&exLocked(k))?`🔒 ${m?m+" ":""}${t} · ${unlockName(k)}`:((k in UNLOCK_LV)?`${m||"✨"} ${t}`:t);
     return `<option value="${k}">${lab}</option>`;
   }).join("")+`</optgroup>`).join("");
 }
@@ -2169,7 +2238,7 @@ function renderExOptions(){
     const v=sel.value; sel.innerHTML=html; sel.dataset.h=html;
     if(v&&EXNAME[v])sel.value=v;
   });
-  renderExPreview(); renderTaskExPreview();
+  renderExPreview(); renderTaskExPreview(); renderExCollect();
 }
 /* 운동 설계에서 고른 운동의 움직이는 자세를 바로 보여 준다 */
 function renderExPreview(){
@@ -2181,9 +2250,10 @@ function renderExPreview(){
   $("expName").textContent=EXNAME[k];
   $("expTip").textContent=EXTIP[k]||"";
   $("expCam").textContent=SIDE_VIEW[k]?"📐 옆모습이 카메라에 보이게":"📱 앞모습이 카메라에 보이게";
-  const locked=exLocked(k);
+  const locked=exLocked(k), tier=EX_TIER_GOAL?exTier(k):"";
   box.classList.toggle("locked",locked);
-  $("expLock").textContent=locked?`🔒 ${unlockName(k)} 단계로 진화하면 열려요`:"";
+  box.classList.toggle("tier-gold",tier==="gold");      // 잠긴 골드도 금빛이 비치게 — 열고 싶게
+  $("expLock").textContent=locked?`🔒 ${tier?TIER_TXT[tier].join(" ")+" 운동 — ":""}${unlockName(k)} 단계로 진화하면 열려요`:"";
   const add=$("addBtn"); if(add)add.disabled=locked;
 }
 
@@ -3433,7 +3503,10 @@ function showNextEvo(){
   evoShowing=true; evoCur=item;
   evoTimers.forEach(clearTimeout); evoTimers=[];
   const o=$("levelupOverlay"), stage=$("evoStage"), front=$("evoFront");
-  stage.className="evo-stage charging";
+  const tier=(EX_TIER_GOAL&&item.kind==="ex")?exTier(item.k):"";      // 새 운동 카드는 실버·골드
+  stage.className="evo-stage charging"+(tier?" tier-"+tier:"");
+  const bt=$("evoBackTxt"); if(bt)bt.textContent=tier?tier.toUpperCase():"EVOLUTION";
+  const gl=$("evoGoal"); if(gl)gl.innerHTML="";
   $("evoBtns").innerHTML="";
   if(item.kind==="level"){
     const lv=LEVELS[item.lv], prev=LEVELS[Math.max(0,Math.min(item.from,item.lv-1))];
@@ -3442,8 +3515,9 @@ function showNextEvo(){
     front.innerHTML=`<div class="evo-stars">${"★".repeat(stars)}</div><div class="evo-emoji">${lv[1]}</div>`
       +`<div class="evo-name">${lv[2]}</div><div class="evo-sub">${prev[1]} → ${lv[1]} 진화!</div>`;
   } else {
-    $("evoHead").textContent=item.intro?"🎁 새 운동 카드가 도착했어요":"🔓 새 운동 카드!";
-    front.innerHTML=`<div class="evo-new">NEW</div><div class="evo-art">${exerciseAnim(item.k)}</div>`
+    $("evoHead").textContent=item.intro?"🎁 새 운동 카드가 도착했어요":tier==="gold"?"🌟 골드 카드가 왔어요…!":tier==="silver"?"🔓 실버 카드!":"🔓 새 운동 카드!";
+    front.innerHTML=`<div class="evo-new">NEW</div>`+(tier?`<div class="evo-tier">${TIER_TXT[tier].join(" ")}</div>`:"")
+      +`<div class="evo-art">${exerciseAnim(item.k)}</div>`
       +`<div class="evo-name">${EXNAME[item.k]}</div><div class="evo-sub">${unlockName(item.k)} 단계 운동</div>`;
   }
   $("evoTap").textContent="카드를 눌러 뒤집기!";
@@ -3461,14 +3535,18 @@ function flipEvo(){
   evoTimers.forEach(clearTimeout); evoTimers=[];
   stage.classList.remove("charging","hot"); stage.classList.add("revealed");
   $("evoTap").textContent="";
-  spawnConfetti();
+  const tier=(EX_TIER_GOAL&&item.kind==="ex")?exTier(item.k):"";
+  spawnConfetti(tier?CONF_PAL[tier]:null);
   [0,120,240,420].forEach((d,i)=>evoTimers.push(setTimeout(()=>beep([660,880,1046,1318][i],.18,.2),d+350)));
   if(item.kind==="level"){
     $("evoHead").textContent="🎉 진화 성공!";
     // 카드를 본 순간 이 학생의 진화 단계를 남긴다 (보기 전에 앱을 닫으면 다음에 다시 보여 준다)
     const all=evoLoad(); if(item.id&&(!all[item.id]||all[item.id].lv<item.lv)){ all[item.id]={lv:item.lv}; evoSave(all); }
-  } else $("evoHead").textContent="🔓 새 운동이 열렸어요!";
+  } else $("evoHead").textContent=tier==="gold"?"🥇 골드 운동이 열렸어요!":tier==="silver"?"🥈 실버 운동이 열렸어요!":"🔓 새 운동이 열렸어요!";
   const next=evoQueue.length&&evoQueue[0].kind==="ex";
+  // 모은 개수 — 마지막 카드에서는 골드까지 남은 거리도
+  if(tier){ const gl=$("evoGoal"), lv=UNLOCK_LV[item.k], c=exCollect(lv);
+    if(gl)gl.innerHTML=`모은 새 운동 🥈 ${c.s}/${c.sN} · 🥇 ${c.g}/${c.gN}`+(next?"":`<br><b>${tierGoalText(lv)}</b>`); }
   const btns=$("evoBtns");
   btns.innerHTML=next
     ?`<button class="btn btn-go" id="evoNext" style="padding:12px 26px;font-size:17px">다음 카드 ▶</button>`
@@ -3507,9 +3585,9 @@ function toast(msg,kind,emoji){
     setTimeout(()=>el.remove(),300);
   },4200);
 }
-function spawnConfetti(){
+function spawnConfetti(pal){
   const box=$("confetti"); box.innerHTML="";
-  const colors=["#5B51E8","#8B80F9","#FF9F1C","#2EC4B6","#F45B69","#D3960A","#3CBB75"];
+  const colors=pal||["#5B51E8","#8B80F9","#FF9F1C","#2EC4B6","#F45B69","#D3960A","#3CBB75"];
   for(let i=0;i<80;i++){
     const s=document.createElement("span");
     const sz=6+Math.random()*8;
