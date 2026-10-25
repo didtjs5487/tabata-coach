@@ -1296,7 +1296,7 @@
         <summary id="authSum">🔐 교사 로그인 — 로그인 필요</summary>
         <div class="hint" id="authMsg" style="margin:10px 0 8px">학생이 쓴 <b>성찰·계획서</b>는 로그인한 교사만 볼 수 있습니다.</div>
         <div class="row" id="authForm" style="margin:0">
-          <div class="field" style="flex:1;min-width:180px"><label>이메일</label>
+          <div class="field" style="flex:1;min-width:180px"><label>이메일 또는 아이디</label>
             <input type="email" id="authEmail" autocomplete="username" style="width:100%"></div>
           <div class="field" style="flex:1;min-width:140px"><label>비밀번호</label>
             <input type="password" id="authPw" autocomplete="current-password" style="width:100%"></div>
@@ -1549,7 +1549,7 @@
 <!-- 학습센터 열기 — 교사 로그인 (기기마다 따로 두던 잠금 비밀번호를 대신한다) -->
 <div id="unlockOverlay" style="display:none;position:fixed;inset:0;z-index:10009;background:rgba(20,22,48,.96);flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center">
   <div style="color:#fff;font-size:20px;font-weight:800">🔐 교사 로그인</div>
-  <input type="email" id="unlockEmail" autocomplete="username" placeholder="이메일" style="width:min(320px,100%);padding:12px;border-radius:10px;border:1px solid #6C63C8;font-size:16px">
+  <input type="email" id="unlockEmail" autocomplete="username" placeholder="이메일 또는 아이디" style="width:min(320px,100%);padding:12px;border-radius:10px;border:1px solid #6C63C8;font-size:16px">
   <input type="password" id="unlockPw" autocomplete="current-password" placeholder="비밀번호" style="width:min(320px,100%);padding:12px;border-radius:10px;border:1px solid #6C63C8;font-size:16px">
   <div id="unlockMsg" style="color:#C9C6EE;font-size:14px;min-height:20px;max-width:340px"></div>
   <div class="row" style="margin:0;justify-content:center">
@@ -1774,6 +1774,16 @@ document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()
    폰·집 데스크탑·학교 노트북의 비밀번호가 제각각이 됐고, 한 번도 안 바꾼 학생 폰에서는 1234로 열렸다.
    교사 계정은 어느 기기에서나 같고, 한 번 로그인한 기기는 로그아웃할 때까지 묻지 않는다. */
 const TEACHER_EMAIL_KEY="tabataTeacherEmail";
+/* 보강 선생님 로그인 (2026-10-25 선생님: "보강계정 더 간략하게 만들 수 없나?") —
+   이메일 대신 짧은 아이디(예: bogang)만 쳐도 된다. '@'가 없으면 뒤에 SUB_LOGIN_DOMAIN을 붙여 로그인한다.
+   보강 계정은 Firebase 콘솔에서 "아이디@SUB_LOGIN_DOMAIN" 이메일로 만든다(.invalid는 받는 사람이 없는 예약 주소).
+   선생님 두 분은 지금처럼 이메일 전체를 치면 그대로 들어간다. 끄려면 SUB_LOGIN=false. */
+const SUB_LOGIN=true;
+const SUB_LOGIN_DOMAIN="tabata.invalid";
+function loginEmail(raw){
+  const t=String(raw==null?"":raw).trim();
+  return (SUB_LOGIN&&t&&t.indexOf("@")<0)?(t.toLowerCase()+"@"+SUB_LOGIN_DOMAIN):t;
+}
 let authKnown=false; const authWaiters=[];
 function waitAuth(ms){ return authKnown?Promise.resolve():new Promise(r=>{ authWaiters.push(r); setTimeout(r,ms); }); }
 async function openUnlock(){
@@ -1791,13 +1801,13 @@ async function openUnlock(){
   ($("unlockEmail").value?$("unlockPw"):$("unlockEmail")).focus();
 }
 async function doUnlock(){
-  const em=($("unlockEmail").value||"").trim(), pw=$("unlockPw").value||"", msg=$("unlockMsg");
+  const typed=($("unlockEmail").value||"").trim(), em=loginEmail(typed), pw=$("unlockPw").value||"", msg=$("unlockMsg");
   if(!em||!pw){ msg.innerHTML='<span class="err">이메일과 비밀번호를 입력하세요.</span>'; return; }
   if(!fbAuth){ msg.innerHTML='<span class="err">서버에 연결되는 중이에요 — 잠시 뒤 다시 눌러 주세요.</span>'; return; }
   msg.textContent="로그인 중…";
   try{
     await authMod.signInWithEmailAndPassword(fbAuth,em,pw);
-    try{ localStorage.setItem(TEACHER_EMAIL_KEY,em); }catch(e){}
+    try{ localStorage.setItem(TEACHER_EMAIL_KEY,typed); }catch(e){}
     $("unlockPw").value=""; $("unlockOverlay").style.display="none";
     adminUnlocked=true; goPage("pgAdmin");
   }catch(e){ msg.innerHTML='<span class="err">'+authErrText(e)+'</span>'; }
@@ -9780,14 +9790,14 @@ async function ensureAuth(app){
   return fbAuth;
 }
 $("authIn").addEventListener("click",async()=>{
-  const em=($("authEmail").value||"").trim(), pw=$("authPw").value||"";
+  const typed=($("authEmail").value||"").trim(), em=loginEmail(typed), pw=$("authPw").value||"";
   const msg=$("authMsg");
   if(!em||!pw){msg.innerHTML='<span class="err">이메일과 비밀번호를 입력하세요.</span>';return;}
   if(!fbAuth){msg.innerHTML='<span class="err">서버 연결 후 다시 시도하세요.</span>';return;}
   msg.textContent="로그인 중…";
   try{
     await authMod.signInWithEmailAndPassword(fbAuth,em,pw);
-    try{ localStorage.setItem(TEACHER_EMAIL_KEY,em); }catch(e){}
+    try{ localStorage.setItem(TEACHER_EMAIL_KEY,typed); }catch(e){}
     $("authPw").value="";
   }catch(e){
     msg.innerHTML='<span class="err">'+authErrText(e)+'</span>';
