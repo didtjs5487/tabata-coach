@@ -1549,6 +1549,7 @@
 <!-- 학습센터 열기 — 교사 로그인 (기기마다 따로 두던 잠금 비밀번호를 대신한다) -->
 <div id="unlockOverlay" style="display:none;position:fixed;inset:0;z-index:10009;background:rgba(20,22,48,.96);flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center">
   <div style="color:#fff;font-size:20px;font-weight:800">🔐 교사 로그인</div>
+  <button type="button" class="btn btn-stop" id="unlockSub" style="background:#6C63C8;color:#fff;padding:10px 22px;font-size:16px">👥 보강 선생님</button>
   <input type="email" id="unlockEmail" autocomplete="username" placeholder="이메일 또는 아이디" style="width:min(320px,100%);padding:12px;border-radius:10px;border:1px solid #6C63C8;font-size:16px">
   <input type="password" id="unlockPw" autocomplete="current-password" placeholder="비밀번호" style="width:min(320px,100%);padding:12px;border-radius:10px;border:1px solid #6C63C8;font-size:16px">
   <div id="unlockMsg" style="color:#C9C6EE;font-size:14px;min-height:20px;max-width:340px"></div>
@@ -1784,6 +1785,17 @@ function loginEmail(raw){
   const t=String(raw==null?"":raw).trim();
   return (SUB_LOGIN&&t&&t.indexOf("@")<0)?(t.toLowerCase()+"@"+SUB_LOGIN_DOMAIN):t;
 }
+/* [👥 보강 선생님] 단추 (2026-10-25 선생님: "다트 앱에서는 보강 버튼을 누르고 비밀번호만 누르면 되도록 되어 있는데 우리 앱에서는 안 될까?") —
+   누르면 보강 계정의 아이디를 앱이 칸에 채우고 비밀번호 칸으로 넘어간다. 보강 선생님은 비밀번호만 치면 된다.
+   아이디가 코드에 들어 있으므로 학생도 이 단추를 눌러 볼 수 있다 — 지켜 주는 것은 비밀번호 하나다(길고 추측하기 어렵게 정할 것).
+   선생님 두 분의 이메일은 단추로 만들지 않는다(학생에게 보이지 않게). 끄려면 SUB_BUTTON=false — 단추만 사라진다. */
+const SUB_BUTTON=true;
+const SUB_LOGIN_ID="bogang";
+function pickSubTeacher(){
+  $("unlockEmail").value=SUB_LOGIN?SUB_LOGIN_ID:(SUB_LOGIN_ID+"@"+SUB_LOGIN_DOMAIN);
+  $("unlockMsg").textContent="";
+  $("unlockPw").focus();
+}
 let authKnown=false; const authWaiters=[];
 function waitAuth(ms){ return authKnown?Promise.resolve():new Promise(r=>{ authWaiters.push(r); setTimeout(r,ms); }); }
 async function openUnlock(){
@@ -1815,6 +1827,8 @@ async function doUnlock(){
 $("unlockGo").addEventListener("click",doUnlock);
 $("unlockPw").addEventListener("keydown",e=>{ if(e.key==="Enter")doUnlock(); });
 $("unlockCancel").addEventListener("click",()=>{ $("unlockOverlay").style.display="none"; $("unlockPw").value=""; });
+$("unlockSub").addEventListener("click",pickSubTeacher);
+if(!SUB_BUTTON)$("unlockSub").style.display="none";
 function goPage(id){ document.querySelector(`nav button[data-page=${id}]`).click(); }
 
 /* ---------- 운동 전 건강 자가체크 (PAR-Q 간이) ---------- */
