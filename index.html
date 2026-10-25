@@ -1777,10 +1777,12 @@ document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()
 const TEACHER_EMAIL_KEY="tabataTeacherEmail";
 /* 보강 선생님 로그인 (2026-10-25 선생님: "보강계정 더 간략하게 만들 수 없나?") —
    이메일 대신 짧은 아이디(예: bogang)만 쳐도 된다. '@'가 없으면 뒤에 SUB_LOGIN_DOMAIN을 붙여 로그인한다.
-   보강 계정은 Firebase 콘솔에서 "아이디@SUB_LOGIN_DOMAIN" 이메일로 만든다(.invalid는 받는 사람이 없는 예약 주소).
-   선생님 두 분은 지금처럼 이메일 전체를 치면 그대로 들어간다. 끄려면 SUB_LOGIN=false. */
+   보강 계정은 Firebase 콘솔에서 "아이디@SUB_LOGIN_DOMAIN" 이메일로 만든다.
+   (2026-10-25 선생님: "bogang@yeongjong.icehs.kr로 통일하자" — 스포츠다트 앱의 보강 계정과 같은 이메일. 메일함은 없다, 아이디 역할만 한다.
+   처음엔 받는 사람이 없는 예약 주소 tabata.invalid를 썼다.)
+   선생님 두 분은 지금처럼 이메일 전체를 치면 그대로 들어가고, 같은 학교 도메인이라 teacher112처럼 짧게 쳐도 된다. 끄려면 SUB_LOGIN=false. */
 const SUB_LOGIN=true;
-const SUB_LOGIN_DOMAIN="tabata.invalid";
+const SUB_LOGIN_DOMAIN="yeongjong.icehs.kr";
 function loginEmail(raw){
   const t=String(raw==null?"":raw).trim();
   return (SUB_LOGIN&&t&&t.indexOf("@")<0)?(t.toLowerCase()+"@"+SUB_LOGIN_DOMAIN):t;
