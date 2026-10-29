@@ -591,6 +591,14 @@
   .center-msg{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:12px; padding:24px;}
   .center-msg h2{font-family:"Barlow Condensed"; font-size:32px; margin:0;}
   .center-msg p{color:var(--muted); max-width:460px; margin:0; line-height:1.55; font-size:14px;}
+  /* 카메라를 못 열었을 때 안내 — 4:3 고정 상자보다 길 수 있어 이 안에서만 스크롤한다 */
+  .center-msg:has(.cam-fail){padding:10px 12px;}
+  .cam-fail{width:100%; max-height:100%; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; align-items:center; gap:8px; -webkit-overflow-scrolling:touch;}
+  .cam-fail h2{font-size:20px; line-height:1.2;}
+  .cam-fail p{font-size:13px; line-height:1.5;}
+  .cam-fail .btn{text-decoration:none; width:100%; max-width:280px; justify-content:center; box-sizing:border-box;}
+  .cam-away{display:flex; flex-direction:column; align-items:center; gap:8px; width:100%;}
+  .cam-url{width:100%; max-width:280px; box-sizing:border-box; font-size:12px; padding:6px 8px; min-height:0;}
   .spinner{width:40px;height:40px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--work);animation:spin 1s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg)}}
   .judge{position:absolute; top:32%; left:50%; transform:translate(-50%,-50%);
@@ -3714,9 +3722,15 @@ function handleBattleEvents(){
 }
 renderSeq();
 
+/* 공통과제는 처음부터 ×2로 둔다(2026-10-29 선생님: "×2가 안 돼서 ×1로 과제를 낸 적이 있었어").
+   동작을 넣고 빼도 고른 배수가 그대로 남는다. 0이면 예전처럼 동작 수에 따라 배수가 저절로 바뀐다. */
+const TASK_X_DEFAULT=2;
 /* ---------- 미니 운동설계 (배틀·공통과제 화면 내장) ---------- */
-function setupMiniDesigner(o){ // o={sel,add,copy,list,work,rest,rounds,diff,onChange?}
-  const st={seq:[...seq]};
+function setupMiniDesigner(o){ // o={sel,add,copy,list,work,rest,rounds,diff,onChange?,defaultX?}
+  /* defaultX(1~3)가 있으면 고른 배수를 기억한다. 없으면 예전처럼 '라운드 수 ÷ 동작 수'로 매번 다시 계산한다 —
+     그러면 동작을 6개 이상 넣을 때 ×2가 조용히 ×1이 되어(8÷6) 과제가 ×1로 나갔다(2026-10-29 선생님 확인). */
+  const st={seq:[...seq], x:(o.defaultX>=1&&o.defaultX<=3)?(o.defaultX|0):0};
+  const keepX=()=>{ if(o.defaultX&&st.seq.length)st.x=repeatXFor(st.seq,o.rounds); };   // 불러온 구성은 그 배수를 따른다
   { const h=exOptionsHTML(false); $(o.sel).innerHTML=h; $(o.sel).dataset.h=h; }  // 공통과제는 모든 운동을 낼 수 있다 (진화 잠금 없음)
   function render(){
     const el=$(o.list); el.innerHTML="";
@@ -3734,7 +3748,7 @@ function setupMiniDesigner(o){ // o={sel,add,copy,list,work,rest,rounds,diff,onC
     });
     if(!st.seq.length)el.innerHTML='<span class="hint">아직 운동이 없습니다 — 위에서 추가하세요.</span>';
     // 동작 수가 바뀌면 라운드 수도 같이 맞춘다 — 학생 쪽 renderSeq()의 clampRounds()와 동일한 방식.
-    if(o.pick)setRepeatFor(st.seq,o.rounds,o.pick,repeatXFor(st.seq,o.rounds));
+    if(o.pick)setRepeatFor(st.seq,o.rounds,o.pick,st.x||repeatXFor(st.seq,o.rounds));
     if(o.strip&&$(o.strip)){ $(o.strip).innerHTML=exStripHTML(st.seq); wireExStrip($(o.strip)); }   // 짠 구성을 그림으로
     if(o.onChange)o.onChange();
   }
@@ -3743,11 +3757,12 @@ function setupMiniDesigner(o){ // o={sel,add,copy,list,work,rest,rounds,diff,onC
     st.seq=[...seq];
     $(o.work).value=$("workSec").value; $(o.rest).value=$("restSec").value;
     $(o.rounds).value=$("rounds").value; $(o.diff).value=$("difficulty").value;
-    render();
+    keepX(); render();
   });
   [o.work,o.rest,o.rounds,o.diff].forEach(id=>$(id).addEventListener("change",()=>{ if(o.onChange)o.onChange(); }));
   if(o.pick)$(o.pick).addEventListener("click",e=>{
     const b=e.target.closest("button"); if(!b)return;
+    if(o.defaultX)st.x=+b.dataset.x;
     setRepeatFor(st.seq,o.rounds,o.pick,+b.dataset.x);
     if(o.onChange)o.onChange();
   });
@@ -3763,14 +3778,14 @@ function setupMiniDesigner(o){ // o={sel,add,copy,list,work,rest,rounds,diff,onC
       if(c.rest)$(o.rest).value=c.rest;
       if(c.rounds)$(o.rounds).value=c.rounds;
       if(c.diff)$(o.diff).value=c.diff;
-      render();
+      keepX(); render();
       if(o.onChange)o.onChange();
     }
   };
 }
 let taskDesigner=null;
 taskDesigner=setupMiniDesigner({sel:"tAddEx",add:"tAddBtn",copy:"tCopyBtn",list:"tSeqList",
-  work:"tWorkSec",rest:"tRestSec",rounds:"tRounds",diff:"tDifficulty",pick:"tRepeatPick",strip:"tSeqStrip"});
+  work:"tWorkSec",rest:"tRestSec",rounds:"tRounds",diff:"tDifficulty",defaultX:TASK_X_DEFAULT,pick:"tRepeatPick",strip:"tSeqStrip"});
 
 /* ---------- gamification ---------- */
 let totalPts=0;   // 이 기기에 쌓아 둔 점수 — 이제는 아래 스위치를 껐을 때만 화면에 쓴다
@@ -5045,16 +5060,18 @@ async function setup(){
     // 앱 속 브라우저·카메라 없는 브라우저면 다른 브라우저로 옮기는 단추를 함께 준다
     const away=CAM_INAPP_V2&&(r.kind==="inapp"||r.kind==="unsupported");
     const isAnd=camPlatform(String(navigator.userAgent||"").toLowerCase())==="android";
-    const awayHtml=!away?"":'<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px">'
+    const awayHtml=!away?"":'<div class="cam-away">'
       +(isAnd?'<a class="btn btn-go" id="openChromeBtn" href="'+chromeIntentUrl(location.href)+'">🌐 크롬으로 열기</a>':'')
       +'<button class="btn btn-stop" id="copyUrlBtn">📋 주소 복사</button></div>'
-      +'<input id="copyUrlBox" readonly value="'+String(location.href).replace(/#.*$/,"").replace(/"/g,"&quot;")+'" style="width:100%;margin-top:6px;font-size:13px">';
+      +'<input class="cam-url" id="copyUrlBox" readonly value="'+String(location.href).replace(/#.*$/,"").replace(/"/g,"&quot;")+'">';
     /* 무엇보다 중요한 것: 카메라가 안 된다고 수업에서 빠지지 않게 하는 일이다.
        자세 채점만 못 할 뿐, 운동·심박·과제 이수는 카메라 없이도 그대로 할 수 있다. */
-    $("intro").innerHTML='<h2>'+r.title+'</h2><p class="err" style="line-height:1.6">'+r.tip+'</p>'+awayHtml
-      +'<p class="hint">고친 뒤 [시작]을 다시 눌러 주세요.</p>'
-      +'<button class="btn btn-go" id="noCamBtn" style="margin-top:10px">📵 카메라 없이 운동하기</button>'
-      +'<p class="hint" style="margin-top:6px">자세 채점만 빠지고 <b>운동·심박수·과제 이수는 그대로</b> 인정됩니다.</p>';
+    /* 운동 화면 상자는 4:3 고정이라 이 안내가 길면 제목과 맨 아래 [카메라 없이 운동하기]가 잘렸다(10/29 확인).
+       안쪽 상자 하나로 감싸 그 안에서만 스크롤되게 하고, [카메라 없이]는 안내 바로 아래에 둔다. */
+    $("intro").innerHTML='<div class="cam-fail"><h2>'+r.title+'</h2><p class="err" style="line-height:1.55">'+r.tip+'</p>'
+      +awayHtml
+      +'<button class="btn '+(away?'btn-stop':'btn-go')+'" id="noCamBtn">📵 카메라 없이 운동하기</button>'
+      +'<p class="hint">자세 채점만 빠지고 <b>운동·심박수·과제 이수는 그대로</b> 인정됩니다. 고친 뒤에는 [시작]을 다시 눌러 주세요.</p></div>';
     $("intro").style.display="";
     const nb=$("noCamBtn");
     if(nb)nb.addEventListener("click",()=>{ start({auto:true,noCam:true}); });
