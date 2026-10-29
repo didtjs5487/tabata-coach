@@ -827,6 +827,7 @@
   /* ===== 화면 정리 v2 (2026-10-29) — 폰 아래 탭 막대 · 첫 화면 정리 · 화면 전환 · 캐릭터·현황판 움직임 =====
      스위치는 위쪽 head의 NAV_BOTTOM·SETUP_TIDY·MOTION_UI·MOTION_PET·MOTION_BOARD (html 클래스 navb·stidy·mui·mpet·mbrd). */
   /* 채점 난이도 접기 — 접어 둔 줄에도 지금 고른 맛이 보인다 */
+  .adm-hdr{display:none;}
   .spice-fold{margin-top:12px; border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:0 12px;}
   .spice-fold>summary{cursor:pointer; list-style:none; min-height:44px; display:flex; align-items:center; gap:6px; font-size:14px; font-weight:700; color:var(--ink);}
   .spice-fold>summary::-webkit-details-marker{display:none;}
@@ -843,6 +844,11 @@
     html.navb nav button::before{content:attr(data-ico); font-size:20px; line-height:1;}
     html.navb nav button.on{background:color-mix(in srgb,var(--primary) 13%,transparent); color:var(--primary);}
     html.navb nav .lk{display:none;}
+    /* 학습센터는 아래 막대에서 빼고(4개만) 머리글 오른쪽 위 🔒로 — 탭 자체는 남겨 두어 기존 동작(goPage·잠금)이 그대로 돈다 */
+    html.navb nav button[data-page="pgAdmin"]{display:none;}
+    html.navb .adm-hdr{display:flex; align-items:center; justify-content:center; flex:none; width:40px; height:40px; border-radius:50%; font-size:18px; line-height:1;
+      background:var(--panel); border:1px solid var(--line); color:var(--muted); cursor:pointer; padding:0;}
+    html.navb:has(nav button[data-page="pgAdmin"].on) .adm-hdr{background:var(--primary); border-color:var(--primary); color:#fff;}
     html.navb .wrap{padding:0 14px calc(92px + env(safe-area-inset-bottom,0px));}
     html.navb .page{border-radius:16px;}
     html.navb header{flex-wrap:nowrap; padding:12px 16px 2px; gap:8px;}
@@ -867,6 +873,37 @@
     @keyframes navPop{0%{transform:scale(.8);} 55%{transform:scale(1.18);} 100%{transform:scale(1);}}
   }
   /* ⑤ 캐릭터 — 가만히 있어도 살짝 떠다니고, 점수가 오르면 알약이 통통 튄다 */
+  /* 운동 중 화면 움직임(MOTION_HUD) — 클래스 mh-full·mh-lite는 자바스크립트가 무대(.stage)에 붙인다. transform·opacity만 쓴다. */
+  @media (prefers-reduced-motion:no-preference){
+    /* 배치는 그대로 두고(display를 바꾸지 않는다) 왼쪽 아래를 기준으로 커졌다 돌아온다 — 두 숫자 모두 왼쪽 정렬이다 */
+    .stage .metric .n, .stage .timer .big{transform-origin:0 90%;}
+    .stage .metric .n.hm-pop{animation:hmPop .32s cubic-bezier(.3,1.6,.5,1);}
+    @keyframes hmPop{0%{transform:scale(1);} 40%{transform:scale(1.34);} 100%{transform:scale(1);}}
+    .stage .timer.hm-last .big{color:#FF8A94;}
+    .stage .timer .big.hm-tick{animation:hmTick .4s ease-out;}
+    @keyframes hmTick{0%{transform:scale(1.3);} 100%{transform:scale(1);}}
+    .stage.mh-full .hm-wash{position:absolute; inset:0; pointer-events:none; z-index:8; opacity:0;
+      background:radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 46%, color-mix(in srgb,var(--wc,#FFB020) 62%, transparent) 100%);}
+    .stage.mh-full .hm-wash.go{animation:hmWash .75s ease-out;}
+    @keyframes hmWash{0%{opacity:0;} 22%{opacity:1;} 100%{opacity:0;}}
+    /* 판정마다 다르게 — PERFECT는 크게 튀며 고리가 퍼지고, GREAT는 가볍게, GOOD·OK는 부드럽게, MISS는 떨린다 */
+    .stage.mh-full .judge.show.j-perfect{animation:jPerfect .8s cubic-bezier(.2,1.4,.4,1);}
+    @keyframes jPerfect{0%{opacity:0; transform:translate(-50%,-50%) scale(.4) rotate(-6deg);} 18%{opacity:1; transform:translate(-50%,-50%) scale(1.32) rotate(2deg);}
+      32%{transform:translate(-50%,-50%) scale(1) rotate(0);} 78%{opacity:1;} 100%{opacity:0; transform:translate(-50%,-90%) scale(1.06);}}
+    .stage.mh-full .judge.j-perfect::after{content:""; position:absolute; left:50%; top:50%; width:1.5em; height:1.5em; margin:-.75em 0 0 -.75em;
+      border:3px solid #FF7AF5; border-radius:50%; opacity:0; pointer-events:none;}
+    .stage.mh-full .judge.show.j-perfect::after{animation:jRing .7s ease-out;}
+    @keyframes jRing{0%{opacity:.9; transform:scale(.5);} 100%{opacity:0; transform:scale(2.6);}}
+    .stage.mh-full .judge.show.j-great{animation:jGreat .65s cubic-bezier(.2,1.3,.4,1);}
+    @keyframes jGreat{0%{opacity:0; transform:translate(-50%,-50%) scale(.6);} 18%{opacity:1; transform:translate(-50%,-50%) scale(1.16);}
+      32%{transform:translate(-50%,-50%) scale(1);} 75%{opacity:1;} 100%{opacity:0; transform:translate(-50%,-80%) scale(1);}}
+    .stage.mh-full .judge.show.j-good, .stage.mh-full .judge.show.j-ok{animation:jSoft .6s ease-out;}
+    @keyframes jSoft{0%{opacity:0; transform:translate(-50%,-40%) scale(.9);} 25%{opacity:1; transform:translate(-50%,-50%) scale(1);}
+      75%{opacity:1;} 100%{opacity:0; transform:translate(-50%,-68%) scale(1);}}
+    .stage.mh-full .judge.show.j-miss{animation:jMiss .6s ease-out;}
+    @keyframes jMiss{0%{opacity:0; transform:translate(-50%,-50%) scale(1.15);} 12%{opacity:1; transform:translate(-56%,-50%) scale(1);} 24%{transform:translate(-44%,-50%);}
+      36%{transform:translate(-54%,-50%);} 48%{transform:translate(-47%,-50%);} 60%{transform:translate(-50%,-50%); opacity:1;} 100%{opacity:0; transform:translate(-50%,-38%) scale(.96);}}
+  }
   @media (prefers-reduced-motion:no-preference){
     html.mpet .avatar{display:inline-block; animation:petIdle 3.4s ease-in-out infinite; transform-origin:50% 90%;}
     @keyframes petIdle{0%,100%{transform:translateY(0) rotate(0);} 40%{transform:translateY(-2px) rotate(-3deg);} 70%{transform:translateY(-1px) rotate(3deg);}}
@@ -900,6 +937,8 @@ var NAV_BOTTOM=true, SETUP_TIDY=true, MOTION_UI=true, MOTION_PET=true, MOTION_BO
     <div class="avatar" id="avatarEmoji">🥚</div>
     <div><div class="pv num" id="totalPts">0 P</div><div class="pl" id="levelName">Lv.1 알</div></div>
   </div>
+  <!-- 폰에서는 하단 탭을 4개로 두고 학습센터는 여기로(NAV_BOTTOM) — 눌러도 원래 학습센터 탭과 똑같이 교사 로그인을 거친다 -->
+  <button class="adm-hdr" id="admHdrBtn" type="button" aria-label="학습센터 (선생님)" title="학습센터 (선생님)">🔒</button>
 </header>
 
 <nav>
@@ -2103,6 +2142,7 @@ $("unlockCancel").addEventListener("click",()=>{ $("unlockOverlay").style.displa
 $("unlockSub").addEventListener("click",pickSubTeacher);
 if(!SUB_BUTTON)$("unlockSub").style.display="none";
 function goPage(id){ document.querySelector(`nav button[data-page=${id}]`).click(); }
+if($("admHdrBtn"))$("admHdrBtn").addEventListener("click",()=>goPage("pgAdmin"));   // 폰 머리글의 🔒 — 아래 탭의 학습센터와 같다
 
 /* ---------- 운동 전 건강 자가체크 (PAR-Q 간이) ---------- */
 const PARQ=[
@@ -8897,6 +8937,42 @@ function closeToolsMenu(){ const w=$("toolsMore"), b=$("toolsMoreBtn"); if(w)w.c
   btn.addEventListener("click",e=>{ e.stopPropagation(); const o=!wrap.classList.contains("open"); wrap.classList.toggle("open",o); btn.setAttribute("aria-expanded",o?"true":"false"); });
   $("toolsMenu").addEventListener("click",()=>closeToolsMenu());          // 어느 도구를 눌러도 닫는다
   document.addEventListener("click",e=>{ if(!wrap.contains(e.target))closeToolsMenu(); });
+})();
+/* ---------- 운동 중 화면 움직임 (MOTION_HUD, 2026-10-29 선생님: "운동 중 화면 모션 좋은 거 같아 이어서 해줘") ----------
+   운동 루프·카메라·소리·채점 코드는 한 줄도 건드리지 않는다. 화면의 글자가 바뀌는 것을 '지켜보기만' 하는 관찰자
+   (MutationObserver)가 클래스만 붙이고, 움직임은 CSS(transform·opacity만)가 한다 — 자세 인식과 같은 폰에서 도는
+   화면이라 일을 가볍게 둔다. 관찰자가 실패해도 운동에는 영향이 없다(모두 try/catch).
+   "full": 횟수 톡 · 판정마다 다른 움직임 · 운동↔휴식 색 번짐 · 마지막 3초 / "lite": 횟수 톡 · 마지막 3초만(느린 폰은 저절로) /
+   "off": 예전 그대로(폰의 '동작 줄이기'를 켠 경우도). 문제가 생기면 "off"로 바꾸고 배포한다. */
+const MOTION_HUD="full";
+function hudMotionMode(){
+  if(MOTION_HUD==="off")return "off";
+  try{ if(typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches)return "off"; }catch(e){}
+  if(MOTION_HUD==="lite")return "lite";
+  try{ const n=typeof navigator!=="undefined"?navigator:{}; if((n.deviceMemory&&n.deviceMemory<=2)||(n.hardwareConcurrency&&n.hardwareConcurrency<=4))return "lite"; }catch(e){}
+  return "full";
+}
+(function(){
+  const mode=hudMotionMode(), stage=$("stage");
+  if(mode==="off"||!stage||typeof MutationObserver==="undefined")return;
+  stage.classList.add("mh-"+mode);
+  const kick=(el,cls)=>{ el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+  const watch=(el,fn,opts)=>{ if(!el)return; try{ new MutationObserver(()=>{ try{ fn(); }catch(e){} }).observe(el,opts); }catch(e){} };
+  const txt={childList:true,characterData:true,subtree:true};
+  // ① 횟수가 오르면 톡 — 정수가 늘 때만(0으로 돌아갈 때와 '유지 시간'의 소수는 튀지 않는다)
+  const repN=$("repN"); let lastRep=0;
+  watch(repN,()=>{ const s=repN.textContent, v=/^\d+$/.test(s)?+s:0; if(v>lastRep)kick(repN,"hm-pop"); lastRep=v; },txt);
+  // ② 남은 시간 마지막 3초 — 빨갛게, 숫자가 한 번씩 커졌다 돌아온다
+  const tb=$("timerBig"), tbox=$("timerBox");
+  watch(tb,()=>{ const v=parseInt(tb.textContent,10), last=v>0&&v<=3; tbox.classList.toggle("hm-last",last); if(last)kick(tb,"hm-tick"); },txt);
+  // ③ 운동 ↔ 휴식이 바뀌면 화면 가장자리에 그 단계의 색이 번졌다 사라진다
+  if(mode==="full"&&tbox){
+    const wash=document.createElement("div"); wash.className="hm-wash"; wash.setAttribute("aria-hidden","true"); stage.appendChild(wash);
+    let lastPh="";
+    watch(tbox,()=>{ const ph=tbox.classList.contains("work")?"work":tbox.classList.contains("rest")?"rest":"";
+      if(ph&&ph!==lastPh){ wash.style.setProperty("--wc",ph==="work"?"#FFB020":"#35D0BA"); kick(wash,"go"); }
+      if(ph)lastPh=ph; },{attributes:true,attributeFilter:["class"]});
+  }
 })();
 $("camFlip")&&$("camFlip").addEventListener("click",flipWorkoutCam);
 $("camFlipFs")&&$("camFlipFs").addEventListener("click",flipWorkoutCam);
