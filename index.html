@@ -823,12 +823,73 @@
   .stage-tools.tools-flat .tools-more{display:contents;}
   .stage-tools.tools-flat .tools-menu{display:contents;}
   .stage-tools.tools-flat #toolsMoreBtn{display:none;}
+
+  /* ===== 화면 정리 v2 (2026-10-29) — 폰 아래 탭 막대 · 첫 화면 정리 · 화면 전환 · 캐릭터·현황판 움직임 =====
+     스위치는 위쪽 head의 NAV_BOTTOM·SETUP_TIDY·MOTION_UI·MOTION_PET·MOTION_BOARD (html 클래스 navb·stidy·mui·mpet·mbrd). */
+  /* 채점 난이도 접기 — 접어 둔 줄에도 지금 고른 맛이 보인다 */
+  .spice-fold{margin-top:12px; border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:0 12px;}
+  .spice-fold>summary{cursor:pointer; list-style:none; min-height:44px; display:flex; align-items:center; gap:6px; font-size:14px; font-weight:700; color:var(--ink);}
+  .spice-fold>summary::-webkit-details-marker{display:none;}
+  .spice-fold>summary::after{content:"▾"; margin-left:auto; color:var(--muted);}
+  .spice-fold[open]>summary::after{content:"▴";}
+  .spice-fold .spice-body{padding:2px 0 12px;}
+  @media (max-width:640px){
+    /* ① 탭을 아래 막대로 — 5개가 두 줄로 접히던 것을 한 줄로, 엄지가 닿는 곳에 */
+    html.navb nav{position:fixed; left:0; right:0; bottom:0; z-index:50; width:auto; max-width:none; padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));
+      gap:2px; flex-wrap:nowrap; background:var(--panel); border-top:1px solid var(--line); box-shadow:0 -6px 20px rgba(43,49,96,.10);}
+    html.navb nav button{flex:1 1 0; min-width:0; min-height:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+      background:transparent; border:0; border-radius:12px; padding:6px 2px 5px; font-family:"Noto Sans KR",system-ui,sans-serif; font-size:12px; font-weight:700;
+      line-height:1.15; white-space:nowrap; color:var(--muted);}
+    html.navb nav button::before{content:attr(data-ico); font-size:20px; line-height:1;}
+    html.navb nav button.on{background:color-mix(in srgb,var(--primary) 13%,transparent); color:var(--primary);}
+    html.navb nav .lk{display:none;}
+    html.navb .wrap{padding:0 14px calc(92px + env(safe-area-inset-bottom,0px));}
+    html.navb .page{border-radius:16px;}
+    html.navb header{flex-wrap:nowrap; padding:12px 16px 2px; gap:8px;}
+    html.navb header h1{font-size:22px; white-space:nowrap;}
+    html.navb header .tag{display:none;}
+    html.navb .profile{padding:4px 10px 4px 6px; gap:8px; flex:none;}
+    /* ② 첫 화면 — 자세 그림을 줄여 한 화면에 더 담는다 */
+    html.stidy .ex-preview{gap:10px; padding:8px; margin:6px 0 2px;}
+    html.stidy .ex-preview .exp-art{width:84px; height:84px; flex-basis:84px;}
+    html.stidy .ex-preview .exp-tip{font-size:13px; line-height:1.45;}
+  }
+  /* ④ 화면 전환·펼침 — 짧게(0.2초대), 동작 줄이기를 켠 폰에서는 없다 */
+  @media (prefers-reduced-motion:no-preference){
+    html.mui .page.on{animation:pgIn .22s ease-out backwards;}
+    @keyframes pgIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+    html.mui details[open]>*:not(summary){animation:dtIn .2s ease-out backwards;}
+    @keyframes dtIn{from{opacity:0; transform:translateY(-4px);} to{opacity:1; transform:none;}}
+    html.mui .tc-body.open{animation:dtIn .2s ease-out backwards;}
+  }
+  @media (max-width:640px) and (prefers-reduced-motion:no-preference){
+    html.navb.mui nav button.on::before{animation:navPop .3s ease-out;}
+    @keyframes navPop{0%{transform:scale(.8);} 55%{transform:scale(1.18);} 100%{transform:scale(1);}}
+  }
+  /* ⑤ 캐릭터 — 가만히 있어도 살짝 떠다니고, 점수가 오르면 알약이 통통 튄다 */
+  @media (prefers-reduced-motion:no-preference){
+    html.mpet .avatar{display:inline-block; animation:petIdle 3.4s ease-in-out infinite; transform-origin:50% 90%;}
+    @keyframes petIdle{0%,100%{transform:translateY(0) rotate(0);} 40%{transform:translateY(-2px) rotate(-3deg);} 70%{transform:translateY(-1px) rotate(3deg);}}
+    html.mpet .profile.bump{animation:profBump .7s cubic-bezier(.3,1.5,.5,1);}
+    @keyframes profBump{0%{transform:scale(1);} 30%{transform:scale(1.12);} 100%{transform:scale(1);}}
+    /* ⑤ 현황판 — 지금 하고 있는 단계 점이 숨 쉬듯 깜빡인다 */
+    html.mbrd .stage-dot.cur{animation:dotPulse 1.8s ease-out infinite;}
+    @keyframes dotPulse{0%{box-shadow:0 0 0 0 rgba(91,81,232,.55);} 70%{box-shadow:0 0 0 7px rgba(91,81,232,0);} 100%{box-shadow:0 0 0 0 rgba(91,81,232,0);}}
+  }
 </style>
 <script>
 /* 🎨 DESIGN_FIX (2026-10-29 디자인 점검) — 글자 대비·선택 칩·운동 중 글씨·단추 크기.
    html에 dfix 클래스를 붙이면 위 스타일 층이 켜진다. 끄려면 false (예전 모양으로 돌아간다). */
 var DESIGN_FIX=true;
 if(DESIGN_FIX)document.documentElement.classList.add("dfix");
+</script>
+<script>
+/* 화면 정리 v2 (2026-10-29) — 문제가 생기면 해당 줄만 false (아래 클래스가 안 붙어 예전 모습으로 돌아간다)
+   NAV_BOTTOM 폰에서 탭을 아래 막대로 · SETUP_TIDY 폰 첫 화면 정리(채점 난이도 접기·그림 줄임)
+   MOTION_UI 화면 전환·펼침 · MOTION_PET 캐릭터 · MOTION_BOARD 현황판 */
+var NAV_BOTTOM=true, SETUP_TIDY=true, MOTION_UI=true, MOTION_PET=true, MOTION_BOARD=true;
+(function(){ var c=document.documentElement.classList;
+  if(NAV_BOTTOM)c.add("navb"); if(SETUP_TIDY)c.add("stidy"); if(MOTION_UI)c.add("mui"); if(MOTION_PET)c.add("mpet"); if(MOTION_BOARD)c.add("mbrd"); })();
 </script>
 </head>
 <body>
@@ -842,11 +903,11 @@ if(DESIGN_FIX)document.documentElement.classList.add("dfix");
 </header>
 
 <nav>
-  <button class="on" data-page="pgSetup">운동 설계</button>
-  <button data-page="pgTasks">내 과제</button>
-  <button data-page="pgWork">운동하기</button>
-  <button data-page="pgMine">내 기록</button>
-  <button data-page="pgAdmin">🔒 학습센터</button>
+  <button class="on" data-page="pgSetup" data-ico="✏️">운동 설계</button>
+  <button data-page="pgTasks" data-ico="📋">내 과제</button>
+  <button data-page="pgWork" data-ico="🏃">운동하기</button>
+  <button data-page="pgMine" data-ico="📊">내 기록</button>
+  <button data-page="pgAdmin" data-ico="🔒"><span class="lk">🔒 </span>학습센터</button>
 </nav>
 
 <div class="wrap">
@@ -941,17 +1002,20 @@ if(DESIGN_FIX)document.documentElement.classList.add("dfix");
       </div>
       <!-- 판정 난이도는 화면에 뜨는 PERFECT·GREAT 글자만 바꾼다. 점수는 그대로라서
            학생이 골라도 성적에 유리하거나 불리해지지 않는다. 공통 과제는 선생님 값으로 고정. -->
-      <div class="field" style="margin-top:12px">
-        <label>🍜 채점 난이도 — 얼마나 맵게 볼까?</label>
-        <div class="pc-opts" id="spicePick">
-          <button type="button" data-s="easy">🥛 순한맛</button>
-          <button type="button" data-s="normal">🌶️ 보통맛</button>
-          <button type="button" data-s="hard">🔥 매운맛</button>
-          <button type="button" data-s="hell">💀 지옥맛</button>
-          <button type="button" data-s="legend">👑 전설맛</button>
+      <details class="spice-fold" id="spiceFold">
+        <summary>🍜 채점 난이도 — <b id="spiceNow">🌶️ 보통맛</b></summary>
+        <div class="field spice-body">
+          <label>얼마나 맵게 볼까?</label>
+          <div class="pc-opts" id="spicePick">
+            <button type="button" data-s="easy">🥛 순한맛</button>
+            <button type="button" data-s="normal">🌶️ 보통맛</button>
+            <button type="button" data-s="hard">🔥 매운맛</button>
+            <button type="button" data-s="hell">💀 지옥맛</button>
+            <button type="button" data-s="legend">👑 전설맛</button>
+          </div>
+          <div class="hint" id="spiceHint" style="margin-top:6px"></div>
         </div>
-        <div class="hint" id="spiceHint" style="margin-top:6px"></div>
-      </div>
+      </details>
       <div class="cfg-fixed" id="cfgFixed" style="margin-top:10px"></div>
     </div>
 
@@ -2070,6 +2134,7 @@ $("parqOk").addEventListener("click",()=>{
     const sent=sendHealthNote(items);
     $("parqMsg").innerHTML='<span class="err">해당 항목이 있어요. 오늘은 무리하지 말고 선생님께 알리세요.</span>'
       +(sent?'<br><span class="hint">선생님 화면에 <b>건강 사유</b>로 표시했습니다 — 그냥 안 한 것과 구분됩니다.</span>':"")
+      +(sent&&HEALTH_AUTO_EXCUSE&&currentTask?`<br><span class="hint"><b>'${escHtml(currentTask.title)}'</b> 과제는 건강 사유로 빠지는 것으로 표시돼요. 나으면 내 과제에서 <b>보충</b>할 수 있어요.</span>`:"")
       +'<br><span class="hint"><b>잘못 눌렀나요?</b> 체크를 모두 풀고 [확인]을 다시 누르면 취소됩니다.</span>';
     return;
   }
@@ -3246,8 +3311,8 @@ function boardForClass(tsCls){
     /* 안 한 학생을 둘로 가른다 — 몸이 안 좋아 자가진단에 체크한 학생과, 아무것도 안 한 학생.
        기준은 '그 반에 이 과제를 낸 날'에 체크가 있었는지다. */
     const rest=who.filter(st=>!first[st.name]);
-    /* 인정은 교사가 한다 — 이름을 눌러 표시한 학생만 '건강 사유'로 간다.
-       학생이 앱에서 자가진단에 체크한 것은 옆에 🩹로 귀띔만 한다. */
+    /* 이름을 눌러 표시한 학생과, 학생이 이 과제를 고른 채 자가체크에 해당 항목을 체크한 학생이 '건강 사유'로 간다
+       (HEALTH_AUTO_EXCUSE — 자동으로 간 학생도 이름을 눌러 취소할 수 있다). 과제를 고르지 않고 체크한 것은 옆에 🩹로 귀띔만 한다. */
     const sickList=rest.filter(st=>isExcused(tsCls,x.id,st.name));
     const todoList=rest.filter(st=>!isExcused(tsCls,x.id,st.name));
     const done=doneList.length;
@@ -3260,8 +3325,8 @@ function boardForClass(tsCls){
     // 누를 수 있는 이름 — 아직 안 함 ↔ 건강 사유를 오간다
     const pickStr=(list,on)=>list.length
       ? list.map(st=>`<span class="ex-pick" data-cls="${tsCls}" data-task="${x.id}" data-no="${st.no}" data-name="${escHtml(st.name)}"
-            title="${on?"건강 사유 해제":"질병 등으로 못 한 학생이면 누르세요"}"
-            style="white-space:nowrap;cursor:pointer;border:1px solid var(--line);border-radius:6px;padding:1px 6px;display:inline-block;margin:1px 0">${st.no}&nbsp;${escHtml(st.name)}${(!on&&given&&healthNoteOn(tsCls,st.name,given))?" 🩹":""}${on?" ✓":""}</span>`).join(" ")
+            title="${on?(excuseIsAuto(tsCls,x.id,st.name)?"학생이 자가체크로 표시했습니다 — 누르면 취소":"건강 사유 해제"):"질병 등으로 못 한 학생이면 누르세요"}"
+            style="white-space:nowrap;cursor:pointer;border:1px solid var(--line);border-radius:6px;padding:1px 6px;display:inline-block;margin:1px 0">${st.no}&nbsp;${escHtml(st.name)}${(!on&&given&&healthNoteOn(tsCls,st.name,given))?" 🩹":""}${on?(excuseIsAuto(tsCls,x.id,st.name)?" ✓ 자가체크":" ✓"):""}</span>`).join(" ")
       : "<span style='opacity:.6'>없음</span>";
     const head=`${isToday(x)?'<span class="ord num" style="background:var(--work);color:#fff">오늘</span> ':""}<b style="cursor:pointer;text-decoration:underline dotted" data-ts="${x.id}" data-cls="${tsCls}" title="자세한 기록 보기">${x.no}차시 · ${escHtml(taskLabel(x.a))}</b>
         <span class="hint">${given?given:""}${preN?` · 전입 전 ${preN}명 제외`:""}</span>
@@ -3363,7 +3428,7 @@ function renderTaskRows(){
       const pre=!r&&!afterJoin(givenFor(cls),s.joined||"");
       tr.innerHTML=r
         ?`<td class="num">${s.no}</td><td>${s.name}</td><td>${shortCls(cls)}</td>${cell(r)}`
-        :`<td class="num">${s.no}</td><td>${s.name}</td><td>${shortCls(cls)}</td><td colspan="5" style="color:${sick?"var(--gold)":"var(--muted)"}">${pre?"전입 전 과제 — 평가 제외":sick?"건강 사유 — 선생님 확인(제외)":"미완료"}</td>`;
+        :`<td class="num">${s.no}</td><td>${s.name}</td><td>${shortCls(cls)}</td><td colspan="5" style="color:${sick?"var(--gold)":"var(--muted)"}">${pre?"전입 전 과제 — 평가 제외":sick?(excuseIsAuto(cls,id,s.name)?"건강 사유 — 학생 자가체크(자동 제외)":"건강 사유 — 선생님 확인(제외)"):"미완료"}</td>`;
       if(tb)tb.appendChild(tr);
     });
     const list=Object.values(done);
@@ -3846,12 +3911,23 @@ const LEVELS=[
   [6000, "☄️",   "Lv.11 혜성"],     [8000, "🌟",  "Lv.12 레전드"]];
 function levelIndex(pts){ let i=0; LEVELS.forEach((l,idx)=>{ if(pts>=l[0]) i=idx; }); return i; }
 let shownLevel=0;
+let profileShown=false;
 function refreshProfile(opts){
   let pts=totalPts;
   try{ pts=shownPts(); }catch(e){}            // 기록이 아직 준비 안 됐으면 이 기기 값으로 잠깐 버틴다
   const idx=levelIndex(pts), cur=LEVELS[idx];
   $("avatarEmoji").textContent=cur[1]; $("levelName").textContent=cur[2];
+  const prevTxt=$("totalPts").textContent;
   $("totalPts").textContent=pts+" P";
+  /* 점수가 오르면 캐릭터 알약이 통통 튄다(MOTION_PET) — 처음 그릴 때와 줄어들 때는 튀지 않는다 */
+  try{
+    const pill=document.querySelector(".profile");
+    if(profileShown&&pill&&document.documentElement.classList.contains("mpet")&&prevTxt!==pts+" P"&&parseInt(prevTxt,10)<pts){
+      pill.classList.remove("bump"); void pill.offsetWidth; pill.classList.add("bump");
+      setTimeout(()=>pill.classList.remove("bump"),900);
+    }
+  }catch(e){}
+  profileShown=true;
   /* 레벨이 오르면 카드 뽑기로 축하한다 — 운동 직후 심박을 잰 뒤에 뜨도록 줄을 세워 둔다(진화 카드 참고).
      진화하면 열리는 운동도 목록에 바로 반영한다. */
   try{ checkEvolution(idx); maybeShowEvo(); renderExOptions(); }catch(e){}
@@ -6178,7 +6254,7 @@ function buildStageRows(c,showAlert){
     const stale=!p||(now-(+p.ts||0)>PRESENCE_STALE_MS);
     const stage=stale?0:(p.stage||0);
     let dots="";
-    for(let i=1;i<=5;i++) dots+=`<div class="stage-dot" style="background:${stage>=i?STAGE_COLORS[i]:""}"></div>`;
+    for(let i=1;i<=5;i++) dots+=`<div class="stage-dot${stage===i&&i<5?" cur":""}" style="background:${stage>=i?STAGE_COLORS[i]:""}"></div>`;   // 지금 하고 있는 단계는 숨 쉬듯 깜빡인다(MOTION_BOARD)
     const rank=ranks[s.name];
     // 순위가 없는 학생도 같은 너비의 빈 배지를 둬서 신호등 위치가 줄마다 어긋나지 않게 한다
     const badge=rank?`<span class="rank-badge${rank<=3?` top${rank}`:""}">${medals[rank-1]||rank+"위"}</span>`
@@ -6450,12 +6526,15 @@ function setRepeat(x){ setRepeatFor(seq,"rounds","repeatPick",x); }
 function syncRepeatChips(){ syncRepeatChipsFor(seq,"rounds","repeatPick"); }
 function clampRounds(){ setRepeat(repeatX()); }   // 동작 수가 바뀌면 라운드 수도 따라 바뀐다
 
+// 폰 첫 화면 정리를 끄면(SETUP_TIDY=false) 채점 난이도를 예전처럼 펼쳐 둔다
+try{ if(typeof SETUP_TIDY!=="undefined"&&!SETUP_TIDY&&$("spiceFold"))$("spiceFold").open=true; }catch(e){}
 /* 채점 난이도(맛) 고르기 — 자율 실천·결투에만 적용된다 */
 function setSpice(k){
   if(!SPICE[k])k="normal";
   mySpice=k;
   const box=$("spicePick");
   if(box)[...box.querySelectorAll("button")].forEach(b=>b.classList.toggle("on",b.dataset.s===k));
+  const sn=$("spiceNow"); if(sn)sn.textContent=SPICE[k].emoji+" "+SPICE[k].name;   // 접어 둔 줄에도 지금 고른 맛을 보여 준다
   const el=$("spiceHint");
   if(el){
     el.innerHTML=`${SPICE[k].desc} · 이 맛의 꼭대기 <b style="color:var(--gold)">${SPICE_CAP[k]||"SSS"}등급</b>`;
@@ -9017,6 +9096,14 @@ function sendHealthNote(items){
   if(raw.length<5||!cls||!name)return false;
   const date=todayStr();
   const note={name,items,ts:Date.now()};
+  /* 내 과제에서 '이 과제 하기'를 누른 채 체크했다면 그 공통과제를 함께 남긴다 — 선생님이 따로 표시하지 않아도
+     그 과제에서는 '건강 사유로 빠지는 학생'으로 계산된다(HEALTH_AUTO_EXCUSE). 같은 날 다른 과제로 또 체크해도 쌓인다. */
+  if(HEALTH_AUTO_EXCUSE&&currentTask&&currentTask.id){
+    const prev=(healthNotes[cls]&&healthNotes[cls][raw]&&healthNotes[cls][raw][date])||null;
+    const tasks=Array.isArray(prev&&prev.tasks)?prev.tasks.slice():[];
+    if(tasks.indexOf(currentTask.id)<0)tasks.push(currentTask.id);
+    note.tasks=tasks;
+  }
   if(!healthNotes[cls])healthNotes[cls]={};
   if(!healthNotes[cls][raw])healthNotes[cls][raw]={};
   healthNotes[cls][raw][date]=note;
@@ -9024,12 +9111,17 @@ function sendHealthNote(items){
   if(fdb)fmod.set(fmod.ref(fdb,`health/${cls}/${raw}/${date}`),note).catch(()=>{});
   return true;
 }
-/* ---------- 건강 사유 제외 (교사가 표시) ----------
-   인정은 교사가 한다. 학생이 앱에서 자가진단에 체크한 것은 '이 학생이 오늘 몸이 안 좋다고 했다'는
-   참고 표시로만 쓰고, 성적 계산에는 교사가 눌러 표시한 것만 반영한다.
+/* ---------- 건강 사유 제외 ----------
+   (2026-10-29 선생님: "내 과제 누르고 운동하기 눌러서 자가체크로 들어가서 해당 사항 체크하면 그 공통과제에서
+   아파서 빠지는 학생으로 체크되도록") — 학생이 '이 과제 하기'를 누른 채 자가체크에 해당 항목을 체크하면
+   그 과제가 건강 기록(health)에 함께 남고, 그 과제에서는 자동으로 '건강 사유'로 빠진다.
+   선생님이 이름을 눌러 표시한 것도 그대로 되고, 자동으로 빠진 학생도 이름을 눌러 취소할 수 있다(excused에 off 표시).
+   배점·한도는 그대로다 — 건강 사유는 한 학생당 최대 rubric.excuseMax(3)차시까지만 적용된다(practiceScore).
+   끄려면 HEALTH_AUTO_EXCUSE=false: 예전처럼 선생님이 눌러 표시한 것만 반영한다.
    반 안에서는 번호가 유일하므로 번호를 키로 쓴다(동명이인이 있어도 꼬이지 않는다). */
+const HEALTH_AUTO_EXCUSE=true;
 const EXCUSE_KEY="tabataExcused";
-let excused={};        // {반}{과제id}{번호} = {name,ts}
+let excused={};        // {반}{과제id}{번호} = {name,ts} 또는 {name,ts,off:true}(자동으로 빠진 것을 선생님이 취소)
 function loadExcusedLocal(){
   try{ excused=JSON.parse(localStorage.getItem(EXCUSE_KEY)||"{}")||{}; }catch(e){ excused={}; }
 }
@@ -9037,9 +9129,30 @@ function excuseNoOf(cls,name){
   const st=(rosters[cls]||[]).find(x=>x.name===name);
   return st?String(st.no):"";
 }
+// 이 학생이 이 과제를 고른 채 자가체크에 '해당'을 눌렀는가 — 있으면 그 기록
+function healthTaskNote(cls,name,taskId){
+  const byId=healthNotes[cls]||{};
+  for(const raw in byId){
+    const dates=byId[raw]||{};
+    for(const d in dates){
+      const n=dates[d];
+      if(n&&n.name===name&&Array.isArray(n.tasks)&&n.tasks.indexOf(taskId)>=0)return n;
+    }
+  }
+  return null;
+}
+function excuseEntry(cls,taskId,no){ return !!no&&excused[cls]&&excused[cls][taskId]&&excused[cls][taskId][no]||null; }
 function isExcused(cls,taskId,name){
   const no=excuseNoOf(cls,name);
-  return !!(no && excused[cls] && excused[cls][taskId] && excused[cls][taskId][no]);
+  if(!no)return false;
+  const e=excuseEntry(cls,taskId,no);
+  if(e)return !e.off;                                  // 선생님이 표시했거나 취소한 것이 먼저다
+  return HEALTH_AUTO_EXCUSE&&!!healthTaskNote(cls,name,taskId);
+}
+// 자가체크로 자동 처리된 것인가 (선생님이 직접 표시한 것이 아니라)
+function excuseIsAuto(cls,taskId,name){
+  const no=excuseNoOf(cls,name);
+  return !!no&&!excuseEntry(cls,taskId,no)&&HEALTH_AUTO_EXCUSE&&!!healthTaskNote(cls,name,taskId);
 }
 /* 이 과제를 이 반에서 뺀다 — 전체 반으로 잘못 나간 경우.
    빼면 그 반 학생들의 이수율 계산에서 사라져 '안 한 것'으로 불이익을 받지 않는다.
@@ -9092,13 +9205,16 @@ function deleteTaskEverywhere(taskId){
 function toggleExcuse(cls,taskId,no,name){
   if(!excused[cls])excused[cls]={};
   if(!excused[cls][taskId])excused[cls][taskId]={};
-  const on=!!excused[cls][taskId][no];
-  if(on)delete excused[cls][taskId][no];
-  else excused[cls][taskId][no]={name,ts:Date.now()};
+  const on=isExcused(cls,taskId,name);                  // 자가체크로 자동 처리된 것도 '켜짐'으로 본다
+  /* 켜진 것을 누르면 끈다. 그런데 자가체크 기록이 남아 있으면 지워도 다시 살아나므로,
+     그때는 지우지 않고 '취소(off)' 표시를 남긴다. 꺼진 것을 누르면 켠다(취소 표시도 이때 사라진다). */
+  const keepOff=on&&HEALTH_AUTO_EXCUSE&&!!healthTaskNote(cls,name,taskId);
+  const val=on?(keepOff?{name,ts:Date.now(),off:true}:null):{name,ts:Date.now()};
+  if(val)excused[cls][taskId][no]=val; else delete excused[cls][taskId][no];
   try{ localStorage.setItem(EXCUSE_KEY,JSON.stringify(excused)); }catch(e){}
   if(fdb){
     const r=fmod.ref(fdb,`excused/${cls}/${taskId}/${no}`);
-    (on?fmod.remove(r):fmod.set(r,excused[cls][taskId][no])).catch(()=>{});
+    (val?fmod.set(r,val):fmod.remove(r)).catch(()=>{});
   }
   renderTaskBoard(); renderTaskRows(); renderStats();
 }
