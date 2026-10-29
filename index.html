@@ -333,6 +333,93 @@
   #confetti{position:absolute; inset:0; overflow:hidden; pointer-events:none;}
   #confetti span{position:absolute; top:-16px; border-radius:2px; opacity:.9; animation:confFall linear forwards;}
   @keyframes confFall{to{transform:translateY(105vh) rotate(720deg); opacity:.4}}
+  /* ---------- 진화 카드 연출 (2026-10-29 MOTION_EVO) ----------
+     선생님: "진화나 여러 애니메이션에 모션들도 추가했으면" → 풀 연출을 골랐다. 지금의 흔들림→뒤집힘→빛줄기 뼈대 위에
+     기 모으는 박자·입자 → 번쩍·충격파 → (진화 카드) 옛 모습이 새 모습으로 변신 → 별이 하나씩 → 확인하면 내 캐릭터로 날아간다. 골드는 더 길고 금가루.
+     오버레이 클래스: mo-full | mo-lite(느린 폰) | mo-calm(폰의 '동작 줄이기') — 아무것도 없으면 예전 연출 그대로(MOTION_EVO="off") */
+  .evo-pulse, .evo-float{position:absolute; inset:0;}
+  .evo-float{perspective:1000px;}
+  /* 뒤 화면 글씨가 가운데로 비쳐 제목과 겹쳤다 — 밑바탕을 채운다 */
+  #levelupOverlay.mo-full, #levelupOverlay.mo-lite, #levelupOverlay.mo-calm{background-color:#191B40;}
+  #levelupOverlay.mo-full .evo-float, #levelupOverlay.mo-lite .evo-float{animation:evoFloat 3.4s ease-in-out infinite;}
+  @keyframes evoFloat{50%{transform:translateY(-5px) rotate(.5deg)}}
+  .evo-pulse.b{animation:evoBeat .3s ease-out;}
+  @keyframes evoBeat{40%{transform:scale(1.08)}}
+  .evo-xp{display:none; width:min(240px,64vw); height:8px; border-radius:99px; background:rgba(255,255,255,.2); overflow:hidden;}
+  #levelupOverlay.mo-full.kind-level .evo-xp{display:block;}
+  .evo-xp i{display:block; height:100%; width:100%; transform-origin:left; transform:scaleX(.55); border-radius:99px;
+    background:linear-gradient(90deg,#8B80F9,#FFD75A); transition:transform .8s cubic-bezier(.2,.8,.3,1);}
+  .evo-pips{display:none; gap:7px; height:10px;}
+  #levelupOverlay.mo-full .evo-pips, #levelupOverlay.mo-lite .evo-pips{display:flex;}
+  #levelupOverlay.mo-full.flipped .evo-pips, #levelupOverlay.mo-lite.flipped .evo-pips{visibility:hidden;}
+  .evo-pips i{width:10px; height:10px; border-radius:50%; background:rgba(255,255,255,.22); transition:background .15s, transform .25s cubic-bezier(.3,1.7,.5,1);}
+  .evo-pips i:nth-child(n+5){display:none;}
+  #levelupOverlay.t-gold.mo-full .evo-pips i:nth-child(n+5){display:block;}
+  .evo-pips.p1 i:nth-child(-n+1), .evo-pips.p2 i:nth-child(-n+2), .evo-pips.p3 i:nth-child(-n+3),
+  .evo-pips.p4 i:nth-child(-n+4), .evo-pips.p5 i:nth-child(-n+5), .evo-pips.p6 i:nth-child(-n+6){background:#FFE58A; transform:scale(1.25); box-shadow:0 0 10px #FFE58A;}
+  .evo-flash{position:absolute; inset:0; opacity:0; pointer-events:none; z-index:2; background:radial-gradient(circle at 50% 46%,#fff,rgba(255,255,255,0) 72%);}
+  #levelupOverlay.t-gold .evo-flash{background:radial-gradient(circle at 50% 46%,#FFF3B0,rgba(255,225,120,0) 72%);}
+  .evo-flash.go{animation:evoFlash .5s ease-out;}
+  @keyframes evoFlash{0%{opacity:0}16%{opacity:.95}100%{opacity:0}}
+  .evo-shock{position:absolute; left:50%; top:50%; width:62%; aspect-ratio:1; margin:-31% 0 0 -31%; border-radius:50%; border:3px solid rgba(255,255,255,.9); opacity:0; pointer-events:none;}
+  .evo-shock.go{animation:evoShock .7s cubic-bezier(.2,.7,.3,1);}
+  @keyframes evoShock{from{transform:scale(.5); opacity:.9}to{transform:scale(3.4); opacity:0}}
+  #levelupOverlay.shake{animation:evoQuake .34s linear;}
+  @keyframes evoQuake{20%{transform:translate(-5px,2px)}40%{transform:translate(5px,-3px)}60%{transform:translate(-4px,-2px)}80%{transform:translate(3px,3px)}100%{transform:none}}
+  .evo-parts{position:absolute; inset:0; pointer-events:none;}
+  .evo-parts i{position:absolute; left:50%; top:50%; width:6px; height:6px; margin:-3px; border-radius:50%; background:#FFE58A; box-shadow:0 0 8px #FFE58A; animation:evoConv .55s cubic-bezier(.4,0,.8,.6) forwards;}
+  @keyframes evoConv{from{transform:translate(var(--sx),var(--sy)); opacity:0}25%{opacity:1}to{transform:translate(0,0) scale(.3); opacity:0}}
+  .evo-dustbox{position:absolute; inset:0; overflow:hidden; pointer-events:none;}
+  .evo-dustbox i{position:absolute; top:-8px; width:5px; height:5px; border-radius:50%; background:#FFD75A; box-shadow:0 0 6px #FFD75A; animation:evoDust 3.2s linear forwards;}
+  @keyframes evoDust{to{transform:translate(var(--dx),110vh); opacity:0}}
+  /* 뒤집기: 번쩍인 직후에 돈다 */
+  #levelupOverlay.mo-full .evo-stage.revealed .evo-card, #levelupOverlay.mo-lite .evo-stage.revealed .evo-card{transition-delay:.11s;}
+  /* 진화 카드 앞면: 옛 모습 → 새 모습 (예전 연출에서는 새 모습만) */
+  .evo-emo{display:grid; place-items:center;}
+  .evo-emo > *{grid-area:1/1;}
+  .evo-emo .old{display:none;}
+  .evo-stars i{font-style:normal; display:inline-block;}
+  #levelupOverlay.mo-full.kind-level .evo-emo .old{display:block;}
+  #levelupOverlay.mo-full .evo-stage.revealed .evo-emo .old{animation:evoOldOut .32s ease-in 1s both;}
+  #levelupOverlay.mo-full.kind-level .evo-stage.revealed .evo-emo .new{animation:evoSquash .85s ease-out 1.1s both;}
+  #levelupOverlay.mo-lite .evo-stage.revealed .evo-emoji, #levelupOverlay.mo-lite .evo-stage.revealed .evo-art,
+  #levelupOverlay.mo-full.kind-ex .evo-stage.revealed .evo-art{animation:evoSquash .8s ease-out .5s both;}
+  @keyframes evoOldOut{0%{opacity:1; transform:scale(1)}60%{opacity:1; transform:scale(1.25) rotate(-6deg); filter:brightness(1.8)}100%{opacity:0; transform:scale(1.7)}}
+  @keyframes evoSquash{0%{transform:scale(.2); opacity:0}30%{opacity:1}45%{transform:scale(1.3,.8)}62%{transform:scale(.9,1.14)}80%{transform:scale(1.05,.97)}100%{transform:scale(1); opacity:1}}
+  #levelupOverlay.mo-full .evo-stars i, #levelupOverlay.mo-lite .evo-stars i{opacity:0;}
+  #levelupOverlay.mo-full .evo-stage.revealed .evo-stars i{animation:evoStar .42s cubic-bezier(.3,1.7,.5,1) both; animation-delay:calc(1.7s + var(--i)*.15s);}
+  #levelupOverlay.mo-lite .evo-stage.revealed .evo-stars i{animation:evoStar .42s cubic-bezier(.3,1.7,.5,1) both; animation-delay:calc(.95s + var(--i)*.14s);}
+  @keyframes evoStar{0%{transform:scale(0) rotate(-40deg); opacity:0}70%{transform:scale(1.5) rotate(8deg); opacity:1}100%{transform:scale(1); opacity:1}}
+  #levelupOverlay.mo-full .evo-name, #levelupOverlay.mo-full .evo-sub, #levelupOverlay.mo-lite .evo-name, #levelupOverlay.mo-lite .evo-sub{opacity:0;}
+  #levelupOverlay.mo-full .evo-stage.revealed .evo-name, #levelupOverlay.mo-full .evo-stage.revealed .evo-sub{animation:evoRise .4s ease-out 1.6s both;}
+  #levelupOverlay.mo-lite .evo-stage.revealed .evo-name, #levelupOverlay.mo-lite .evo-stage.revealed .evo-sub{animation:evoRise .4s ease-out 1s both;}
+  @keyframes evoRise{from{opacity:0; transform:translateY(10px)}to{opacity:1; transform:none}}
+  /* 안내·단추는 연출이 끝날 즈음 올라온다 (글자는 뒤집는 순간 이미 들어가 있다) */
+  #levelupOverlay.mo-full.flipped .evo-goal{animation:evoRise .4s ease-out 2s both;}
+  #levelupOverlay.mo-full.flipped .evo-btns{animation:evoRise .4s ease-out 2.3s both;}
+  #levelupOverlay.mo-lite.flipped .evo-goal{animation:evoRise .4s ease-out 1.3s both;}
+  #levelupOverlay.mo-lite.flipped .evo-btns{animation:evoRise .4s ease-out 1.6s both;}
+  /* 반짝이는 면(풀 연출) */
+  @property --evohx{syntax:'<percentage>'; inherits:true; initial-value:0%;}
+  .evo-holo{position:absolute; inset:0; pointer-events:none; opacity:0; mix-blend-mode:overlay;
+    background:linear-gradient(115deg,transparent 18%,rgba(255,255,255,.75) 40%,rgba(255,214,102,.6) 50%,rgba(120,200,255,.45) 60%,transparent 82%);
+    background-size:280% 100%; background-position:var(--evohx) 0;}
+  #levelupOverlay.mo-full .evo-stage.revealed .evo-holo{opacity:.8; transition:opacity .8s 1.8s; animation:evoHolo 4.5s ease-in-out 2.2s infinite;}
+  @keyframes evoHolo{0%,100%{--evohx:0%}50%{--evohx:100%}}
+  .evo-flyer{position:fixed; z-index:10050; pointer-events:none; line-height:1; will-change:transform;}
+  .evo-flyer svg{width:72px; height:72px; display:block;}
+  /* 폰의 '동작 줄이기' — 흔들림·번쩍임·입자 없이 부드럽게 바뀐다 */
+  #levelupOverlay.mo-calm .evo-card, #levelupOverlay.mo-calm .evo-back{animation:none !important; transition:none !important;}
+  #levelupOverlay.mo-calm .evo-rays{animation:none;}
+  #levelupOverlay.mo-calm .evo-tap{animation:none;}
+  #levelupOverlay.mo-calm #confetti{display:none;}
+  #levelupOverlay.mo-calm .evo-face{backface-visibility:visible; -webkit-backface-visibility:visible;}
+  #levelupOverlay.mo-calm .evo-front{transform:none; opacity:0; transition:opacity .4s;}
+  #levelupOverlay.mo-calm .evo-stage.revealed .evo-front{opacity:1;}
+  #levelupOverlay.mo-calm .evo-stage.revealed .evo-back{opacity:0; transition:opacity .4s;}
+  #levelupOverlay.mo-calm .evo-stage.revealed .evo-card{transform:none;}
+  #levelupOverlay.mo-calm .evo-stage.revealed .evo-emoji, #levelupOverlay.mo-calm .evo-stage.revealed .evo-art,
+  #levelupOverlay.mo-calm .evo-stage.revealed .evo-front::after{animation:none;}
   /* ---------- 운동 설계: 고른 운동의 움직이는 자세 (2026-09-17) ---------- */
   .ex-preview{display:flex; gap:12px; align-items:center; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:10px; margin:8px 0 4px;}
   .ex-preview .exp-art{width:118px; height:118px; flex:0 0 118px; max-width:40%;}
@@ -458,6 +545,44 @@
     transition:width .8s cubic-bezier(.2,.8,.3,1);}
   .grade-card .g-next{color:var(--muted); font-size:12px; margin-top:5px;}
   @keyframes gradePop{0%{transform:scale(.4) rotate(-8deg); opacity:0}100%{transform:none; opacity:1}}
+  /* ---------- 결과 화면 정리(RESULT_TIDY) · 연출(MOTION_RESULT) — 2026-10-29 ---------- */
+  #result.tidy .kpis3{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px;}
+  #result.tidy .kpis3 .kpi{min-width:0; padding:10px 12px;}
+  #result.tidy .kpis3 .kpi .v{font-size:clamp(24px,7.4vw,34px);}
+  .jbar-wrap{margin:2px 0 14px;}
+  .jbar{display:flex; height:16px; border-radius:99px; overflow:hidden; gap:2px; background:var(--panel3);}
+  .jbar i{display:block; height:100%; flex:0 0 0; min-width:4px; transform-origin:left;}
+  .jbar i[data-j="p"], .jbar-lg i[data-j="p"]{background:#E24FD8;}
+  .jbar i[data-j="g"], .jbar-lg i[data-j="g"]{background:#D3960A;}
+  .jbar i[data-j="gd"], .jbar-lg i[data-j="gd"]{background:#2EC4B6;}
+  .jbar i[data-j="o"], .jbar-lg i[data-j="o"]{background:#7A85E8;}
+  .jbar i[data-j="m"], .jbar-lg i[data-j="m"]{background:#F45B69;}
+  .jbar-lg{display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:7px; font-size:12.5px; font-weight:700; color:var(--muted);}
+  .jbar-lg span{display:inline-flex; align-items:center; gap:5px;}
+  .jbar-lg i{width:9px; height:9px; border-radius:50%; display:inline-block;}
+  .jbar-lg .num{color:var(--ink); font-size:14px; font-weight:800;}
+  .res-more{margin-top:14px; border:1px solid var(--line); border-radius:14px; padding:0 14px 12px; background:var(--panel);}
+  .res-more summary{cursor:pointer; list-style:none; font-weight:800; font-size:15px; padding:12px 0; min-height:44px; display:flex; flex-direction:column; justify-content:center;}
+  .res-more summary::-webkit-details-marker{display:none;}
+  .res-more summary span{font-weight:600; font-size:12.5px; color:var(--muted); margin-top:2px;}
+  .res-more[open] summary{border-bottom:1px solid var(--line); margin-bottom:10px;}
+  .res-more .kpis{margin-top:4px;}
+  .res-tbl{overflow-x:auto;}
+  .grade-card{position:relative; overflow:hidden;}
+  .res-ring{position:absolute; left:80px; top:50%; width:96px; height:96px; margin:-48px 0 0 -48px; border-radius:50%; border:3px solid var(--gc); opacity:0; pointer-events:none;}
+  .res-ring.go{animation:resRing .6s ease-out;}
+  @keyframes resRing{from{transform:scale(.5); opacity:.9}to{transform:scale(2.6); opacity:0}}
+  .grade-card::after{content:""; position:absolute; inset:0; pointer-events:none; transform:translateX(-130%); background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.85) 50%,transparent 62%);}
+  .grade-card.shine::after{animation:resShine .9s ease-in-out .25s;}
+  @keyframes resShine{to{transform:translateX(130%)}}
+  #result .res-it{transition:opacity .35s ease, transform .4s cubic-bezier(.16,1,.3,1);}
+  #result.mo-pre .res-it:not(.in){opacity:0; transform:translateY(12px);}
+  #result.mo-pre .grade-card .g-letter{animation:none; opacity:0;}
+  #result.mo-pre .grade-card .g-letter.stamp, #result .grade-card .g-letter.stamp{animation:resStamp .45s cubic-bezier(.2,1.6,.4,1) both; opacity:1;}
+  @keyframes resStamp{0%{opacity:0; transform:scale(2.4)}55%{opacity:1}100%{opacity:1; transform:none}}
+  #result.mo-pre .jbar i{transform:scaleX(0); transition:transform .5s cubic-bezier(.2,.8,.3,1);}
+  #result.mo-pre .jbar i.on{transform:scaleX(1);}
+  .res-flyer{font-family:"Barlow Condensed",sans-serif; font-weight:700; font-size:28px; color:var(--primary);}
   .bottom{display:flex; justify-content:space-between; align-items:flex-end;}
   .metric .n{font-family:"Barlow Condensed"; font-weight:700; font-size:clamp(40px,10vw,80px); line-height:.85;}
   .metric .l{color:var(--muted); font-size:12px; letter-spacing:2px; text-transform:uppercase;}
@@ -637,7 +762,65 @@
   .trend-delta{font-family:"Barlow Condensed"; font-weight:700; font-size:20px;}
   .trend-delta.up{color:var(--good)} .trend-delta.down{color:var(--bad)} .trend-delta.flat{color:var(--muted)}
   #mineSpark{width:100%; max-width:420px; height:64px; background:var(--panel3); border-radius:10px;}
+
+  /* ═════ DESIGN_FIX (2026-10-29 디자인 점검) — html.dfix 일 때만 적용 (끄려면 맨 위 DESIGN_FIX=false) ═════
+     · 보조 글자색 --muted 가 흰/연보라 위에서 2.6~3.2:1 이라 첫 화면 글자의 절반이 읽기 기준(4.5:1)에 못 미쳤다 → #5F6490 (4.65:1 이상)
+     · 금색·초록 글자도 같은 이유로 진하게(2.3:1 → 4.2:1 · 5.3:1). 어두운 화면(운동 무대·진화 카드·현황판·안내창)은 예전 밝은 값을 그대로 쓴다
+     · 고른 칩은 '진한 보라 + 흰 글씨'(5.55:1) — 흰 글씨가 연보라 위에 올라가 1.42:1 이던 것을 고친다
+     · 운동 중 글씨는 페이지 기본 남색을 물려받아 검은 띠 위에서 1.1~1.9:1 이던 것을 흰색으로
+     · 누르는 단추는 44px 이상, 누르면 살짝 작아지게 */
+  html.dfix{ --muted:#5F6490; --gold:#8F6200; --good:#1A7C4B; --bad:#C93445; --rest-ink:#0E8F85; }
+  html.dfix .stage, html.dfix #levelupOverlay, html.dfix #classBoardOverlay, html.dfix #pulseOverlay,
+  html.dfix #hrConfirmOverlay, html.dfix #unlockOverlay, html.dfix #qrOverlay, html.dfix #battlePickOverlay,
+  html.dfix #battleCdOverlay{ --muted:#AEB2DC; --gold:#D3960A; --good:#3CBB75; --bad:#F45B69; }
+  html.dfix header h1 span{color:#B96A00 !important;}                      /* 'PRO' — 연보라 바탕에서 1.69:1 이던 주황 */
+  html.dfix .btn-teal{background:#6D62EC;}                                 /* 보조 단추: 흰 글씨 3.2:1 → 4.56:1 */
+  /* 운동 중 화면 */
+  html.dfix .stage{color:#fff;}
+  html.dfix .timer .rnd{color:#fff; font-size:clamp(17px,4.2vw,26px);}
+  html.dfix .p-ex{color:#fff;}
+  html.dfix .fb{font-size:clamp(18px,4.8vw,26px); background:rgba(0,0,0,.66);}
+  html.dfix .pill{backdrop-filter:none; background:rgba(0,0,0,.62);}
+  html.dfix .timer{backdrop-filter:none; background:rgba(0,0,0,.62);}
+  html.dfix .next-preview{backdrop-filter:none; background:rgba(10,17,40,.9);}
+  html.dfix .exit-fs{min-height:44px; background:rgba(0,0,0,.6);}
+  /* 고른 칩 — 한 가지 모양 */
+  html.dfix .pc-opts button.on, html.dfix .rf-self .op button.on,
+  html.dfix .rf-pick button.on, html.dfix .sheet .rf-pick button.on{background:var(--primary); border-color:var(--primary); color:#fff; font-weight:800;}
+  html.dfix .pc-opts button.on::before{content:"✓ "; font-weight:900;}
+  /* 운동 고르는 목록에 🔒·단계 이름이 붙으면 칸이 화면보다 넓어져 오른쪽이 잘렸다 */
+  html.dfix select{max-width:100%;}
+  html.dfix .row > .field{min-width:0; max-width:100%;}
+  /* 큰 숫자·표 */
+  html.dfix .c3{color:var(--rest-ink);}
+  html.dfix th, html.dfix td{word-break:keep-all;}
+  html.dfix .grade-card .g-msg{word-break:keep-all; text-wrap:balance;}
+  /* 누르는 크기 · 누른 느낌 */
+  html.dfix .btn-sm, html.dfix .pick-chip, html.dfix .pc-opts button, html.dfix .task-class-pick button{min-height:44px;}
+  html.dfix .rf-self .op button{min-height:40px; padding-left:11px; padding-right:11px;}
+  html.dfix .chip button{min-width:40px; min-height:40px; font-size:16px;}
+  html.dfix .btn, html.dfix .pick-chip, html.dfix .pc-opts button, html.dfix .rf-pick button, html.dfix .rf-self .op button,
+  html.dfix .task-class-pick button, html.dfix .chip button, html.dfix .exit-fs, html.dfix nav button{transition:transform .1s ease, filter .1s ease, background-color .15s, color .15s, border-color .15s;}
+  html.dfix .btn:active, html.dfix .pick-chip:active, html.dfix .pc-opts button:active, html.dfix .rf-pick button:active,
+  html.dfix .rf-self .op button:active, html.dfix .task-class-pick button:active, html.dfix .chip button:active,
+  html.dfix .exit-fs:active, html.dfix nav button:active{transform:scale(.96); filter:brightness(.95);}
+  @media (prefers-reduced-motion: reduce){ html.dfix .btn:active, html.dfix .pick-chip:active, html.dfix .pc-opts button:active, html.dfix .rf-pick button:active,
+    html.dfix .rf-self .op button:active, html.dfix .task-class-pick button:active, html.dfix .chip button:active, html.dfix .exit-fs:active, html.dfix nav button:active{transform:none;} }
+  /* 운동 중 도구: ⋯ 하나로 접기(HUD_TOOLS_MENU) — 끄면 예전처럼 한 줄에 다 펼친다 */
+  .tools-more{position:static;}   /* 펼친 목록은 도구 줄의 오른쪽 끝에 맞춘다 — 왼쪽의 남은 시간 칸을 가리지 않게 */
+  .tools-menu{display:none; position:absolute; top:calc(100% + 6px); right:0; flex-direction:column; gap:6px; align-items:stretch; min-width:150px;}
+  .tools-more.open .tools-menu{display:flex;}
+  .tools-menu .exit-fs{text-align:left; white-space:nowrap;}
+  .stage-tools.tools-flat .tools-more{display:contents;}
+  .stage-tools.tools-flat .tools-menu{display:contents;}
+  .stage-tools.tools-flat #toolsMoreBtn{display:none;}
 </style>
+<script>
+/* 🎨 DESIGN_FIX (2026-10-29 디자인 점검) — 글자 대비·선택 칩·운동 중 글씨·단추 크기.
+   html에 dfix 클래스를 붙이면 위 스타일 층이 켜진다. 끄려면 false (예전 모양으로 돌아간다). */
+var DESIGN_FIX=true;
+if(DESIGN_FIX)document.documentElement.classList.add("dfix");
+</script>
 </head>
 <body>
 <header>
@@ -857,10 +1040,16 @@
     <div class="stage" id="stage">
       <video id="video" playsinline muted></video>
       <canvas class="ov" id="overlay"></canvas>
-      <div class="stage-tools">
-        <button class="exit-fs" id="camRefresh" title="화면이 멈췄을 때 인식을 다시 잡기">♻️ 새로고침</button>
-        <button class="exit-fs" id="camFlipFs" title="앞/뒤 카메라 바꾸기">🔄 카메라</button>
-        <button class="exit-fs" id="musicNext" title="다른 음악으로 바꾸기">🔀 음악</button>
+      <div class="stage-tools" id="stageTools">
+        <!-- 폰 폭에서 단추 4개가 두 줄로 접혀 운동 이름을 가렸다 → ⋯ 안에 세 개를 넣고 ✕ 종료는 늘 보이게 (HUD_TOOLS_MENU) -->
+        <div class="tools-more" id="toolsMore">
+          <button class="exit-fs" id="toolsMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="더 보기" title="새로고침 · 카메라 바꾸기 · 음악 바꾸기">⋯</button>
+          <div class="tools-menu" id="toolsMenu">
+            <button class="exit-fs" id="camRefresh" title="화면이 멈췄을 때 인식을 다시 잡기">♻️ 새로고침</button>
+            <button class="exit-fs" id="camFlipFs" title="앞/뒤 카메라 바꾸기">🔄 카메라</button>
+            <button class="exit-fs" id="musicNext" title="다른 음악으로 바꾸기">🔀 음악</button>
+          </div>
+        </div>
         <button class="exit-fs" id="exitFs">✕ 종료</button>
       </div>
       <div class="center-msg" id="intro">
@@ -955,7 +1144,8 @@
     <div id="result" style="display:none">
       <h3 style="margin-top:18px">이번 세션 결과</h3>
       <!-- 리듬 게임처럼 한눈에 보이는 등급. 숫자보다 먼저 눈에 들어오게 맨 위에 크게 둔다. -->
-      <div class="grade-card" id="gradeCard">
+      <div class="grade-card res-it" id="gradeCard">
+        <span class="res-ring" id="resRing" aria-hidden="true"></span>
         <div class="g-letter num" id="gradeLetter">–</div>
         <div class="g-side">
           <div class="g-msg" id="gradeMsg"></div>
@@ -1469,14 +1659,22 @@
 </div>
 <div id="levelupOverlay" role="dialog" aria-label="진화 카드">
   <div id="confetti"></div>
+  <div class="evo-dustbox" id="evoDust"></div>
+  <div class="evo-flash" id="evoFlash"></div>
   <div class="evo-head" id="evoHead"></div>
+  <div class="evo-xp" aria-hidden="true"><i id="evoXpFill"></i></div>
   <div class="evo-stage" id="evoStage">
     <div class="evo-rays"></div>
+    <div class="evo-shock" id="evoShock"></div><div class="evo-shock" id="evoShock2"></div>
+    <div class="evo-pulse" id="evoPulse"><div class="evo-float">
     <div class="evo-card">
       <div class="evo-face evo-back"><b>?</b><span id="evoBackTxt">EVOLUTION</span></div>
       <div class="evo-face evo-front" id="evoFront"></div>
     </div>
+    </div></div>
+    <div class="evo-parts" id="evoParts"></div>
   </div>
+  <div class="evo-pips p0" id="evoPips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
   <div class="evo-tap" id="evoTap"></div>
   <div class="evo-goal" id="evoGoal"></div>
   <div class="evo-btns" id="evoBtns"></div>
@@ -3696,6 +3894,100 @@ function evoSafe(){
 }
 function maybeShowEvo(){ if(!evoShowing&&evoQueue.length&&evoSafe())showNextEvo(); }
 setInterval(()=>{ try{ maybeShowEvo(); }catch(e){} },2000);
+/* ---------- 진화 카드 연출 단계 (2026-10-29 MOTION_EVO) ----------
+   선생님: "진화나 여러 애니메이션에 모션들도 추가했으면 좋겠어" → 시안에서 '풀 연출'을 골랐다.
+   "full": 박자마다 카드가 커지고 입자가 모임 → 번쩍·충격파 → 뒤집힘 → (진화 카드) 옛 모습이 새 모습으로 변신 → 별이 하나씩 → 확인하면 내 캐릭터로 날아감. 골드는 6박·금가루
+   "lite": 박자·번쩍·튀어나옴·별만 — 메모리 2GB 이하·코어 2개 이하인 느린 폰
+   "calm": 폰의 '동작 줄이기' 설정 — 흔들림·번쩍임·입자 없이 부드럽게 바뀐다
+   끄려면 MOTION_EVO="off" (예전 연출 그대로). 글자·단추·단계 저장은 연출과 상관없이 뒤집는 순간 바로 들어간다. */
+const MOTION_EVO="full";
+const EVO_PART_MAX=24;                                   // 한 번에 떠 있는 입자 수
+function evoMotion(){
+  if(MOTION_EVO==="off")return "off";
+  try{ if(typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches)return "calm"; }catch(e){}
+  if(MOTION_EVO==="lite")return "lite";
+  try{ const n=typeof navigator!=="undefined"?navigator:{}; if((n.deviceMemory&&n.deviceMemory<=2)||(n.hardwareConcurrency&&n.hardwareConcurrency<=2))return "lite"; }catch(e){}
+  return "full";
+}
+function evoKick(el,cls){
+  if(!el)return;
+  el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
+}
+function evoVib(p){
+  try{ if(typeof navigator!=="undefined"&&navigator.vibrate)navigator.vibrate(p); }catch(e){}
+}
+/* 카드를 띄울 때 연출 옷을 갈아입힌다 — 지난 카드의 칸·입자·번쩍임을 지운다 */
+function evoDress(o,mo,tier,kind){
+  o.classList.remove("mo-full","mo-lite","mo-calm","t-gold","t-silver","kind-level","kind-ex","shake","flipped");
+  o.dataset.mo=mo;
+  if(mo!=="off")o.classList.add("mo-"+mo,"kind-"+kind);
+  if(mo!=="off"&&tier)o.classList.add("t-"+tier);
+  const pips=$("evoPips"); if(pips)pips.className="evo-pips p0";
+  const xp=$("evoXpFill"); if(xp)xp.style.transform="";
+  ["evoFlash","evoShock","evoShock2"].forEach(id=>{ const e=$(id); if(e)e.classList.remove("go"); });
+  const p=$("evoParts"); if(p)p.innerHTML="";
+  const d=$("evoDust"); if(d)d.innerHTML="";
+}
+/* 기 모으는 박자 하나 — 카드가 톡 커지고 칸이 하나 켜진다. 풀 연출은 입자가 카드로 모이고, 마지막 박에 진화 에너지가 가득 찬다 */
+function evoBeat(i,full,last){
+  evoKick($("evoPulse"),"b");
+  const pips=$("evoPips"); if(pips)pips.className="evo-pips p"+(i+1);
+  evoVib(12);
+  if(!full)return;
+  evoParticles(8);
+  if(last){ const xp=$("evoXpFill"); if(xp)xp.style.transform="scaleX(1)"; }
+}
+function evoParticles(n){
+  const box=$("evoParts"); if(!box)return;
+  for(let k=0;k<n;k++){
+    const a=Math.random()*Math.PI*2, r=110+Math.random()*60, p=document.createElement("i");
+    p.style.setProperty("--sx",(Math.cos(a)*r).toFixed(1)+"px"); p.style.setProperty("--sy",(Math.sin(a)*r*1.25).toFixed(1)+"px");
+    p.style.animationDelay=Math.round(Math.random()*120)+"ms";
+    p.addEventListener("animationend",()=>p.remove());
+    box.appendChild(p);
+  }
+  while(box.children.length>EVO_PART_MAX)box.firstChild.remove();
+}
+/* 골드 카드 — 금가루가 천천히 내려온다 */
+function evoDust(n){
+  const box=$("evoDust"); if(!box)return;
+  for(let k=0;k<n;k++){
+    const d=document.createElement("i");
+    d.style.left=(6+Math.random()*88).toFixed(1)+"%"; d.style.setProperty("--dx",Math.round(Math.random()*48-24)+"px");
+    d.style.animationDelay=(Math.random()*.9).toFixed(2)+"s"; d.style.animationDuration=(2.4+Math.random()*1.2).toFixed(2)+"s";
+    d.addEventListener("animationend",()=>d.remove());
+    box.appendChild(d);
+  }
+  while(box.children.length>EVO_PART_MAX)box.firstChild.remove();
+}
+/* 확인 — 풀 연출의 진화 카드는 새 모습이 위쪽 내 캐릭터 자리로 날아가 앉는다 */
+function evoOk(){
+  const o=$("levelupOverlay"), item=evoCur;
+  if(o&&o.dataset.mo==="full"&&item&&item.kind==="level"){
+    const f=$("evoFront"), src=f&&f.querySelector?f.querySelector(".evo-emoji.new"):null;
+    evoFly(src,$("avatarEmoji"));
+  }
+  closeEvo();
+}
+function evoFly(src,dst){
+  if(!src||!dst||!src.animate)return;
+  try{
+    const a=src.getBoundingClientRect(), b=dst.getBoundingClientRect();
+    if(!a.width||!b.width||b.bottom<0||b.top>innerHeight)return;      // 캐릭터 자리가 화면 밖이면 날리지 않는다
+    const fs=parseFloat(getComputedStyle(src).fontSize)||80, c=document.createElement("div");
+    c.className="evo-flyer"; c.innerHTML=src.innerHTML;
+    c.style.cssText=`left:${a.left+a.width/2}px;top:${a.top+a.height/2}px;font-size:${fs}px;transform:translate(-50%,-50%)`;
+    document.body.appendChild(c);
+    const dx=(b.left+b.width/2)-(a.left+a.width/2), dy=(b.top+b.height/2)-(a.top+a.height/2), sc=Math.max(.15,(b.height||26)/fs);
+    const an=c.animate([{transform:"translate(-50%,-50%)"},
+      {transform:`translate(-50%,-50%) translate(${dx*.5}px,${dy*.5-50}px) scale(${((1+sc)/2).toFixed(3)})`,offset:.55},
+      {transform:`translate(-50%,-50%) translate(${dx}px,${dy}px) scale(${sc.toFixed(3)})`,opacity:.9}],{duration:720,easing:"cubic-bezier(.5,0,.3,1)",fill:"forwards"});
+    an.onfinish=()=>{ c.remove(); const pill=dst.closest?dst.closest(".profile")||dst:dst;
+      if(pill.animate)pill.animate([{transform:"scale(1)"},{transform:"scale(1.18)"},{transform:"scale(.97)"},{transform:"scale(1)"}],{duration:520,easing:"cubic-bezier(.3,1.6,.5,1)"});
+      beep(1318,.14,.12); evoVib(30); };
+    an.oncancel=()=>c.remove();
+  }catch(e){}
+}
 function showNextEvo(){
   const item=evoQueue.shift(); if(!item)return;
   evoShowing=true; evoCur=item;
@@ -3703,27 +3995,33 @@ function showNextEvo(){
   const o=$("levelupOverlay"), stage=$("evoStage"), front=$("evoFront");
   const tier=(EX_TIER_GOAL&&item.kind==="ex")?exTier(item.k):"";      // 새 운동 카드는 실버·골드
   stage.className="evo-stage charging"+(tier?" tier-"+tier:"");
+  const mo=evoMotion(), full=mo==="full", fx=full||mo==="lite";
+  evoDress(o,mo,tier,item.kind);
   const bt=$("evoBackTxt"); if(bt)bt.textContent=tier?tier.toUpperCase():"EVOLUTION";
   const gl=$("evoGoal"); if(gl)gl.innerHTML="";
   $("evoBtns").innerHTML="";
+  const holo=full?'<div class="evo-holo"></div>':"";
   if(item.kind==="level"){
     const lv=LEVELS[item.lv], prev=LEVELS[Math.max(0,Math.min(item.from,item.lv-1))];
     const stars=Math.min(5,1+Math.floor(item.lv/2.2));
     $("evoHead").textContent=item.catchup?"🎁 그동안 진화한 카드가 도착했어요":"어? 아바타가 빛나요…!";
-    front.innerHTML=`<div class="evo-stars">${"★".repeat(stars)}</div><div class="evo-emoji">${lv[1]}</div>`
-      +`<div class="evo-name">${lv[2]}</div><div class="evo-sub">${prev[1]} → ${lv[1]} 진화!</div>`;
+    // 옛 모습(.old)은 풀 연출에서만 보인다 — 번쩍하며 새 모습(.new)으로 변신. 예전 연출에서는 새 모습만
+    front.innerHTML=`<div class="evo-stars">${Array.from({length:stars},(_,i)=>`<i style="--i:${i}">★</i>`).join("")}</div>`
+      +`<div class="evo-emo"><div class="evo-emoji old">${prev[1]}</div><div class="evo-emoji new">${lv[1]}</div></div>`
+      +`<div class="evo-name">${lv[2]}</div><div class="evo-sub">${prev[1]} → ${lv[1]} 진화!</div>`+holo;
   } else {
     $("evoHead").textContent=item.intro?"🎁 새 운동 카드가 도착했어요":tier==="gold"?"🌟 골드 카드가 왔어요…!":tier==="silver"?"🔓 실버 카드!":"🔓 새 운동 카드!";
     front.innerHTML=`<div class="evo-new">NEW</div>`+(tier?`<div class="evo-tier">${TIER_TXT[tier].join(" ")}</div>`:"")
       +`<div class="evo-art">${exerciseAnim(item.k)}</div>`
-      +`<div class="evo-name">${EXNAME[item.k]}</div><div class="evo-sub">${unlockName(item.k)} 단계 운동</div>`;
+      +`<div class="evo-name">${EXNAME[item.k]}</div><div class="evo-sub">${unlockName(item.k)} 단계 운동</div>`+holo;
   }
   $("evoTap").textContent="카드를 눌러 뒤집기!";
   o.style.display="flex"; o.classList.remove("show"); void o.offsetWidth; o.classList.add("show");
   document.body.classList.add("fs-lock");
-  // 기 모으는 소리 — 점점 높아진다
-  [0,280,560,840].forEach((d,i)=>evoTimers.push(setTimeout(()=>beep([392,494,587,698][i],.1,.12),d)));
-  evoTimers.push(setTimeout(()=>stage.classList.add("hot"),1600));
+  // 기 모으는 소리 — 점점 높아진다. 소리마다 카드가 톡 커지고 칸이 하나씩 켜진다(풀·가볍게). 골드 풀 연출은 6박
+  const long=full&&tier==="gold", beats=long?[0,280,560,840,1120,1400]:[0,280,560,840];
+  beats.forEach((d,i)=>evoTimers.push(setTimeout(()=>{ beep([392,494,587,698,880,1047][i],.1,.12); if(fx)evoBeat(i,full,i===beats.length-1); },d)));
+  evoTimers.push(setTimeout(()=>stage.classList.add("hot"),long?2200:1600));
   evoTimers.push(setTimeout(()=>flipEvo(),7000));      // 안 누르면 저절로 뒤집는다
   stage.onclick=()=>flipEvo();
 }
@@ -3731,11 +4029,24 @@ function flipEvo(){
   const stage=$("evoStage"), item=evoCur;
   if(!item||stage.classList.contains("revealed"))return;
   evoTimers.forEach(clearTimeout); evoTimers=[];
+  const o=$("levelupOverlay"), mo=(o&&o.dataset&&o.dataset.mo)||"off", full=mo==="full", fx=full||mo==="lite";
+  const tier=(EX_TIER_GOAL&&item.kind==="ex")?exTier(item.k):"";
+  // 번쩍 + 충격파 → 카드는 0.11초 뒤에 돈다(CSS). 풀 연출은 화면이 한 번 흔들린다. 실버·골드는 충격파가 두 겹
+  if(fx){
+    evoKick($("evoFlash"),"go"); evoKick($("evoShock"),"go");
+    if(tier)evoTimers.push(setTimeout(()=>evoKick($("evoShock2"),"go"),160));
+    if(full)evoKick(o,"shake");
+    o.classList.add("flipped"); evoVib([40,30,60]); beep(90,.3,.25);
+  }
   stage.classList.remove("charging","hot"); stage.classList.add("revealed");
   $("evoTap").textContent="";
-  const tier=(EX_TIER_GOAL&&item.kind==="ex")?exTier(item.k):"";
   spawnConfetti(tier?CONF_PAL[tier]:null);
   [0,120,240,420].forEach((d,i)=>evoTimers.push(setTimeout(()=>beep([660,880,1046,1318][i],.18,.2),d+350)));
+  // 풀 연출: 1초 뒤 옛 모습이 번쩍하며 새 모습으로(진화 카드) · 별이 하나씩 켜질 때마다 톡 · 골드는 금가루
+  if(full&&item.kind==="level")evoTimers.push(setTimeout(()=>{ evoKick($("evoShock2"),"go"); evoVib([20,20,50]); beep(520,.2,.14); },1000));
+  if(fx&&item.kind==="level"){ const n=Math.min(5,1+Math.floor(item.lv/2.2)), s0=full?1700:950, gap=full?150:140;
+    for(let i=0;i<n;i++)evoTimers.push(setTimeout(()=>{ beep(988+i*170,.09,.1); evoVib(10); },s0+i*gap)); }
+  if(full&&tier==="gold"){ evoTimers.push(setTimeout(()=>evoDust(14),1500)); evoTimers.push(setTimeout(()=>evoDust(10),2700)); }
   if(item.kind==="level"){
     $("evoHead").textContent="🎉 진화 성공!";
     // 카드를 본 순간 이 학생의 진화 단계를 남긴다 (보기 전에 앱을 닫으면 다음에 다시 보여 준다)
@@ -3752,7 +4063,7 @@ function flipEvo(){
       +(item.kind==="ex"?`<button class="btn btn-teal" id="evoTry" style="padding:12px 20px;font-size:17px">운동 설계에서 보기</button>`:"");
   if(next)$("evoNext").addEventListener("click",()=>{ evoShowing=false; showNextEvo(); });
   else {
-    $("evoOk").addEventListener("click",()=>closeEvo());
+    $("evoOk").addEventListener("click",()=>evoOk());
     const tr=$("evoTry");
     if(tr)tr.addEventListener("click",()=>{
       const k=item.k; closeEvo(); goPage("pgSetup");
@@ -5026,8 +5337,110 @@ function renderGrade(s){
   }
   const lo=g.min, hi=up?up.min:100;
   const pct=capped?100:(hi>lo?Math.round((s.score-lo)/(hi-lo)*100):100);
-  setTimeout(()=>{ $("gradeFill").style.width=Math.max(6,Math.min(pct,100))+"%"; },60);
-  if(g.g.charAt(0)==="S")spawnConfetti();
+  const fillW=Math.max(6,Math.min(pct,100))+"%"; $("gradeFill").dataset.w=fillW;      // 결과 연출이 막대를 0에서 다시 채울 때 쓴다
+  setTimeout(()=>{ $("gradeFill").style.width=fillW; },60);
+  // S로 시작하는 등급이면 축하한다 — 결과 연출(MOTION_RESULT)이 켜져 있으면 등급 도장이 찍히는 순간에
+  if(g.g.charAt(0)==="S"){ if(resultMotion())resConfetti=true; else spawnConfetti(); }
+}
+/* ---------- 결과 화면 정리 · 연출 (2026-10-29 디자인 점검, 선생님이 '⑤ 결과 화면 정리 + 모션'을 골랐다) ----------
+   지금까지는 숫자 타일 10개와 표가 한꺼번에 나타나 결과가 5.7화면 길이였고 성찰 단추가 맨 아래였다.
+   RESULT_TIDY: 등급 → 핵심 3개(점수·정확도·반복) → 판정 한 줄 막대 → 얻은 점수 → '자세히 보기'(수행시간·강도·점수 계산·동작별 기록) → 성찰
+                (원래 마크업은 그대로 두고 처음 열 때 한 번 옮긴다 — 끄면 예전 배치 그대로. 숫자를 넣는 id는 같다)
+   MOTION_RESULT: 결과가 화면에 들어오면(심박을 재고 내려왔을 때) 등급 도장이 찍히고 → 막대 → 숫자가 0에서 올라가고 →
+                판정 막대가 차례로 → 얻은 점수 → '+점수'가 위쪽 내 점수로 날아간다(약 3초). 폰의 '동작 줄이기'면 연출 없이 바로 보인다. */
+const RESULT_TIDY=true;
+const MOTION_RESULT=true;
+let resConfetti=false, resIO=null, resTimers=[];
+function resultMotion(){
+  if(!MOTION_RESULT)return false;
+  try{ if(typeof matchMedia==="function"&&matchMedia("(prefers-reduced-motion: reduce)").matches)return false; }catch(e){}
+  return true;
+}
+function tidyResult(){
+  const res=$("result"); if(!RESULT_TIDY||!res||res.dataset.tidy)return;
+  res.dataset.tidy="1"; res.classList.add("tidy");
+  const k1=$("rScore").closest(".kpis"), k2=$("rPerfect").closest(".kpis"), gain=$("gainPts").closest(".gain");
+  const tbl=$("roundRows").closest("table"), th=tbl.previousElementSibling;
+  // '자세히 보기' — 수행시간·강도·점수 계산·동작별 기록
+  const more=document.createElement("details"); more.className="res-more"; more.id="resMore";
+  more.innerHTML='<summary>📊 자세히 보기<span>수행시간 · 강도 · 점수 계산 · 동작별 기록</span></summary>';
+  const kb=document.createElement("div"); kb.className="kpis";
+  [$("rTime"),$("rInt")].forEach(v=>kb.appendChild(v.closest(".kpi")));
+  more.appendChild(kb); more.appendChild($("breakdown"));
+  if(th&&th.tagName==="H3")more.appendChild(th);
+  const tw=document.createElement("div"); tw.className="res-tbl"; tw.appendChild(tbl); more.appendChild(tw);
+  // 판정 5칸 → 한 줄 막대 (숫자 칸 id는 그대로 아래 범례로 옮긴다)
+  const bar=document.createElement("div"); bar.className="jbar-wrap res-it"; bar.id="jBarWrap";
+  bar.innerHTML='<div class="jbar" id="jBar" role="img" aria-label="판정 비율"><i data-j="p"></i><i data-j="g"></i><i data-j="gd"></i><i data-j="o"></i><i data-j="m"></i></div><div class="jbar-lg"></div>';
+  const lg=bar.querySelector(".jbar-lg");
+  [["rPerfect","퍼펙트","p"],["rGreat","그레이트","g"],["rGood","굿","gd"],["rOk","오케이","o"],["rMiss","미스","m"]].forEach(([id,n,j])=>{
+    const v=$(id), sp=document.createElement("span"); sp.innerHTML=`<i data-j="${j}"></i>${n} `;
+    v.className="num"; v.removeAttribute("style"); sp.appendChild(v); lg.appendChild(sp);
+  });
+  k2.replaceWith(bar);
+  k1.classList.add("kpis3","res-it"); gain.classList.add("res-it"); gain.id="gainBox";
+  gain.insertAdjacentElement("afterend",more);
+}
+try{ tidyResult(); }catch(e){}
+/* 판정 막대의 칸 너비 — 받은 판정 수만큼 */
+function renderJudgeBar(s){
+  const b=$("jBar"); if(!b)return;
+  const n=[s.jP,s.jG,s.jGd,s.jO,s.jB].map(x=>+x||0), tot=n.reduce((a,c)=>a+c,0);
+  [...b.children].forEach((e,i)=>{ e.style.flexGrow=String(n[i]); e.style.display=n[i]?"":"none"; });
+  b.classList.toggle("empty",!tot);
+}
+/* 결과가 화면에 들어오면 연출을 시작한다 (심박을 재러 위로 올라가 있으면 내려왔을 때) */
+function resultArm(){
+  const res=$("result"); if(!res)return;
+  if(resIO){ try{ resIO.disconnect(); }catch(e){} resIO=null; }
+  resTimers.forEach(clearTimeout); resTimers=[];
+  res.classList.remove("mo-pre"); res.querySelectorAll(".res-it.in,.jbar i.on").forEach(e=>e.classList.remove("in","on"));
+  $("gradeLetter").classList.remove("stamp"); $("gradeCard").classList.remove("shine");
+  if(!resultMotion())return;
+  res.classList.add("mo-pre");
+  const go=()=>{ if(resIO){ try{ resIO.disconnect(); }catch(e){} resIO=null; } resultReveal(); };
+  if(typeof IntersectionObserver!=="function"){ go(); return; }
+  resIO=new IntersectionObserver(es=>{ if(es.some(e=>e.isIntersecting))go(); },{threshold:.35});
+  resIO.observe($("gradeCard"));
+}
+function resCount(el,ms){
+  if(!el)return;
+  const m=String(el.textContent).match(/^(\D*)(\d+)([\s\S]*)$/); if(!m)return;
+  const to=+m[2], t0=performance.now();
+  (function f(){ const k=Math.min(1,(performance.now()-t0)/ms); el.textContent=m[1]+Math.round(to*(1-Math.pow(1-k,3)))+m[3]; if(k<1)requestAnimationFrame(f); })();
+}
+function resultReveal(){
+  resTimers.forEach(clearTimeout); resTimers=[];
+  const res=$("result"), at=(ms,fn)=>resTimers.push(setTimeout(()=>{ try{ fn(); }catch(e){} },ms));
+  const card=$("gradeCard"), letter=$("gradeLetter"), fill=$("gradeFill"), big=/^S/.test(letter.textContent);
+  const target=fill.dataset.w||fill.style.width; fill.style.transition="none"; fill.style.width="0%"; void fill.offsetWidth; fill.style.transition="";
+  card.classList.add("in");
+  at(180,()=>{ const ring=$("resRing"), L=letter.getBoundingClientRect(), C=card.getBoundingClientRect();
+    if(ring){ ring.style.left=(L.left-C.left+L.width/2)+"px"; ring.style.top=(L.top-C.top+L.height/2)+"px"; }
+    evoKick(letter,"stamp"); evoKick(ring,"go"); beep(90,.3,.25); evoVib(big?[50,30,80]:[30]);
+    if(big){ evoKick(card,"shine"); if(resConfetti){ resConfetti=false; spawnConfetti(); } } });
+  at(520,()=>{ fill.style.width=target; });
+  at(700,()=>{ $("rScore").closest(".kpis").classList.add("in"); ["rScore","rAcc","rReps"].forEach((id,i)=>{ resCount($(id),700); beep(660+i*120,.06,.08); }); });
+  at(1250,()=>{ const w=$("jBarWrap"); if(w){ w.classList.add("in"); [...$("jBar").children].forEach((e,i)=>resTimers.push(setTimeout(()=>e.classList.add("on"),i*90))); } });
+  at(1800,()=>{ const g=$("gainPts").closest(".gain"); g.classList.add("in"); resCount($("gainPts"),800); beep(1046,.1,.1); });
+  at(2800,()=>{ res.classList.remove("mo-pre"); resFly($("gainPts"),$("totalPts")); });
+}
+/* '+점수'가 위쪽 내 점수 칸으로 날아간다 (그 칸이 화면 안에 보일 때만) */
+function resFly(src,dst){
+  if(!src||!dst||!src.animate)return;
+  try{
+    const a=src.getBoundingClientRect(), b=dst.getBoundingClientRect();
+    if(!a.width||!b.width||b.bottom<0||b.top>innerHeight||a.bottom<0||a.top>innerHeight)return;
+    const c=document.createElement("div"); c.className="evo-flyer res-flyer"; c.textContent=String(src.textContent).replace(/\s*P$/,"");
+    c.style.cssText=`left:${a.left+a.width/2}px;top:${a.top+a.height/2}px;transform:translate(-50%,-50%)`;
+    document.body.appendChild(c);
+    const dx=(b.left+b.width/2)-(a.left+a.width/2), dy=(b.top+b.height/2)-(a.top+a.height/2);
+    const an=c.animate([{transform:"translate(-50%,-50%)",opacity:1},{transform:`translate(-50%,-50%) translate(${dx*.5}px,${dy*.5-40}px) scale(.9)`,offset:.55},{transform:`translate(-50%,-50%) translate(${dx}px,${dy}px) scale(.55)`,opacity:.85}],{duration:650,easing:"cubic-bezier(.5,0,.3,1)",fill:"forwards"});
+    an.onfinish=()=>{ c.remove(); const pill=dst.closest?dst.closest(".profile")||dst:dst;
+      if(pill.animate)pill.animate([{transform:"scale(1)"},{transform:"scale(1.15)"},{transform:"scale(.97)"},{transform:"scale(1)"}],{duration:500,easing:"cubic-bezier(.3,1.6,.5,1)"});
+      beep(1318,.12,.12); evoVib(25); };
+    an.oncancel=()=>c.remove();
+  }catch(e){}
 }
 
 /* ---------- records ---------- */
@@ -7245,12 +7658,25 @@ function pfRender(ctx) {
     }).join("") + '</div>';
   })();
 
-  const cover = '<section class="pf-cover">'
-    + '<div><span class="pf-cv-kick">TABATA PROJECT</span>'
-    + '<h1 class="pf-cv-h1">타바타 운동<br>포트폴리오</h1></div>'
-    + '<div class="pf-cv-who"><span class="pf-cv-cls">' + pfEsc(cls) + '</span>'
-    + '<span class="pf-cv-nm">' + pfEsc(name) + '</span></div>'
-    + (period ? '<div class="pf-cv-pd">' + period + '</div>' : '')
+  /* 표지 머리 — v2(PF_STYLE)는 내 캐릭터·진화 단계를 함께 싣는다. 점수는 앱과 같이 기록의 획득 P를 더한 값(같은 기록은 한 번만) */
+  const pfSeen = {}, ptsSum = rs.reduce(function (a, r) { if (r && r.id) { if (pfSeen[r.id]) return a; pfSeen[r.id] = 1; } return a + (+(r && r.pts) || 0); }, 0);
+  const pfLi = levelIndex(ptsSum), pfLv = LEVELS[pfLi], pfNx = LEVELS[pfLi + 1];
+  const head = PF_STYLE === "v2"
+    ? '<div class="pf-hero"><div class="pf-hero-av"><span class="pf-av">' + pfLv[1] + '</span>'
+      + '<b>' + pfEsc(String(pfLv[2]).replace(/^Lv\.\d+\s*/, "")) + '</b><i>Lv.' + (pfLi + 1) + ' · ' + ptsSum + ' P</i></div>'
+      + '<div class="pf-hero-tx"><span class="pf-cv-kick">TABATA PORTFOLIO</span>'
+      + '<h1 class="pf-cv-h1">타바타 운동<br>포트폴리오</h1>'
+      + '<div class="pf-cv-who"><span class="pf-cv-cls">' + pfEsc(cls) + '</span><span class="pf-cv-nm">' + pfEsc(name) + '</span></div>'
+      + (period ? '<div class="pf-cv-pd">' + period + '</div>' : '') + '</div></div>'
+      + '<div class="pf-evo">' + LEVELS.slice(0, Math.min(LEVELS.length, pfLi + 2)).map(function (L, i) {
+          return '<span class="' + (i < pfLi ? "on" : i === pfLi ? "on now" : "next") + '">' + L[1] + '</span>'; }).join('<em>›</em>')
+      + '<i>' + (pfNx ? '다음 진화 ' + pfNx[1] + '까지 ' + (pfNx[0] - ptsSum) + ' P' : '🏆 최고 단계') + '</i></div>'
+    : '<div><span class="pf-cv-kick">TABATA PROJECT</span>'
+      + '<h1 class="pf-cv-h1">타바타 운동<br>포트폴리오</h1></div>'
+      + '<div class="pf-cv-who"><span class="pf-cv-cls">' + pfEsc(cls) + '</span>'
+      + '<span class="pf-cv-nm">' + pfEsc(name) + '</span></div>'
+      + (period ? '<div class="pf-cv-pd">' + period + '</div>' : '');
+  const cover = '<section class="pf-cover">' + head
     + (p && (GOAL_LABEL[p.goal] || String(p.aim || "").trim())
       ? '<div class="pf-goal"><span>내 운동 목표</span><b>' + (GOAL_LABEL[p.goal] || "–") + '</b>'
         + (String(p.aim || "").trim() ? '<em>“' + pfEsc(p.aim) + '”</em>' : '') + '</div>' : '')
@@ -7412,15 +7838,16 @@ function pfRender(ctx) {
     : '<div class="pf-none">단원 돌아보기를 쓰지 않았습니다.</div>';
 
   /* 2쪽 — 기록으로 보는 변화 (그래프와 해석을 모아 둔다) */
+  const mk = PF_STYLE === "v2" ? ["↗", "A", "B", "C"] : ["📈", "Ⓐ", "Ⓑ", "Ⓒ"];      // v2: 계획(A)·실천(B)·돌아보기(C) 글자 칩
   const analysis = (chart || hrChart || hrTips || wire)
-    ? '<div class="pf-page"><h2 class="pf-h2"><span>📈</span>기록으로 보는 나의 변화</h2>'
+    ? '<div class="pf-page"><h2 class="pf-h2"><span>' + mk[0] + '</span>기록으로 보는 나의 변화</h2>'
       + chart + hrChart + hrTips + wire + '</div>'
     : "";
 
   return '<article class="pf-stu">' + cover + analysis
-    + '<div class="pf-page"><h2 class="pf-h2"><span>Ⓐ</span>내가 세운 운동 계획</h2>' + plan + '</div>'
-    + '<div class="pf-page"><h2 class="pf-h2"><span>Ⓑ</span>내가 실천한 기록과 그날의 생각<i>' + rs.length + '회</i></h2>' + time + '</div>'
-    + '<div class="pf-page"><h2 class="pf-h2"><span>Ⓒ</span>단원을 마치며</h2>' + fin
+    + '<div class="pf-page"><h2 class="pf-h2"><span>' + mk[1] + '</span>내가 세운 운동 계획</h2>' + plan + '</div>'
+    + '<div class="pf-page"><h2 class="pf-h2"><span>' + mk[2] + '</span>내가 실천한 기록과 그날의 생각<i>' + rs.length + '회</i></h2>' + time + '</div>'
+    + '<div class="pf-page"><h2 class="pf-h2"><span>' + mk[3] + '</span>단원을 마치며</h2>' + fin
     + '<div class="pf-end">여기까지 해낸 나에게 —<br><b>' + pfEsc(name) + '</b></div></div>'
     + '</article>';
 }
@@ -7598,6 +8025,108 @@ table.pf-tb{width:100%;border-collapse:collapse;font-size:9.2pt;margin:1mm 0}
 .pf-end b{font-size:15pt;text-shadow:var(--glow)}
 @media print{.pf-bar{display:none}}
 `;
+/* ---------- 포트폴리오 v2 (2026-10-29 디자인 점검 — 선생님: "포트폴리오도 더 멋지게") ----------
+   내용·순서·쪽 나눔은 그대로 두고 모양만 바꾼다: 앱과 같은 남보라·주황·청록, 표지에 내 캐릭터와 진화 단계,
+   숫자는 앱처럼 Barlow Condensed, 쪽 제목은 글자 칩(계획 A · 실천 B · 돌아보기 C), 끝장에 금색 도장.
+   v1 스타일 위에 덧씌우는 층이라 끄면(PF_STYLE="v1") 예전 모양 그대로 돌아간다. */
+const PF_STYLE = "v2";
+const PF_FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+  + '<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">';
+const PF_CSS_V2 = `
+:root{
+  --bg:#fff; --fg:#1F2350; --card:#fff; --line:#E1DDF6; --soft:#F8F7FE; --ac:#5B51E8; --ac2:#0E8F85; --mut:#5F6490;
+  --panel:#F1EFFD; --head:#5B51E8; --headfg:#fff; --gold:#8F6200; --glow:none; --grid:none;
+}
+body.t-hud{
+  --bg:#11132B; --fg:#ECEBFF; --card:rgba(255,255,255,.04); --line:rgba(161,153,255,.32); --soft:rgba(161,153,255,.06);
+  --ac:#A199FF; --ac2:#4FE3C9; --mut:#A9ADD8; --panel:rgba(161,153,255,.12); --head:#A199FF; --headfg:#14163A; --gold:#FFC04D;
+  --glow:0 0 12px rgba(161,153,255,.45);
+  --grid:radial-gradient(900px 500px at 15% -5%, rgba(91,81,232,.35), transparent 60%);
+}
+body{font-family:"Noto Sans KR","Malgun Gothic","맑은 고딕",sans-serif}
+.pf-cv-stats b,.pf-mets b,.pf-gr,.pf-n,.pf-dt,.pf-cv-pd,.pf-h2 span,.pf-gt b,.pf-gt i,.pf-mix b,.pf-jt b,.pf-hero-av i,.pf-evo i{font-family:"Barlow Condensed","Noto Sans KR",sans-serif;letter-spacing:.2pt}
+.pf-bar{background:#1F2350;border-bottom:1px solid rgba(161,153,255,.3)}
+.pf-bar button{border-color:#A199FF;color:#C9C4FF}
+.pf-bar button.go{background:#A199FF;color:#14163A}
+.brk::before,.brk::after{display:none}
+body.t-hud .brk::before,body.t-hud .brk::after{display:block}
+/* 표지 */
+.pf-cover{padding:3mm 0 0}
+.pf-hero{position:relative;overflow:hidden;display:flex;gap:6mm;align-items:center;padding:7mm 6mm;border-radius:5mm;color:#fff;
+  background:linear-gradient(135deg,#5B51E8 0%,#7C6FF0 55%,#F0913A 135%)}
+.pf-hero::before{content:"";position:absolute;right:-16mm;top:-20mm;width:62mm;height:62mm;border-radius:50%;background:rgba(255,255,255,.09)}
+.pf-hero::after{content:"";position:absolute;right:16mm;bottom:-26mm;width:40mm;height:40mm;border-radius:50%;background:rgba(255,255,255,.07)}
+body.t-hud .pf-hero{background:linear-gradient(135deg,#2D2A7A 0%,#3E3197 55%,#6B3F62 135%);box-shadow:0 0 0 0.8pt rgba(161,153,255,.45)}
+.pf-hero-av{position:relative;z-index:1;flex:none;width:33mm;height:33mm;border-radius:50%;background:rgba(255,255,255,.16);
+  border:1.2pt solid rgba(255,255,255,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6mm}
+.pf-hero-av .pf-av{font-size:27pt;line-height:1}
+.pf-hero-av b{font-size:9pt;font-weight:800}
+.pf-hero-av i{font-style:normal;font-size:10pt;opacity:.85}
+.pf-hero-tx{position:relative;z-index:1;min-width:0}
+.pf-hero .pf-cv-kick{color:#FFE2B8;text-shadow:none;letter-spacing:2.6pt}
+.pf-hero .pf-cv-h1{color:#fff;font-size:27pt;font-weight:800;margin:1.2mm 0 0;text-shadow:none}
+.pf-hero .pf-cv-who{border-bottom:0;margin:3.5mm 0 0;padding:0}
+.pf-hero .pf-cv-cls{color:rgba(255,255,255,.78)}
+.pf-hero .pf-cv-nm{color:#fff;font-size:21pt;font-weight:800;text-shadow:none}
+.pf-hero .pf-cv-pd{color:rgba(255,255,255,.82);margin-top:1mm}
+.pf-evo{display:flex;align-items:center;flex-wrap:wrap;gap:1.2mm 1.6mm;margin:3.2mm 0 0;font-size:14pt;line-height:1.2}
+.pf-evo span{opacity:.32;filter:grayscale(1)}
+.pf-evo span.on{opacity:1;filter:none}
+.pf-evo span.now{border-radius:999px;padding:0 1.6mm;background:var(--panel);box-shadow:0 0 0 0.9pt var(--ac)}
+.pf-evo em{font-style:normal;font-size:9pt;color:var(--mut)}
+.pf-evo i{font-style:normal;font-size:10pt;color:var(--mut);margin-left:auto}
+.pf-goal{border-radius:3mm;background:var(--panel);border-color:transparent}
+.pf-goal b{color:var(--ac)}
+.pf-cv-sec{font-size:11pt;font-weight:800}
+.pf-cv-stats div{background:var(--soft);border-radius:3mm}
+.pf-cv-stats b{font-size:17pt;color:var(--ac);line-height:1.15}
+.pf-mix span{background:var(--card);border-color:var(--line)}
+.pf-goalp,.pf-jsum,.pf-tips,.pf-chart{border-radius:3.5mm;background:var(--card)}
+.pf-gh{font-size:9.6pt;font-weight:800}
+.pf-gb{height:3.2mm}
+.pf-gb>span{height:3.2mm;background:linear-gradient(90deg,var(--ac),#9A90FF)}
+.pf-tip{border-left-color:var(--ac)}
+.pf-cv-ft{border-top:0;margin-top:auto;padding:4mm 0 1mm;font-size:9.6pt;color:var(--mut)}
+.pf-cv-ft::before{content:"“";display:block;font-family:Georgia,serif;font-size:24pt;line-height:.6;color:var(--ac);opacity:.55}
+/* 쪽 제목 — 글자 칩 */
+.pf-h2{display:flex;align-items:center;gap:3mm;font-size:15pt;font-weight:800;border-bottom:1pt solid var(--line);padding-bottom:2.6mm;margin:0 0 4mm}
+.pf-h2 span{width:auto;min-width:9.5mm;height:9.5mm;padding:0 2.4mm;border-radius:2.6mm;background:var(--ac);color:var(--headfg);
+  display:inline-flex;align-items:center;justify-content:center;font-size:15pt;font-weight:700;text-shadow:none}
+.pf-h2 i{float:none;margin-left:auto;padding:0;font-size:10pt}
+.pf-pill{background:var(--ac);border-radius:2.6mm}
+.pf-sub{color:var(--ac)}
+.pf-a{border-radius:2.6mm;background:var(--soft)}
+.pf-aim{background:var(--panel);border-color:transparent;color:var(--ac)}
+.pf-tb thead th{background:var(--ac)}
+/* 날짜별 기록 카드 */
+.pf-sess{border-radius:3.6mm;padding:3.4mm;box-shadow:0 0.6mm 2.4mm rgba(43,49,96,.07)}
+body.t-hud .pf-sess{box-shadow:none}
+.pf-n{background:var(--ac)}
+.pf-dt{font-size:11.5pt}
+.pf-gr{font-size:15pt;color:var(--g);color:color-mix(in srgb,var(--g) 62%,#1F2350);background:color-mix(in srgb,var(--g) 16%,transparent);border-radius:2.2mm;padding:0.4mm 2.6mm;text-shadow:none}
+body.t-hud .pf-gr{color:color-mix(in srgb,var(--g) 80%,#fff)}
+.pf-tb th{white-space:nowrap}
+.pf-mets div{border-radius:2.4mm;background:var(--soft)}
+.pf-mets b{font-size:12pt}
+.pf-mets .big{background:var(--ac);border-color:var(--ac)}
+.pf-mets .big b{color:#fff;font-size:14pt;text-shadow:none}
+.pf-mets .big span{color:rgba(255,255,255,.85)}
+body.t-hud .pf-mets .big b{color:var(--headfg)}
+body.t-hud .pf-mets .big span{color:var(--headfg);opacity:.8}
+.pf-seq span{background:var(--panel);color:var(--ac);border-color:transparent}
+.pf-hrt .post b{background:#E0435A;border-color:#E0435A}
+/* 끝장 — 금색 도장 */
+.pf-end{position:relative;margin-top:12mm;padding:9mm 6mm 7mm;border-radius:4mm;background:var(--panel);border:1pt solid var(--line);color:var(--fg)}
+.pf-end::before{content:"★";position:absolute;right:7mm;top:-7mm;width:14mm;height:14mm;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#FFE58A,#E3A300 70%);color:#6B4A00;display:flex;align-items:center;justify-content:center;
+  font-size:15pt;box-shadow:0 1mm 3mm rgba(176,125,0,.35)}
+.pf-end b{color:var(--ac);font-size:19pt}
+@media (max-width:520px){
+  .pf-hero{flex-direction:column;align-items:flex-start;gap:4mm}
+  .pf-evo i{flex-basis:100%;margin-left:0}
+}
+`;
+function pfStyleTag() { return PF_STYLE === "v2" ? PF_FONTS + "<style>" + PF_CSS + PF_CSS_V2 + "</style>" : "<style>" + PF_CSS + "</style>"; }
 
 /* ---------- 포트폴리오 보기 ----------
    예전에는 새 창(window.open)으로 띄웠는데, 폰 브라우저가 팝업으로 막아버려 학생 화면에서는
@@ -7633,7 +8162,7 @@ function pfOpen(cls, list) {
   if (!list.length) { alert("학생이 없습니다."); return; }
   const body = list.map(s => pfStudent(cls, s)).join("");
   const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8">
-    <title>타바타 운동 포트폴리오 — ${pfEsc(cls)}</title><style>${PF_CSS}</style></head>
+    <title>타바타 운동 포트폴리오 — ${pfEsc(cls)}</title>${pfStyleTag()}</head>
     <body><div class="pf-bar"><button class="go" onclick="window.print()">🖨 인쇄 / PDF로 저장</button><button onclick="var d=document.body.classList.toggle('t-hud');this.textContent=d?'📄 밝은 배경으로':'🌑 어두운 화면용으로'">🌑 어두운 화면용으로</button>      <span>${pfEsc(cls)} · ${list.length}명 — 학생마다 새 쪽에서 시작합니다. 이 줄은 인쇄되지 않습니다.</span></div>
     ${body}</body></html>`;
   pfShow(html, `${pfEsc(cls)} · ${list.length}명`);
@@ -7671,7 +8200,7 @@ if ($("pfMineBtn")) $("pfMineBtn").addEventListener("click", () => {
   const ctx = pfMineCtx();
   if (!ctx.plan && !ctx.rs.length) { alert("아직 묶을 기록이 없습니다. 운동을 한 번 해보세요."); return; }
   const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8">
-    <title>${pfEsc(me.name)} — 타바타 운동 포트폴리오</title><style>${PF_CSS}</style></head>
+    <title>${pfEsc(me.name)} — 타바타 운동 포트폴리오</title>${pfStyleTag()}</head>
     <body><div class="pf-bar"><button class="go" onclick="window.print()">🖨 인쇄 / PDF로 저장</button><button onclick="var d=document.body.classList.toggle('t-hud');this.textContent=d?'📄 밝은 배경으로':'🌑 어두운 화면용으로'">🌑 어두운 화면용으로</button>      <span>이 줄은 인쇄되지 않습니다.</span></div>${pfRender(ctx)}</body></html>`;
   pfShow(html, `${pfEsc(me.name)}의 포트폴리오`);
 });
@@ -8059,6 +8588,7 @@ function finish(){
   });
   totalPts+=s.pts;   // 레벨은 아래 addRecord 뒤에 그린다 — 점수를 이 세션 기록에서 세므로
   $("rPerfect").textContent=s.jP; $("rGreat").textContent=s.jG; $("rGood").textContent=s.jGd; $("rOk").textContent=s.jO; $("rMiss").textContent=s.jB;
+  renderJudgeBar(s);          // 판정 한 줄 막대 (RESULT_TIDY)
   $("gainPts").textContent="+"+s.pts+" P";
   $("gainAv").textContent=$("avatarEmoji").textContent;
   const bonusTxt=s.bonus?` 🌱 자율 실천 가산점 +${s.bonus}P 포함!`:(currentBattle?` ⚔️ 배틀 기록으로 제출됩니다!`:` 📋 '${currentTask?currentTask.title:""}' 과제 완료로 인정되었습니다.`);
@@ -8073,6 +8603,7 @@ function finish(){
     tb.appendChild(tr);
   });
   $("result").style.display="block";
+  resultArm();                // 결과가 화면에 들어오면 등급 도장부터 차례로 (MOTION_RESULT)
   setTimeout(()=>{try{$("hrStep3").scrollIntoView({behavior:"smooth",block:"start"});}catch(e){}},200); // 운동 직후 STEP 3 심박 측정으로 안내
   showBodyCheck();            // 운동 직후 몸 상태를 한 번 묻는다
   needPostHr();               // 잴 때까지 빨간 안내와 알림을 띄운다
@@ -8160,7 +8691,7 @@ async function start(opts){
   tickId=setInterval(tick,1000);
 }
 function stopAll(){
-  hideSideTip();
+  hideSideTip(); closeToolsMenu();
   running=false; $("stage").classList.remove("running"); syncStartBtn(); if(rafId)cancelAnimationFrame(rafId); if(tickId)clearInterval(tickId);
   $("nextPreview").style.display="none";
   exitFullscreen();
@@ -8190,6 +8721,18 @@ function exitFullscreen(){
   if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});
 }
 $("exitFs").addEventListener("click",()=>{ stopAll(); resetStage(); });
+/* 운동 중 도구 — ⋯ 하나로 접는다 (2026-10-29 디자인 점검: 폰 폭에서 단추 4개가 두 줄로 접혀 운동 이름 칸을 가렸다).
+   ♻️ 새로고침·🔄 카메라·🔀 음악은 ⋯ 안에, ✕ 종료는 늘 보인다. 단추 id와 누르면 하는 일은 그대로다.
+   끄려면 HUD_TOOLS_MENU=false — 예전처럼 한 줄에 다 펼친다. */
+const HUD_TOOLS_MENU=true;
+function closeToolsMenu(){ const w=$("toolsMore"), b=$("toolsMoreBtn"); if(w)w.classList.remove("open"); if(b)b.setAttribute("aria-expanded","false"); }
+(function(){
+  const bar=$("stageTools"), wrap=$("toolsMore"), btn=$("toolsMoreBtn"); if(!bar||!wrap||!btn)return;
+  if(!HUD_TOOLS_MENU){ bar.classList.add("tools-flat"); return; }
+  btn.addEventListener("click",e=>{ e.stopPropagation(); const o=!wrap.classList.contains("open"); wrap.classList.toggle("open",o); btn.setAttribute("aria-expanded",o?"true":"false"); });
+  $("toolsMenu").addEventListener("click",()=>closeToolsMenu());          // 어느 도구를 눌러도 닫는다
+  document.addEventListener("click",e=>{ if(!wrap.contains(e.target))closeToolsMenu(); });
+})();
 $("camFlip")&&$("camFlip").addEventListener("click",flipWorkoutCam);
 $("camFlipFs")&&$("camFlipFs").addEventListener("click",flipWorkoutCam);
 $("camRefresh")&&$("camRefresh").addEventListener("click",refreshWorkoutCam);
