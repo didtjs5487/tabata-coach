@@ -6613,7 +6613,8 @@ function buildGradeSheets(){
   const num=v=>(v===""||v==null||!isFinite(v))?v:Number(v);
   // 평가계획서 ㉯ 5개 항목의 ○×와 그 근거 수치를 함께 내보낸다 (최종 판단은 교사 몫)
   const OX=b=>b?"○":"×";
-  const planCols=GRADE_PLAN_COLS?["㉮계획서제출","㉮채점(10점)","㉮제출건수","㉮서술작성(칸/5)","㉮최근작성일","㉰단원돌아보기","㉰채점(10점)"]:[];   // 채점칸은 비워 둔다 — 계획의 옳고 그름은 앱이 판정하지 않고 선생님이 읽고 적는다(10·8·6·4·2)
+  /* 마지막 두 칸(합계·최종 환산)은 비워 둔다 — 구글 시트의 스크립트가 선생님이 적은 ㉮·㉰ 점수와 ㉯ 실천점수로 계산한다(평가계획서 환산표) */
+  const planCols=GRADE_PLAN_COLS?["㉮계획서제출","㉮채점(10점)","㉮제출건수","㉮서술작성(칸/5)","㉮최근작성일","㉰단원돌아보기","㉰채점(10점)","㉮㉯㉰ 합계(40)","최종 환산(40)"]:[];   // 채점칸은 비워 둔다 — 계획의 옳고 그름은 앱이 판정하지 않고 선생님이 읽고 적는다(10·8·6·4·2)
   const head=["번호","이름","성별",
     ...planCols,...(PLAN_ACC_ITEM?["①과제제출","②심박","③정확도","④자율실천","⑤향상","만족개수(5)"]:["①과제제출","②심박","③자율실천","④향상","만족개수","정확도가산"]),"실천점수(20점)",
     "배정차시","이수차시","건강제외","제외적용","당일","보충","이수율(%)",
@@ -6625,7 +6626,7 @@ function buildGradeSheets(){
     rows:[head].concat((rosters[c]||[]).map(s=>{
       const st=statsFor(s.name,c), g=practiceScore(s.name,c), rf=reflectOf(s.name,c);
       const pl=GRADE_PLAN_COLS?plansOf(s.name,c):[], bp=pl.length?bestPlan(pl):null;   // 서버에 올라온 것만 = 제출한 것
-      const planCells=GRADE_PLAN_COLS?[OX(pl.length), "", pl.length, bp?planWrote(bp):"", pl.length?pl.map(p=>String(p.submitted||p.made||"").slice(0,10)).sort().pop():"", hasFinal(rf)?"작성":"미작성", ""]:[];
+      const planCells=GRADE_PLAN_COLS?[OX(pl.length), "", pl.length, bp?planWrote(bp):"", pl.length?pl.map(p=>String(p.submitted||p.made||"").slice(0,10)).sort().pop():"", hasFinal(rf)?"작성":"미작성", "", "", ""]:[];
       return [num(s.no), s.name, s.sex||"",...planCells,
         ...(PLAN_ACC_ITEM?[OX(g.ok.task),OX(g.ok.hr),OX(g.ok.acc),OX(g.ok.self),OX(g.ok.gain),g.met]:[OX(g.ok.task),OX(g.ok.hr),OX(g.ok.self),OX(g.ok.gain),g.met,num(g.accBonus)]),num(g.score),
         g.assigned, g.done, g.excusedN, g.exOver?"한도초과-미적용":(g.exUsed||""), g.onTime, g.late, g.assigned?g.rate:"",
