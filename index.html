@@ -1567,11 +1567,10 @@ var NAV_BOTTOM=true, SETUP_TIDY=true, MOTION_UI=true, MOTION_PET=true, MOTION_BO
     </details>
 
     <details class="collapsible">
-      <summary>☁ 구글 시트 자동 연동 (매일 17시)</summary>
-      <div class="hint" style="margin:10px 0 8px">한 번 연결하면 <b>매일 17:00</b>에 이 앱이 구글 시트 <b>타바타_성적_종합</b>을 <b>저절로 갱신</b>합니다
-        (그 시각에 앱이 닫혀 있었으면 다음에 선생님이 앱을 열 때 바로). 엑셀을 받아 올릴 필요가 없어요. 설정 방법은 프로젝트의 <b>성적/구글시트_연동방법.md</b>.</div>
+      <summary>☁ 구글 시트 자동 연동</summary>
+      <div class="hint" style="margin:10px 0 8px">선생님이 로그인한 앱을 열어 두면, <b>성적이 새로 바뀌었을 때 구글 시트에 저절로 보냅니다</b>. 엑셀을 받아 올릴 필요가 없어요.
+        처음 한 번만 아래에 시트의 웹 앱 주소를 넣으세요 — 방법은 프로젝트의 <b>성적/구글시트_연동방법.md</b>.</div>
       <div class="field"><label>웹 앱 주소</label><input type="text" id="sheetUrl" placeholder="https://script.google.com/macros/s/…/exec" style="width:100%" autocomplete="off"></div>
-      <div class="field" style="margin-top:8px"><label>비밀 코드</label><input type="password" id="sheetTok" style="width:100%" autocomplete="off"></div>
       <div class="row" style="margin:10px 0 0;flex-wrap:wrap">
         <button class="btn btn-go btn-sm" id="sheetSave">저장하고 지금 보내기</button>
         <button class="btn btn-stop btn-sm" id="sheetNow">지금 다시 보내기</button>
@@ -6649,94 +6648,74 @@ $("gradeCsv").addEventListener("click",()=>{
   toast(`${cs.length}개 반을 시트로 나눠 내려받았습니다 — 구글 드라이브에 올리면 탭으로 열립니다.`,"good","📊");
 });
 
-/* =================== ☁ 구글 시트 자동 연동 (2026-11-09) ===================
-   다트 앱에서 먼저 쓴 방식 — 구글 시트에 붙인 Apps Script 웹 앱 주소로 성적을 보내면 시트가 그대로 덮어써진다.
-   매일 17:00(SHEET_HOUR·SHEET_DAYS) 이후 처음 이 앱이 열려 있을 때 한 번 보낸다(17시에 앱이 닫혀 있었으면 다음에 열 때).
-   주소·비밀 코드는 선생님 전용 서버 경로 sheetLink에 한 번만 저장해 다른 선생님 기기에서도 쓴다(학생은 읽을 수 없다 — 서버 규칙 게시 필요).
-   계획서·성찰은 교사 로그인으로만 읽히므로, 그 자료를 다 받은 기기에서만 보낸다(덜 받은 채로 보내 시트가 비는 것을 막는다).
+/* =================== ☁ 구글 시트 자동 연동 — 단순판 (2026-11-09) ===================
+   선생님: "타바타 앱을 열면 새로 갱신된 내용이 있을 때 스프레드시트에 자동으로 보내주도록".
+   교사로 로그인한 기기에서 앱을 열어 두면, 성적 내용이 지난번 보낸 것과 달라졌을 때 저절로 구글 시트(Apps Script 웹 앱)로 보낸다.
+   예약 시각도, 비밀 코드도, 서버에 저장하는 연동 정보도 없다 — 주소는 이 기기에 한 번만 넣는다.
+   계획서·성찰은 교사 로그인으로만 읽히므로 그 자료를 다 받은 뒤에만 보낸다(덜 받은 채로 보내 시트가 비는 것을 막는다).
    끄려면 SHEET_SYNC=false. 설정 방법: 성적/구글시트_연동방법.md */
 const SHEET_SYNC=true;
-const SHEET_HOUR=17;
-const SHEET_DAYS=[0,1,2,3,4,5,6];     // 0=일 … 6=토 — 매일. 평일만 하려면 [1,2,3,4,5]
-const SHEET_URL_KEY="tabataSheetUrl", SHEET_TOK_KEY="tabataSheetTok", SHEET_SENT_KEY="tabataSheetSentAt";
-// 지금(nowMs)보다 앞선 가장 가까운 '보내는 시각'(밀리초). 없으면 0
-function lastSheetSlot(nowMs){
-  const d=new Date(nowMs==null?Date.now():nowMs);
-  for(let i=0;i<8;i++){
-    const c=new Date(d.getFullYear(),d.getMonth(),d.getDate()-i,SHEET_HOUR,0,0,0);
-    if(c.getTime()<=d.getTime()&&SHEET_DAYS.indexOf(c.getDay())>=0)return c.getTime();
-  }
-  return 0;
+const SHEET_URL_KEY="tabataSheetUrl", SHEET_SENT_KEY="tabataSheetSentAt", SHEET_HASH_KEY="tabataSheetHash";
+const SHEET_MIN_GAP=120000;   // 학생들이 기록을 한꺼번에 올리는 동안 너무 자주 보내지 않는다(2분)
+// 시트에 들어갈 내용의 지문 — 내용이 같으면 같다(보낸 시각은 넣지 않는다)
+function sheetHashOf(sheets){
+  const t=JSON.stringify(sheets.map(x=>[x.name,x.rows]));
+  let h=5381; for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))|0;
+  return h+"-"+t.length;
 }
-function sheetLinkGet(){
-  try{ return {url:localStorage.getItem(SHEET_URL_KEY)||"", token:localStorage.getItem(SHEET_TOK_KEY)||""}; }catch(e){ return {url:"",token:""}; }
-}
-function sheetLinkSetLocal(url,token){
-  try{ localStorage.setItem(SHEET_URL_KEY,url); localStorage.setItem(SHEET_TOK_KEY,token); }catch(e){}
-}
+function sheetUrlGet(){ try{ return localStorage.getItem(SHEET_URL_KEY)||""; }catch(e){ return ""; } }
 function sheetReady(){
   return !!(SHEET_SYNC&&fdb&&isTeacher()&&recordsReady&&protState.plans&&protState.reflections&&!protState.denied&&classNames().length);
 }
 function renderSheetLink(){
-  const L=sheetLinkGet(), u=$("sheetUrl"), t=$("sheetTok"), st=$("sheetState");
-  if(u&&document.activeElement!==u)u.value=L.url;
-  if(t&&document.activeElement!==t)t.value=L.token;
+  const url=sheetUrlGet(), u=$("sheetUrl"), st=$("sheetState");
+  if(u&&document.activeElement!==u)u.value=url;
   if(!st)return;
   let sent=0; try{ sent=+localStorage.getItem(SHEET_SENT_KEY)||0; }catch(e){}
-  const when=sent?new Date(sent):null;
-  const w=when?((when.getMonth()+1)+"/"+when.getDate()+" "+String(when.getHours()).padStart(2,"0")+":"+String(when.getMinutes()).padStart(2,"0")):"";
-  st.innerHTML=(L.url&&L.token)
-    ?'<b style="color:var(--good)">연결됨</b>'+(w?" · 마지막 전송 "+w:" · 아직 보낸 적 없음")
-    :'<span style="color:var(--bad)">아직 연결 전</span>';
+  const w=sent?(d=>(d.getMonth()+1)+"/"+d.getDate()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"))(new Date(sent)):"";
+  st.innerHTML=url?'<b style="color:var(--good)">연결됨</b>'+(w?" · 마지막 전송 "+w:" · 아직 보낸 적 없음"):'<span style="color:var(--bad)">아직 연결 전</span>';
 }
 let sheetSending=false;
+// manual이면 내용이 같아도 보낸다. 아니면 지난번과 달라졌을 때만 보낸다.
 async function sendToSheet(manual){
-  const L=sheetLinkGet(), msg=$("sheetMsg");
+  const url=sheetUrlGet(), msg=$("sheetMsg");
   const say=(t,bad)=>{ if(manual&&msg)msg.innerHTML=bad?'<span class="err">'+t+'</span>':t; };
-  if(!L.url||!L.token){ say("웹 앱 주소와 비밀 코드를 넣고 [저장하고 지금 보내기]를 눌러 주세요.",true); return false; }
+  if(!url){ say("웹 앱 주소를 넣고 [저장하고 지금 보내기]를 눌러 주세요.",true); return false; }
   if(!sheetReady()){ say("교사로 로그인해 계획서·성찰 자료를 불러온 뒤에 보낼 수 있어요 (학생별 종합현황 맨 위가 '불러왔습니다'일 때).",true); return false; }
   if(sheetSending)return false;
   let sheets=null; try{ sheets=buildGradeSheets(); }catch(e){}
   if(!sheets){ say("먼저 명렬표를 등록하세요.",true); return false; }
+  const hash=sheetHashOf(sheets);
+  let last=""; try{ last=localStorage.getItem(SHEET_HASH_KEY)||""; }catch(e){}
+  if(!manual&&hash===last)return false;           // 새로 바뀐 내용이 없다
   sheetSending=true;
   try{
-    await fetch(L.url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body:JSON.stringify({token:L.token,at:nowStamp(),sheets:sheets.map(x=>({name:x.name,rows:x.rows,head:1,freeze:2}))})});
-    try{ localStorage.setItem(SHEET_SENT_KEY,String(Date.now())); }catch(e){}
+    await fetch(url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({at:nowStamp(),sheets:sheets.map(x=>({name:x.name,rows:x.rows,head:1,freeze:2}))})});
+    try{ localStorage.setItem(SHEET_SENT_KEY,String(Date.now())); localStorage.setItem(SHEET_HASH_KEY,hash); }catch(e){}
     renderSheetLink();
-    say("보냈습니다 — 잠시 뒤 시트를 새로 고침해 보세요. (비밀 코드가 틀리면 시트가 바뀌지 않습니다)");
+    say("보냈습니다 — 잠시 뒤 시트를 새로 고침해 보세요.");
     return true;
   }catch(e){ say("보내지 못했어요 — 인터넷과 웹 앱 주소를 확인해 주세요.",true); return false; }
   finally{ sheetSending=false; }
 }
-// 1분마다: 연결돼 있고, 마지막 전송이 가장 최근 보내는 시각보다 앞이면 보낸다
+// 앱을 열어 둔 동안 1분마다: 연결돼 있고, 마지막 전송에서 2분이 지났고, 내용이 달라졌으면 보낸다
 function sheetTick(){
-  if(!SHEET_SYNC||!sheetReady())return;
-  const L=sheetLinkGet(); if(!L.url||!L.token)return;
+  if(!SHEET_SYNC||!sheetUrlGet()||!sheetReady())return;
   let sent=0; try{ sent=+localStorage.getItem(SHEET_SENT_KEY)||0; }catch(e){}
-  if(sent<lastSheetSlot())sendToSheet(false);
-}
-let sheetLinkOff=null;
-function watchSheetLink(){
-  if(sheetLinkOff){ try{ sheetLinkOff(); }catch(e){} sheetLinkOff=null; }
-  if(!fdb||!isTeacher())return;
-  sheetLinkOff=fmod.onValue(fmod.ref(fdb,"sheetLink"),snap=>{
-    const v=snap.val();
-    if(v&&v.url&&v.token){ sheetLinkSetLocal(v.url,v.token); renderSheetLink(); }
-    else{ const L=sheetLinkGet(); if(L.url&&L.token)fmod.set(fmod.ref(fdb,"sheetLink"),{url:L.url,token:L.token}).catch(()=>{}); }   // 이 기기에만 있으면 서버로 올려 준다
-  },()=>{ /* 서버 규칙에 sheetLink가 아직 없으면 이 기기에만 저장된다 */ });
+  if(Date.now()-sent<SHEET_MIN_GAP)return;
+  sendToSheet(false);
 }
 if($("sheetSave"))$("sheetSave").addEventListener("click",()=>{
-  const url=($("sheetUrl").value||"").trim(), tok=($("sheetTok").value||"").trim(), msg=$("sheetMsg");
+  const url=($("sheetUrl").value||"").trim(), msg=$("sheetMsg");
   if(!/^https:\/\/script\.google\.com\/macros\/s\/\S+\/exec$/.test(url)){ msg.innerHTML='<span class="err">웹 앱 주소를 넣어 주세요 (https://script.google.com/macros/s/…/exec).</span>'; return; }
-  if(!tok){ msg.innerHTML='<span class="err">비밀 코드를 넣어 주세요 (시트 스크립트에 적은 것과 같아야 해요).</span>'; return; }
-  sheetLinkSetLocal(url,tok); renderSheetLink();
-  if(fdb&&isTeacher())fmod.set(fmod.ref(fdb,"sheetLink"),{url,token:tok}).catch(()=>{ msg.innerHTML='<span class="err">이 기기에만 저장됐어요 (서버 규칙에 sheetLink가 없어 다른 기기와 공유되지 않습니다).</span>'; });
+  try{ localStorage.setItem(SHEET_URL_KEY,url); }catch(e){}
+  renderSheetLink();
   sendToSheet(true);
 });
 if($("sheetNow"))$("sheetNow").addEventListener("click",()=>sendToSheet(true));
 renderSheetLink();
-setInterval(sheetTick,60000); setTimeout(sheetTick,20000);
+setInterval(sheetTick,60000); setTimeout(sheetTick,15000);
 
 /* =================== 📝 운동 계획서 (평가계획서 ㉮) ===================
    앱은 계획의 옳고 그름을 판정하지 않는다. 목표가 다양하고, 한 부위만 집중하는 계획도,
@@ -10860,7 +10839,7 @@ async function ensureAuth(app){
       Object.keys(reflections).forEach(k=>delete reflections[k]);
       Object.keys(reports).forEach(k=>delete reports[k]); renderReports();
     }
-    if(fmod&&fdb){ attachProtected(fmod.onValue,fmod.ref); attachReports(); attachHealth(); attachExcused(); attachNotices(); attachPresenceListener(); try{ watchSheetLink(); }catch(e){} }
+    if(fmod&&fdb){ attachProtected(fmod.onValue,fmod.ref); attachReports(); attachHealth(); attachExcused(); attachNotices(); attachPresenceListener(); }
     renderAuth();
     if(u)toast("교사 로그인됨 — 성찰·계획서를 볼 수 있습니다","good","🔐");
   });
