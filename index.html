@@ -1569,7 +1569,7 @@ var NAV_BOTTOM=true, SETUP_TIDY=true, MOTION_UI=true, MOTION_PET=true, MOTION_BO
     <details class="collapsible">
       <summary>☁ 구글 시트 자동 연동</summary>
       <div class="hint" style="margin:10px 0 8px">선생님이 로그인한 앱을 열어 두면, <b>성적이 새로 바뀌었을 때 구글 시트에 저절로 보냅니다</b>. 엑셀을 받아 올릴 필요가 없어요.
-        처음 한 번만 아래에 시트의 웹 앱 주소를 넣으세요 — 방법은 프로젝트의 <b>성적/구글시트_연동방법.md</b>.</div>
+        처음 한 번만 아래에 시트의 웹 앱 주소를 넣으세요(다른 선생님 기기에도 저절로 적용돼요) — 방법은 프로젝트의 <b>성적/구글시트_연동방법.md</b>.</div>
       <div class="field"><label>웹 앱 주소</label><input type="text" id="sheetUrl" placeholder="https://script.google.com/macros/s/…/exec" style="width:100%" autocomplete="off"></div>
       <div class="row" style="margin:10px 0 0;flex-wrap:wrap">
         <button class="btn btn-go btn-sm" id="sheetSave">저장하고 지금 보내기</button>
@@ -6706,10 +6706,25 @@ function sheetTick(){
   if(Date.now()-sent<SHEET_MIN_GAP)return;
   sendToSheet(false);
 }
+/* 여러 기기에서 쓰도록 주소를 서버에 한 번만 저장한다 (2026-11-09 선생님: "여러 기기에서 사용할 거야").
+   저장 자리는 excused/_sheetLink — excused는 이미 교사만 읽고 쓰는 칸이라 서버 규칙을 새로 게시할 필요가 없고 학생은 읽지 못한다.
+   (다른 코드는 excused 안을 반·과제·번호로만 찾으므로 이 키는 영향이 없다.) 교사 로그인 때 읽어 이 기기에 반영하고,
+   서버에 없고 이 기기에만 있으면 올려 준다. */
+let sheetLinkOff=null;
+function watchSheetLink(){
+  if(sheetLinkOff){ try{ sheetLinkOff(); }catch(e){} sheetLinkOff=null; }
+  if(!fdb||!isTeacher())return;
+  sheetLinkOff=fmod.onValue(fmod.ref(fdb,"excused/_sheetLink"),snap=>{
+    const v=snap.val();
+    if(v&&v.url){ try{ localStorage.setItem(SHEET_URL_KEY,v.url); }catch(e){} renderSheetLink(); }
+    else{ const u=sheetUrlGet(); if(u)fmod.set(fmod.ref(fdb,"excused/_sheetLink"),{url:u}).catch(()=>{}); }
+  },()=>{ /* 읽을 수 없으면 이 기기에만 저장된 대로 쓴다 */ });
+}
 if($("sheetSave"))$("sheetSave").addEventListener("click",()=>{
   const url=($("sheetUrl").value||"").trim(), msg=$("sheetMsg");
   if(!/^https:\/\/script\.google\.com\/macros\/s\/\S+\/exec$/.test(url)){ msg.innerHTML='<span class="err">웹 앱 주소를 넣어 주세요 (https://script.google.com/macros/s/…/exec).</span>'; return; }
   try{ localStorage.setItem(SHEET_URL_KEY,url); }catch(e){}
+  if(fdb&&isTeacher())fmod.set(fmod.ref(fdb,"excused/_sheetLink"),{url}).catch(()=>{});   // 다른 기기에도 적용되게
   renderSheetLink();
   sendToSheet(true);
 });
@@ -10839,7 +10854,7 @@ async function ensureAuth(app){
       Object.keys(reflections).forEach(k=>delete reflections[k]);
       Object.keys(reports).forEach(k=>delete reports[k]); renderReports();
     }
-    if(fmod&&fdb){ attachProtected(fmod.onValue,fmod.ref); attachReports(); attachHealth(); attachExcused(); attachNotices(); attachPresenceListener(); }
+    if(fmod&&fdb){ attachProtected(fmod.onValue,fmod.ref); attachReports(); attachHealth(); attachExcused(); attachNotices(); attachPresenceListener(); try{ watchSheetLink(); }catch(e){} }
     renderAuth();
     if(u)toast("교사 로그인됨 — 성찰·계획서를 볼 수 있습니다","good","🔐");
   });
@@ -10903,7 +10918,7 @@ let protOff=[];
 /* 계획서·성찰을 받았는지 선생님이 한눈에 알게 한다 (2026-11-09 선생님: "학생별 종합현황에서 계획서·성찰·마무리 성찰이 하나도 반영되지 않는 것 같아").
    예전에는 읽기가 막혀도 조용히 넘겨(학생 화면에서는 정상) 선생님 화면이 그냥 비어 보였다. 이제 교사로 로그인한 기기에서는
    ① 불러오는 중 ② 불러옴(몇 반) ③ 읽을 권한이 없음(어느 계정인지) 중 하나를 학생별 종합현황 맨 위에 보여 주고 [다시 불러오기]를 준다. */
-let protState={plans:false,reflections:false,denied:""};
+let protState={plans:false,reflections:false,denied:""}, protRetry=0;
 function protBannerHTML(){
   if(!fdb||!isTeacher())return "";
   const who=(typeof teacherUser!=="undefined"&&teacherUser&&teacherUser.email)?escHtml(teacherUser.email):"";
@@ -10924,19 +10939,26 @@ function attachProtected(onValue,ref){
   if(!fdb)return;
   protState={plans:false,reflections:false,denied:""};
   // 권한 없음 — 학생 화면에서는 아무 일도 일어나지 않아야 한다. 교사로 로그인한 기기에서만 알린다.
-  const fail=err=>{ if(isTeacher()){ protState.denied=String((err&&err.code)||"permission_denied").replace(/^.*\//,""); try{ renderStuBoard(); }catch(e){} } };
+  /* 앱을 열자마자 로그인이 이어질 때(저장된 로그인), 첫 읽기가 '로그인 정보가 서버에 닿기 전'에 나가 거부되고 다시 시도하지 않아
+     계획서·성찰이 통째로 비어 보였다(2026-11-09 확인: [다시 불러오기]를 누르면 바로 풀렸다). 거부되면 로그인 토큰을 새로 받아 저절로 다시 시도한다(최대 3번). */
+  const fail=err=>{
+    if(!isTeacher())return;
+    protState.denied=String((err&&err.code)||"permission_denied").replace(/^.*\//,"");
+    if(protRetry<3){ protRetry++; setTimeout(()=>{ if(isTeacher()&&protState.denied){ try{ refreshProtected(); }catch(e){} } },1500*protRetry); }
+    try{ renderStuBoard(); }catch(e){}
+  };
   protOff.push(onValue(ref(fdb,"plans"),snap=>{
     const v=snap.val()||{};
     Object.keys(plans).forEach(k=>{ if(!(k in v))delete plans[k]; });
     Object.assign(plans,v);
-    protState.plans=true; protState.denied="";
+    protState.plans=true; protState.denied=""; protRetry=0;
     renderPlanAdmin();
   },fail));
   protOff.push(onValue(ref(fdb,"reflections"),snap=>{
     const v=snap.val()||{};
     Object.keys(reflections).forEach(k=>{ if(!(k in v))delete reflections[k]; });
     Object.assign(reflections,v);
-    protState.reflections=true; protState.denied="";
+    protState.reflections=true; protState.denied=""; protRetry=0;
     renderReflectAdmin();
     try{ renderStuBoard(); }catch(e){}   // 성찰이 들어오면 학생별 종합현황도 바로 새로 그린다
   },fail));
