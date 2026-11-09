@@ -828,6 +828,18 @@
      스위치는 위쪽 head의 NAV_BOTTOM·SETUP_TIDY·MOTION_UI·MOTION_PET·MOTION_BOARD (html 클래스 navb·stidy·mui·mpet·mbrd). */
   /* 채점 난이도 접기 — 접어 둔 줄에도 지금 고른 맛이 보인다 */
   .adm-hdr{display:none;}
+  .fr-tip{font-size:14px; line-height:1.55; padding:10px 12px; margin:0 0 12px; border-radius:10px; background:rgba(255,159,28,.14); border:1px solid rgba(255,159,28,.5); color:var(--ink);}
+  .fr-tip .fr-eg{display:block; margin-top:4px; font-size:13px; color:var(--muted);}
+  .prot-note{font-size:13px; line-height:1.5; padding:8px 12px; margin:0 0 8px; border-radius:10px; background:var(--panel3); border:1px solid var(--line); color:var(--muted);}
+  .prot-note.ok{color:var(--good);}
+  .prot-note.bad{color:var(--bad); border-color:var(--bad); font-weight:700;}
+  .due-box{background:var(--panel3); border:1px solid var(--line); border-radius:12px; padding:2px 12px; margin:0 0 12px;}
+  .due-row{display:flex; align-items:center; gap:10px; padding:10px 0; border-top:1px solid var(--line);}
+  .due-row:first-child{border-top:0;}
+  .due-ic{font-size:22px; line-height:1; flex:none;}
+  .due-tx{flex:1; min-width:0;}
+  .due-tx .hint{margin-top:2px;}
+  .due-row .btn{flex:none;}
   .spice-fold{margin-top:12px; border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:0 12px;}
   .spice-fold>summary{cursor:pointer; list-style:none; min-height:44px; display:flex; align-items:center; gap:6px; font-size:14px; font-weight:700; color:var(--ink);}
   .spice-fold>summary::-webkit-details-marker{display:none;}
@@ -1344,7 +1356,9 @@ var NAV_BOTTOM=true, SETUP_TIDY=true, MOTION_UI=true, MOTION_PET=true, MOTION_BO
     <div class="mine-body">
     <div class="step-box" id="finalRfBox" style="margin-top:0">
       <div style="font-weight:700;font-size:16px">단원 전체를 돌아보기</div>
-      <div class="hint" style="margin:2px 0 10px">모든 수업이 끝난 뒤 <b>한 번</b> 씁니다 (저장한 뒤에도 고칠 수 있어요)</div>
+      <div class="hint" style="margin:2px 0 8px">모든 수업이 끝난 뒤 <b>한 번</b> 씁니다 (저장한 뒤에도 고칠 수 있어요)</div>
+      <!-- 2026-11-09 선생님: "단원 돌아보기는 문제에 대한 답변과 그 이유나 상황들이 구체적으로 작성되어야 좋은 점수를 얻을 수 있다는 안내가 있었으면 좋겠어" -->
+      <div class="fr-tip" id="frTip">💡 <b>좋은 점수를 받으려면</b> 각 문항에 <b>답</b>만 쓰지 말고, <b>왜 그렇게 생각하는지(이유)</b>와 <b>어떤 상황이었는지</b>(언제·어떤 운동·몸이 어떻게 느꼈는지)를 <b>구체적으로</b> 함께 써 주세요.<br><span class="fr-eg">예) ✖ "좋아졌다" → ○ "초기 62점에서 최근 81점이 됐다. 스쿼트를 매번 끝까지 앉았더니 정확도가 올라서다."</span></div>
       <div class="hint" style="margin-bottom:4px">내 기록 요약</div>
       <div class="rf-sum" id="frSummary"></div>
 
@@ -1366,7 +1380,7 @@ var NAV_BOTTOM=true, SETUP_TIDY=true, MOTION_UI=true, MOTION_PET=true, MOTION_BO
     </div>
     </div>
 
-    <!-- 포트폴리오는 '단원 마무리 성찰' 안에 접혀 있어 학생들이 찾기 어려웠다.
+    <!-- 포트폴리오는 '단원 돌아보기' 안에 접혀 있어 학생들이 찾기 어려웠다.
          맨 아래에 접히지 않는 독립 항목으로 빼서 바로 눈에 띄게 한다. -->
     <div id="pfMineBox" class="step-box" style="margin-top:18px;border:2px solid var(--primary2)">
       <div style="font-weight:800;font-size:17px">📘 내 운동 포트폴리오</div>
@@ -1527,7 +1541,7 @@ var NAV_BOTTOM=true, SETUP_TIDY=true, MOTION_UI=true, MOTION_PET=true, MOTION_BO
       <span><i class="mk ok" style="--c:#FF9F1C;--ct:#2a1800">자</i>자율실천</span>
       <span><i class="mk ok" style="--c:#FFD23F;--ct:#2a2200">계</i>계획서</span>
       <span><i class="mk ok" style="--c:#35D0BA;--ct:#06281f">성</i>성찰</span>
-      <span><i class="mk ok" style="--c:#8B80F9;--ct:#fff">마</i>마무리</span>
+      <span><i class="mk ok" style="--c:#8B80F9;--ct:#fff">돌</i>단원 돌아보기</span>
       <span style="margin-left:auto">채움=완료 · 테두리=일부 · 흐림=없음</span>
     </div>
     <div class="row" style="margin:0 0 8px">
@@ -1555,7 +1569,7 @@ var NAV_BOTTOM=true, SETUP_TIDY=true, MOTION_UI=true, MOTION_PET=true, MOTION_BO
     <details class="collapsible">
       <summary>🖨 운동 포트폴리오 인쇄</summary>
       <div class="hint" style="margin:10px 0 8px">학생 한 명을 <b>한 부</b>로 묶어 인쇄합니다 —
-        <b>운동 계획서 → 날짜순 운동 기록과 그날의 성찰 → 마무리 성찰</b> 순서로 쌓입니다.
+        <b>운동 계획서 → 날짜순 운동 기록과 그날의 성찰 → 단원 돌아보기</b> 순서로 쌓입니다.
         새 창이 열리면 <b>Ctrl+P</b>로 인쇄하거나 <b>PDF로 저장</b>하세요.</div>
       <div class="row" style="flex-wrap:wrap;align-items:flex-end">
         <div class="field"><label>반</label><select id="pfClass"></select></div>
@@ -1895,7 +1909,7 @@ var NAV_BOTTOM=true, SETUP_TIDY=true, MOTION_UI=true, MOTION_PET=true, MOTION_BO
     </div>
     <div class="sheet-bd">
       <!-- 매 차시 성찰은 '터치로 고르고 한 줄만 쓰기'로 가볍게 한다.
-           길게 쓰는 깊은 성찰은 단원이 끝난 뒤 '단원 마무리 성찰'에서 한 번 받는다.
+           길게 쓰는 깊은 성찰은 단원이 끝난 뒤 '단원 돌아보기'에서 한 번 받는다.
            문항마다 카드로 나눠 '질문'과 '고르는 곳'이 한눈에 구분되게 한다. -->
       <div class="rf-card">
         <div class="rf-head"><span class="rf-no">1</span>
@@ -1935,6 +1949,18 @@ var NAV_BOTTOM=true, SETUP_TIDY=true, MOTION_UI=true, MOTION_PET=true, MOTION_BO
       <button class="btn btn-go btn-sm" id="rfDocSave">💾 성찰 저장</button>
       <button class="btn btn-stop btn-sm" id="rfDocClose">닫기</button>
       <span class="hint" id="rfDocMsg" style="flex-basis:100%"></span>
+    </div>
+  </div>
+</div>
+<!-- 단원 돌아보기를 내 과제에서 바로 쓰는 시트 — 내 기록 탭의 칸(#finalRfBox)을 이 안으로 옮겨 쓰고 닫으면 되돌린다 -->
+<div id="finalDocOverlay" class="sheet" style="display:none">
+  <div class="sheet-in">
+    <div class="sheet-hd">
+      <div style="font-weight:800;font-size:18px">🏁 단원 돌아보기</div>
+    </div>
+    <div class="sheet-bd" id="finalDocHost"></div>
+    <div class="sheet-ft">
+      <button class="btn btn-stop btn-sm" id="finalDocClose">닫기</button>
     </div>
   </div>
 </div>
@@ -2074,7 +2100,7 @@ document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()
   document.querySelectorAll("nav button").forEach(x=>x.classList.remove("on"));
   document.querySelectorAll(".page").forEach(x=>x.classList.remove("on"));
   b.classList.add("on"); $(b.dataset.page).classList.add("on");
-  if(b.dataset.page==="pgTasks")renderNotice();
+  if(b.dataset.page==="pgTasks"){ renderNotice(); try{ renderDue(); }catch(e){} }
   if(b.dataset.page==="pgMine")renderMine();
   if(b.dataset.page==="pgSetup")refreshBattleUI();
   if(b.dataset.page==="pgWork" && !parqPassed){ $("healthGate").style.display="block"; $("workBody").style.display="none"; initParq(); }
@@ -2992,6 +3018,74 @@ function classProgress(c){
   const total=(rosters[c]||[]).length;
   return {no:cur.no, title:taskLabel(cur.a), done:taskDoneCount(cur.id,c), total, count:mine.length};
 }
+/* 📌 선생님께 낼 것 (2026-11-09 선생님: "내 과제에 운동과제뿐 아니라 제출 안 한 운동계획서, 마무리 성찰 등도 같이 안내해줘").
+   내 과제 맨 위에 아직 안 낸 것만 모아 보여 준다 — ① 운동 계획서 ② 안 쓴 성찰 일지 ③ 단원 돌아보기.
+   이 기기에 남은 내 자료로 판단한다(서버의 계획서·성찰은 교사만 읽는다). 끄려면 DUE_GUIDE=false. */
+const DUE_GUIDE=true;
+const FINAL_RF_NAME="단원 돌아보기";   // 학생 화면에서 단원 돌아보기을 부르는 이름 — 용어를 바꿀 때는 이 줄과 화면 글자를 함께 고친다(tests/final-name-test.js)
+function openMineSec(btn){ if(btn&&!btn.classList.contains("open")){ btn.classList.add("open"); if(btn.nextElementSibling)btn.nextElementSibling.classList.add("open"); } }
+let finalRfHome=null;
+function openFinalDoc(){
+  const box=$("finalRfBox"), host=$("finalDocHost"); if(!box||!host)return;
+  if(!finalRfHome){ finalRfHome=document.createElement("span"); finalRfHome.style.display="none"; box.parentNode.insertBefore(finalRfHome,box); }
+  host.appendChild(box);                 // 내 기록 탭의 칸을 이 시트로 옮겨 쓴다 — 같은 칸이라 저장·불러오기가 그대로 돈다
+  try{ renderFinalReflect(); }catch(e){}
+  ["pulseOverlay","battleCdOverlay","hrConfirmOverlay","battlePickOverlay","qrOverlay"].forEach(id=>{ const el=$(id); if(el&&el.style.display!=="none")el.style.display="none"; });
+  document.body.classList.remove("fs-lock");
+  $("finalDocOverlay").style.zIndex="10009";
+  $("finalDocOverlay").style.display="flex";
+}
+function closeFinalDoc(){
+  const box=$("finalRfBox");
+  if(finalRfHome&&box&&finalRfHome.parentNode)finalRfHome.parentNode.insertBefore(box,finalRfHome.nextSibling);   // 내 기록 탭 제자리로
+  $("finalDocOverlay").style.display="none";
+  try{ renderDue(); }catch(e){}
+}
+if($("finalDocClose"))$("finalDocClose").addEventListener("click",closeFinalDoc);
+function renderDue(){
+  const box=$("dueBox"); if(!box)return;
+  box.innerHTML="";
+  const me=myKey();
+  if(!DUE_GUIDE||!me.name){ box.style.display="none"; return; }
+  const rows=[]; let kinds=0;
+  if(!myPlans.some(p=>p.submitted)){
+    kinds++;
+    const last=myPlans.slice().sort((a,b)=>String(b.made).localeCompare(String(a.made)))[0];
+    rows.push({ic:"📝",t:"운동 계획서",s:last?"아직 선생님께 안 냈어요 — 쓰고 [제출]을 눌러야 해요":"먼저 운동 설계 탭에서 내 운동을 만들어요",
+      b:last?"계획서 쓰기":"운동 설계로", go:()=>{ if(last)openPlanDoc(last); else goPage("pgSetup"); }});
+  }
+  // 안 쓴 성찰 일지 — 내 기록 탭에 가지 않아도 여기서 바로 쓴다(가장 최근 3건)
+  const todo=records.filter(r=>r.name===me.name&&String(r.cls)===String(me.cls)&&!myLogsLocal[r.id])
+    .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  if(todo.length){
+    kinds++;
+    todo.slice(0,3).forEach(r=>{
+      rows.push({ic:"✍️",t:"성찰 일지 · "+String(r.date||"").slice(5,10)+" "+escHtml(String(r.task||"자율")),s:"운동하고 안 쓴 성찰이에요",b:"쓰기",go:()=>openReflectDoc(null,r)});
+    });
+    if(todo.length>3)rows.push({ic:"✍️",t:"성찰 일지 외 "+(todo.length-3)+"건",s:"지난 운동의 성찰은 내 기록 탭에서 이어 쓸 수 있어요",b:"내 기록으로",go:()=>{ goPage("pgMine"); openMineSec($("rfLogSec")); }});
+  }
+  if(!hasFinal({final:myFinalLocal})){
+    kinds++;
+    rows.push({ic:"🏁",t:FINAL_RF_NAME,s:"단원이 끝난 뒤 한 번 써요. 답과 함께 이유·상황을 구체적으로 써야 좋은 점수를 받아요",b:"쓰기",go:openFinalDoc});
+  }
+  box.style.display="";
+  const head=document.createElement("div"); head.className="pick-group";
+  head.textContent=kinds?"📌 선생님께 낼 것 · "+kinds+"가지":"📌 선생님께 낼 것";
+  box.appendChild(head);
+  if(!rows.length){
+    const ok=document.createElement("div"); ok.className="hint"; ok.style.margin="0 0 4px 2px";
+    ok.innerHTML='<b style="color:var(--good)">✅ 계획서·성찰 일지·'+FINAL_RF_NAME+'를 모두 냈어요</b>';
+    box.appendChild(ok); return;
+  }
+  const wrap=document.createElement("div"); wrap.className="due-box";
+  rows.forEach(d=>{
+    const r=document.createElement("div"); r.className="due-row";
+    r.innerHTML='<span class="due-ic">'+d.ic+'</span><div class="due-tx"><b>'+d.t+'</b><div class="hint">'+d.s+'</div></div>';
+    const bt=document.createElement("button"); bt.type="button"; bt.className="btn btn-teal btn-sm"; bt.textContent=d.b;
+    bt.addEventListener("click",d.go); r.appendChild(bt); wrap.appendChild(r);
+  });
+  box.appendChild(wrap);
+}
 function renderTasks(){
   try{ renderWeekStrip(); }catch(e){}          // 이번 주의 나 (이번 주 운동·연속 운동·S등급)
   // 학생: 과제 카드 — 내 반에 배정된 과제만 보인다
@@ -3005,6 +3099,8 @@ function renderTasks(){
   const tag=document.createElement("div"); tag.className="step-tag";
   tag.textContent="STEP 0 · 무엇을 할까요?";
   tc.appendChild(tag);
+  const dueBox=document.createElement("div"); dueBox.id="dueBox"; tc.appendChild(dueBox);
+  try{ renderDue(); }catch(e){}   // 아직 안 낸 계획서·성찰 (앱을 막 켠 순간에는 내 성찰 자료가 아직 준비 전일 수 있어 실패해도 넘어간다)
   const group=t=>{ const g=document.createElement("div"); g.className="pick-group"; g.textContent=t; tc.appendChild(g); };
 
   const me=myKey();
@@ -4807,6 +4903,11 @@ function audioIdle(){
    보이지 않는 쪽에서 타이머와 배경음이 계속 돌며 "앱을 켜면 비프음이 계속 난다"는
    현상이 생겼다. 소리를 내는 길목을 한 곳에서 막는다. */
 function soundOK(){ return !document.hidden; }
+/* 다른 학생의 기록이 서버에서 들어올 때마다 나던 알림음 (2026-11-09 선생님: "앱을 열면 비프음이 연속으로 계속 울리면서 다른 미디어가 멈춰").
+   이 소리는 이 기기가 한 운동이 아니라 반 전체의 기록이 들어올 때 나서, 수업 중 여럿이 끝내는 때에는 모든 학생 폰에서
+   1.5초마다 울렸고, 소리를 낼 때마다 폰의 오디오를 잡아 보던 유튜브·음악이 멈췄다. 기록 목록은 그대로 올라오고 소리만 끈다.
+   다시 켜려면 true (교사 기기에서만 켜고 싶다면 알려 주세요). */
+const LIVE_FEED_BEEP=false;
 function beep(f=880,d=.12,v=.2){try{
   if(!soundOK())return;
   ensureAudio(); if(!audio)return;
@@ -6038,7 +6139,7 @@ let deviceOwnerId=null, deviceOwnerName=null;
 
 /* ---------- 한 기기를 두 학생이 나눠 쓸 때 ----------
    폰이 고장 난 학생이 친구 폰을 빌려 학번만 바꿔 쓰는 일이 실제로 있다.
-   그런데 이 기기에 남는 개인 자료(내가 만든 운동, 성찰 일지, 마무리 성찰)는
+   그런데 이 기기에 남는 개인 자료(내가 만든 운동, 성찰 일지, 단원 돌아보기)는
    학번과 묶여 있지 않아서, 나중에 서버로 올릴 때 '지금 로그인한 사람'의 것으로
    통째로 올라갔다 — 빌려준 학생 이름으로 남의 계획서·성찰이 제출되는 사고다.
    그래서 개인 자료는 학번별 칸에 따로 담고, 학번이 바뀌면 통째로 갈아 끼운다. */
@@ -6487,23 +6588,30 @@ function practiceScore(name,cls){
 }
 // 전 학급 성적을 반마다 시트(탭)로 나눠 엑셀 파일 하나로 내보낸다.
 // 구글 드라이브에 올리면 탭이 그대로 살아있는 스프레드시트로 열린다.
+/* 성적 파일에 평가계획서 ㉮(운동 계획서) 칸을 넣는다 (2026-11-09 선생님: "성적 스프레드시트에 운동계획서 제출은 없는 것 같은데").
+   제출했는지·몇 건인지·서술 5칸 중 몇 칸을 썼는지·언제 썼는지만 담는다 — 계획의 옳고 그름은 판정하지 않는다(교사가 읽는다).
+   끄려면 GRADE_PLAN_COLS=false: 예전처럼 ㉯·㉰만 내보낸다. */
+const GRADE_PLAN_COLS=true;
 $("gradeCsv").addEventListener("click",()=>{
   const cs=classNames();
   if(!cs.length){alert("먼저 명렬표를 등록하세요.");return;}
   const num=v=>(v===""||v==null||!isFinite(v))?v:Number(v);
   // 평가계획서 ㉯ 5개 항목의 ○×와 그 근거 수치를 함께 내보낸다 (최종 판단은 교사 몫)
   const OX=b=>b?"○":"×";
+  const planCols=GRADE_PLAN_COLS?["㉮계획서제출","㉮채점(10점)","㉮제출건수","㉮서술작성(칸/5)","㉮최근작성일","㉰단원돌아보기","㉰채점(10점)"]:[];   // 채점칸은 비워 둔다 — 계획의 옳고 그름은 앱이 판정하지 않고 선생님이 읽고 적는다(10·8·6·4·2)
   const head=["번호","이름","성별",
-    ...(PLAN_ACC_ITEM?["①과제제출","②심박","③정확도","④자율실천","⑤향상","만족개수(5)"]:["①과제제출","②심박","③자율실천","④향상","만족개수","정확도가산"]),"실천점수(20점)",
+    ...planCols,...(PLAN_ACC_ITEM?["①과제제출","②심박","③정확도","④자율실천","⑤향상","만족개수(5)"]:["①과제제출","②심박","③자율실천","④향상","만족개수","정확도가산"]),"실천점수(20점)",
     "배정차시","이수차시","건강제외","제외적용","당일","보충","이수율(%)",
     "세션수",`심박달성(≥${rubric.hr})`,"심박달성률(%)","평균정확도(%)","질적자율실천",
     "초기평균","최근평균","향상률(%)","최고점수","퍼펙트그레이트율(%)","최근심박","누적P","최근수행일",
-    "㉰수시성찰(회)","㉰마무리성찰","전입일","전입전과제(제외)"];
+    "㉰수시성찰(회)","㉰단원돌아보기","전입일","전입전과제(제외)"];
   const sheets=cs.map(c=>({
     name:c,
     rows:[head].concat((rosters[c]||[]).map(s=>{
       const st=statsFor(s.name,c), g=practiceScore(s.name,c), rf=reflectOf(s.name,c);
-      return [num(s.no), s.name, s.sex||"",
+      const pl=GRADE_PLAN_COLS?plansOf(s.name,c):[], bp=pl.length?bestPlan(pl):null;   // 서버에 올라온 것만 = 제출한 것
+      const planCells=GRADE_PLAN_COLS?[OX(pl.length), "", pl.length, bp?planWrote(bp):"", pl.length?pl.map(p=>String(p.submitted||p.made||"").slice(0,10)).sort().pop():"", hasFinal(rf)?"작성":"미작성", ""]:[];
+      return [num(s.no), s.name, s.sex||"",...planCells,
         ...(PLAN_ACC_ITEM?[OX(g.ok.task),OX(g.ok.hr),OX(g.ok.acc),OX(g.ok.self),OX(g.ok.gain),g.met]:[OX(g.ok.task),OX(g.ok.hr),OX(g.ok.self),OX(g.ok.gain),g.met,num(g.accBonus)]),num(g.score),
         g.assigned, g.done, g.excusedN, g.exOver?"한도초과-미적용":(g.exUsed||""), g.onTime, g.late, g.assigned?g.rate:"",
         g.n, g.dil, g.n?Math.round(g.dil/g.n*100):"", g.n?g.acc:"", g.selfGood,
@@ -6843,7 +6951,7 @@ $("pvReload").addEventListener("click",()=>{
 let sbOpen="";
 // 빨 주 노 초 보 — 자리마다 색이 달라 위치로도 구분된다
 const MK_COLOR={ "과":["#F45B69","#fff"], "자":["#FF9F1C","#2a1800"], "계":["#FFD23F","#2a2200"],
-                 "성":["#35D0BA","#06281f"], "마":["#8B80F9","#fff"] };
+                 "성":["#35D0BA","#06281f"], "돌":["#8B80F9","#fff"] };
 function sbMk(state,ch){
   const c=MK_COLOR[ch]||["#8B80F9","#fff"];
   return `<i class="mk ${state}" style="--c:${c[0]};--ct:${c[1]}">${ch}</i>`;
@@ -6865,11 +6973,13 @@ function stuStatus(name,cls){
 function renderStuBoard(){
   const box=$("stuBoard"); if(!box)return;
   const cls=$("pvClass").value;
-  box.innerHTML=""; 
+  box.innerHTML="";
   if(fdb&&!isTeacher()){
     box.innerHTML='<div class="hint">🔐 위 <b>교사 로그인</b>을 하면 학생별 현황이 표시됩니다.</div>';
     $("stuDetail").innerHTML=""; return;
   }
+  box.innerHTML=protBannerHTML();                       // 계획서·성찰 자료를 받았는지 (못 받았으면 이유와 [다시 불러오기])
+  const pr=$("protRetry"); if(pr)pr.addEventListener("click",refreshProtected);
   const list=rosters[cls]||[];
   if(!cls||!list.length){ box.innerHTML='<div class="hint">반을 고르면 학생별 현황이 표시됩니다.</div>'; $("sbCount").textContent=""; return; }
   const onlyTodo=$("sbOnlyTodo").checked;
@@ -6881,7 +6991,7 @@ function renderStuBoard(){
     shown++;
     const b=document.createElement("button"); b.className="stu-row"+(sbOpen===s.name?" on":"");
     b.innerHTML=`<span class="no">${s.no||""}</span><span class="nm">${s.name}</span>`
-      +`<span class="dots">${sbMk(st.task,"과")}${sbMk(st.self,"자")}${sbMk(st.plan,"계")}${sbMk(st.log,"성")}${sbMk(st.fin,"마")}</span>`
+      +`<span class="dots">${sbMk(st.task,"과")}${sbMk(st.self,"자")}${sbMk(st.plan,"계")}${sbMk(st.log,"성")}${sbMk(st.fin,"돌")}</span>`
       +`<span class="sb-score" style="color:${dn===5?"var(--good)":dn>=3?"var(--gold)":"var(--muted)"}">${dn}/5</span>`;
     b.addEventListener("click",()=>{ sbOpen=(sbOpen===s.name?"":s.name); renderStuBoard(); showStuDetail(cls,sbOpen); });
     box.appendChild(b);
@@ -6916,7 +7026,7 @@ function showStuDetail(cls,name){
     +line(st.self,"🏃","자율 실천", st.selfN?`${st.selfN}회 (전체 세션 ${g.n}회)`:"기록 없음")
     +line(st.plan,"📝","계획서", st.best?`제출 · 서술 ${planWrote(st.best)}/5칸`:"미제출")
     +line(st.log,"✍️","성찰 일지", logs.length?`${logs.length}회${lateN?` · 당일 아님 ${lateN}건`:""}`:"작성 없음")
-    +line(st.fin,"🏁","마무리 성찰", hasFinal(st.rf)?"작성함":"미작성")
+    +line(st.fin,"🏁","단원 돌아보기", hasFinal(st.rf)?"작성함":"미작성")
     +`</div>`;
 
   h+=`<h4>🏃 운동 실천 (㉯) — 실천점수 ${g.score}점 `
@@ -6973,7 +7083,7 @@ function showStuDetail(cls,name){
       +`</div>`;}).join("")
     :`<div class="sd-none">아직 쓴 성찰이 없습니다.</div>`;
 
-  h+=`<h4>🏁 단원 마무리 성찰</h4>`;
+  h+=`<h4>🏁 단원 돌아보기</h4>`;
   const fin=(st.rf&&st.rf.final)||{};
   const FQ=["체력 변화","나아진 점","어려웠던 운동","계획 실천","앞으로의 계획"];
   h+=hasFinal(st.rf)
@@ -7092,11 +7202,11 @@ $("pvExport").addEventListener("click",()=>{
 /* =================== ✍️ 자기성찰 (평가계획서 ㉰) ===================
    수시 성찰: 운동을 마칠 때마다 쓴다. 학습지(타바타_자기성찰_학습지)의 5문항 +
    자기평가 4항목을 그대로 옮겼고, 심박·정확도·종합점수는 앱이 자동으로 채운다.
-   마무리 성찰: 모든 차시가 끝난 뒤 단원 전체를 돌아보며 한 번 쓴다.
+   단원 돌아보기: 모든 차시가 끝난 뒤 단원 전체를 돌아보며 한 번 쓴다.
    저장 위치 reflections/{반}/{이름} = {logs:{...수시}, final:{...마무리}}          */
 const reflections={};                 // Firebase /reflections 미러 (교사가 로그인했을 때만 채워진다)
 let myLogsLocal={};                   // 내가 쓴 수시 성찰 (이 기기에 보관 — 남의 것을 볼 수 없게 하려고)
-let myFinalLocal=null;                // 내 마무리 성찰
+let myFinalLocal=null;                // 내 단원 돌아보기
 let lastRec=null;                     // 방금 끝낸 세션 (수시 성찰을 이 기록에 붙인다)
 let sessionEndAt=0;                   // 그 세션이 끝난 시각 — 운동 후 심박을 언제 쟀는지 재는 기준
 /* 예전 방식(5문항 서술 + 자기평가 4개)으로 쓴 일지도 그대로 열어보고 인쇄할 수 있어야 하므로
@@ -7316,6 +7426,7 @@ $("rfDocSave").addEventListener("click",()=>{
   entry.late=dayOf(entry.workDate)!==entry.writeDate;    // 다르면 미제출 처리
   myLogsLocal[rfDocKey]=entry; saveAll();   // 기기에 먼저 남긴다
   renderRfLogs(); markReflectDone();
+  try{ renderDue(); }catch(e){}
   if(!fdb){msg.textContent="이 기기에만 저장됨 (인터넷 연결 시 전송)";return;}
   msg.textContent="저장 중…";
   fmod.set(reflectRef(me,"logs/"+rfDocKey),entry)
@@ -7400,9 +7511,10 @@ function renderRfLogs(){
     box.appendChild(b);
   });
 }
-/* ---------- 마무리 성찰 (내 기록 탭) ----------
-   학생 화면에서는 "단원 돌아보기"라고 부른다 (2026-09-24 선생님: 운동 뒤에 쓰는 것도 성찰, 단원 마무리도 성찰이라 학생들이 헷갈려함).
-   선생님 화면·엑셀 열은 평가계획서 용어("마무리 성찰")를 그대로 쓴다. */
+/* ---------- 단원 돌아보기 (내 기록 탭, 내 과제의 [쓰기]) ----------
+   이름은 앱 어디서나 "단원 돌아보기"로 통일한다 (2026-11-09 선생님: "단원 돌아보기로 통일하자").
+   예전(9/24)에는 학생 화면만 "단원 돌아보기"이고 선생님 화면·엑셀은 평가계획서 용어 "마무리 성찰"이었는데,
+   한 가지를 두 이름으로 부르는 것이 오히려 헷갈렸다. 평가계획서 ㉰의 '마무리 성찰'이 이것이다. */
 function renderFinalReflect(){
   const me=myKey(), box=$("finalRfBox");
   if(!me.name){ $("frSummary").innerHTML='<div class="hint">운동 설계 탭에서 학번을 입력하면 내 요약이 표시됩니다.</div>'; return; }
@@ -7429,6 +7541,7 @@ $("frSave").addEventListener("click",()=>{
   if(!filled){msg.innerHTML='<span class="err">한 문항이라도 써 주세요.</span>';return;}
   if(filled<5&&!confirm(`${5-filled}개 문항이 비어 있습니다.\n이대로 저장할까요? (나중에 이어서 쓸 수 있습니다)`))return;
   myFinalLocal=f; saveAll();   // 기기에 먼저 남긴다
+  try{ renderDue(); }catch(e){}
   if(!fdb){msg.textContent="이 기기에만 저장됨 (인터넷 연결 시 전송)";return;}
   msg.textContent="저장 중…";
   fmod.set(reflectRef(me,"final"),f)
@@ -7484,7 +7597,7 @@ function showReflectDetail(cls,name){
           +([1,2,3,4].some(i=>l["s"+i])?`<br><span style="color:var(--muted)">자기평가 — `+RF_SELF.map((t,si)=>`${t}: ${SELF_LABEL[l["s"+(si+1)]]||"–"}`).join(" · ")+`</span>`:"")}</div>`).join("")
     :'<div class="hint">아직 없습니다.</div>';
   const f=rf.final;
-  h+=`<div class="hint" style="margin:12px 0 4px">🏁 단원 마무리 성찰${f&&f.date?` (${esc(f.date)})`:""}</div>`;
+  h+=`<div class="hint" style="margin:12px 0 4px">🏁 단원 돌아보기${f&&f.date?` (${esc(f.date)})`:""}</div>`;
   const Q=["이 단원에서 내 체력은 어떻게 달라졌나요?","가장 크게 나아진 점과 그 이유는?",
     "가장 어려웠던 운동과 이겨내려 한 방법은?","계획대로 실천했나요? 못 했다면 이유는?","앞으로 이어갈 운동 계획은?"];
   h+=hasFinal(rf)?Q.map((q,i)=>`<div class="rf-text"><b>${i+1}. ${q}</b><br>${esc(f["q"+(i+1)])||'<span style="color:var(--muted)">(미작성)</span>'}</div>`).join("")
@@ -7497,7 +7610,7 @@ $("rfExport").addEventListener("click",()=>{
   if(!cs.length){alert("먼저 명렬표를 등록하세요.");return;}
   if(fdb&&!isTeacher()){alert("🔐 교사 로그인을 먼저 해주세요.");return;}
   // 수시 성찰은 건수가 계속 늘어나므로 반별 시트엔 요약만 두고 원문은 별도 시트에 한 줄씩 편다
-  const head=["번호","이름","수시성찰(회)","자기평가 평균(3점)","최근 성찰일","마무리성찰",
+  const head=["번호","이름","수시성찰(회)","자기평가 평균(3점)","최근 성찰일","단원돌아보기",
     "① 체력 변화","② 나아진 점","③ 어려웠던 운동","④ 계획 실천","⑤ 앞으로의 계획"];
   const sheets=cs.map(c=>({
     name:c,
@@ -7544,7 +7657,7 @@ function buildGradeBook(){
   // ── 시트 1: 전 학급 요약 (한눈에 채점 상태 파악) ──
   const sumHead=["반","번호","이름","성별",
     "㉮ 계획서 제출","㉮ 서술(5칸)","㉯ 실천점수(20)","㉯ 이수율(%)","㉯ 세션수",
-    "㉰ 수시성찰(회)","㉰ 마무리성찰"];
+    "㉰ 수시성찰(회)","㉰ 단원돌아보기"];
   const sumRows=[sumHead];
   cs.forEach(c=>(rosters[c]||[]).forEach(s=>{
     const g=practiceScore(s.name,c), rf=reflectOf(s.name,c);
@@ -7564,7 +7677,7 @@ function buildGradeBook(){
     "㉯배정차시","㉯이수차시","㉯건강제외","㉯이수율(%)","㉯세션수","㉯심박달성","㉯평균정확도(%)","㉯향상률(%)","㉯최고점수","㉯최근수행일",
     // ㉰ 자기성찰
     // 수시 성찰은 운동 횟수만큼 늘어나므로 여기엔 요약만 두고, 원문은 마지막 시트에 한 줄씩 편다
-    "㉰수시성찰(회)","㉰자기평가 평균(3점)","㉰최근 성찰일","㉰최근 성찰 내용","㉰마무리성찰",
+    "㉰수시성찰(회)","㉰자기평가 평균(3점)","㉰최근 성찰일","㉰최근 성찰 내용","㉰단원돌아보기",
     "㉰① 체력 변화","㉰② 나아진 점","㉰③ 어려웠던 운동","㉰④ 계획 실천","㉰⑤ 앞으로의 계획"];
   const sheets=[{name:"전체요약",rows:sumRows}].concat(cs.map(c=>({
     name:c,
@@ -7626,7 +7739,7 @@ function buildGradeBook(){
 }
 
 /* ---------- 🖨 운동 포트폴리오 인쇄 ----------
-   학생 한 명을 한 부로 묶는다: 운동 계획서 → 날짜순 운동 기록과 그날의 성찰 → 마무리 성찰.
+   학생 한 명을 한 부로 묶는다: 운동 계획서 → 날짜순 운동 기록과 그날의 성찰 → 단원 돌아보기.
    성찰은 세션 기록의 id를 키로 저장되므로 둘을 정확히 짝지을 수 있다.
    새 창에 인쇄용 문서를 띄우고, 팝업이 막히면 파일로 내려받게 한다. */
 const PF_RQ = ["운동 강도 돌아보기", "잘한 점 / 배운 점", "배운 개념 연결하기", "부족했던 점", "다음 실천 계획"];
@@ -8036,7 +8149,7 @@ function pfRender(ctx) {
   }).join("");
   if (!time) time = '<div class="pf-none">운동 기록이 없습니다.</div>';
 
-  /* ── Ⓒ 마무리 성찰 ── */
+  /* ── Ⓒ 단원 돌아보기 ── */
   const f = rf.final || {};
   const fin = hasFinal(rf)
     ? PF_FQ.map(function (t, k) { return '<div class="pf-sub">' + (k + 1) + '. ' + t + '</div><div class="pf-a">' + pfText(f["q" + (k + 1)]) + '</div>'; }).join("")
@@ -9322,6 +9435,21 @@ function clearHealthNote(){
    학생 화면에서 읽기만 하므로 공개로 두고(누구에게 보낸 것인지 이름이 들어가므로
    같은 반 안에서만 뜻이 있다), 쓰는 것은 교사만 하도록 규칙에서 막는다. */
 const MSG_KEY="tabataMsgSeen";
+/* 확인한 알림은 다시 띄우지 않는다 (2026-11-09 선생님: "알림은 확인했다고 눌러도 계속 나오네").
+   예전에는 [확인했어요]를 누르면 상자만 숨기고, 화면을 다시 그릴 때마다(내 과제 탭으로 돌아올 때·새 자료가 올 때)
+   이미 확인한 알림도 다시 보여 주었다. 한 폰을 둘이 나눠 쓰므로 확인 표시는 학생별로 남긴다(반|이름 → 알림 id). */
+const MSG_KEY2="tabataMsgSeen2";
+function noticeSeenId(me){
+  let m=null; try{ m=JSON.parse(localStorage.getItem(MSG_KEY2)||"null"); }catch(e){}
+  const k=String(me.cls)+"|"+me.name;
+  if(m&&m[k])return m[k];
+  if(m&&Object.keys(m).length)return "";      // 이 기기에서 새 방식이 이미 쓰였으면 다른 학생이 확인한 것을 빌리지 않는다
+  try{ return localStorage.getItem(MSG_KEY)||""; }catch(e){ return ""; }   // 예전에 눌렀던 확인은 그대로 인정
+}
+function markNoticeSeen(me,id){
+  try{ const m=JSON.parse(localStorage.getItem(MSG_KEY2)||"null")||{}; m[String(me.cls)+"|"+me.name]=id; localStorage.setItem(MSG_KEY2,JSON.stringify(m)); }catch(e){}
+  try{ localStorage.setItem(MSG_KEY,id); }catch(e){}
+}
 let notices={};                 // {id: {text,to,cls,names,date,ts}}
 function noticeFor(me){
   /* 나에게 온 것 중 가장 최근 하나 */
@@ -9341,8 +9469,9 @@ function renderNotice(){
   const me=myKey();
   const n=me.name?noticeFor(me):null;
   if(!n){ box.style.display="none"; box.innerHTML=""; return; }
-  let seen=""; try{ seen=localStorage.getItem(MSG_KEY)||""; }catch(e){}
-  const isNew=(seen!==n.id);
+  const seen=noticeSeenId(me);
+  if(seen===n.id){ box.style.display="none"; box.innerHTML=""; return; }   // 이미 확인한 알림은 띄우지 않는다
+  const isNew=true;
   box.style.display="block";
   // 지나치지 않도록 크게 — 수업 중에 흘깃 봐도 읽히는 크기로 둔다
   box.innerHTML=`<div class="step-box" style="margin:0 0 14px;padding:16px;border:2px solid var(--primary);background:rgba(124,108,255,.12)">
@@ -9356,8 +9485,8 @@ function renderNotice(){
     </div>`;
   const b=$("msgSeen");
   if(b)b.addEventListener("click",()=>{
-    try{ localStorage.setItem(MSG_KEY,n.id); }catch(e){}
-    box.style.display="none";
+    markNoticeSeen(me,n.id);
+    box.style.display="none"; box.innerHTML="";
   });
 }
 function attachNotices(){
@@ -10411,7 +10540,7 @@ function loadAll(){
       if(d.assignments)Object.assign(assignments,d.assignments);
       if(Array.isArray(d.seenBattles))seenBattles=d.seenBattles;
       if(d.rubric)rubric={...RUBRIC_DEFAULT,...d.rubric};
-      /* 개인 자료(내가 만든 운동·성찰·마무리 성찰)는 여기서 바로 쓰지 않고 따로 담아 둔다.
+      /* 개인 자료(내가 만든 운동·성찰·단원 돌아보기)는 여기서 바로 쓰지 않고 따로 담아 둔다.
          학번이 정해지는 순간 그 학생 칸으로 옮겨진다 — 기기를 나눠 써도 섞이지 않게. */
       legacyMine={ myPlans:Array.isArray(d.myPlans)?d.myPlans:[], myLogs:d.myLogs||{},
                    myFinal:d.myFinal||null, mySpice:d.mySpice };
@@ -10681,22 +10810,46 @@ $("authOut").addEventListener("click",async()=>{
 });
 // 성찰·계획서는 교사만 읽을 수 있다. 학생 기기에서는 권한 오류가 나는 게 정상이므로 조용히 넘긴다.
 let protOff=[];
+/* 계획서·성찰을 받았는지 선생님이 한눈에 알게 한다 (2026-11-09 선생님: "학생별 종합현황에서 계획서·성찰·마무리 성찰이 하나도 반영되지 않는 것 같아").
+   예전에는 읽기가 막혀도 조용히 넘겨(학생 화면에서는 정상) 선생님 화면이 그냥 비어 보였다. 이제 교사로 로그인한 기기에서는
+   ① 불러오는 중 ② 불러옴(몇 반) ③ 읽을 권한이 없음(어느 계정인지) 중 하나를 학생별 종합현황 맨 위에 보여 주고 [다시 불러오기]를 준다. */
+let protState={plans:false,reflections:false,denied:""};
+function protBannerHTML(){
+  if(!fdb||!isTeacher())return "";
+  const who=(typeof teacherUser!=="undefined"&&teacherUser&&teacherUser.email)?escHtml(teacherUser.email):"";
+  const btn='<button type="button" class="btn btn-stop btn-sm" id="protRetry" style="margin-left:6px">🔄 다시 불러오기</button>';
+  if(protState.denied)return '<div class="prot-note bad">⚠️ <b>'+who+'</b> 계정으로는 계획서·성찰 자료를 읽을 수 없습니다 ('+escHtml(protState.denied)+'). 선생님 계정으로 다시 로그인한 뒤 눌러 주세요.'+btn+'</div>';
+  if(!protState.plans||!protState.reflections)return '<div class="prot-note">⏳ 계획서·성찰 자료를 불러오는 중…'+btn+'</div>';
+  return '<div class="prot-note ok">📥 계획서·성찰 자료를 불러왔습니다 — 계획서 '+Object.keys(plans).length+'개 반 · 성찰 '+Object.keys(reflections).length+'개 반</div>';
+}
+function refreshProtected(){
+  if(!fdb||!fmod)return;
+  protState={plans:false,reflections:false,denied:""};
+  const go=()=>{ try{ attachProtected(fmod.onValue,fmod.ref); }catch(e){} };
+  try{ if(fbAuth&&fbAuth.currentUser)fbAuth.currentUser.getIdToken(true).then(go,go); else go(); }catch(e){ go(); }
+  try{ renderStuBoard(); }catch(e){}
+}
 function attachProtected(onValue,ref){
   protOff.forEach(f=>{try{f();}catch(e){}}); protOff=[];
   if(!fdb)return;
-  const quiet=()=>{};   // 권한 없음 — 학생 화면에서는 아무 일도 일어나지 않아야 한다
+  protState={plans:false,reflections:false,denied:""};
+  // 권한 없음 — 학생 화면에서는 아무 일도 일어나지 않아야 한다. 교사로 로그인한 기기에서만 알린다.
+  const fail=err=>{ if(isTeacher()){ protState.denied=String((err&&err.code)||"permission_denied").replace(/^.*\//,""); try{ renderStuBoard(); }catch(e){} } };
   protOff.push(onValue(ref(fdb,"plans"),snap=>{
     const v=snap.val()||{};
     Object.keys(plans).forEach(k=>{ if(!(k in v))delete plans[k]; });
     Object.assign(plans,v);
+    protState.plans=true; protState.denied="";
     renderPlanAdmin();
-  },quiet));
+  },fail));
   protOff.push(onValue(ref(fdb,"reflections"),snap=>{
     const v=snap.val()||{};
     Object.keys(reflections).forEach(k=>{ if(!(k in v))delete reflections[k]; });
     Object.assign(reflections,v);
+    protState.reflections=true; protState.denied="";
     renderReflectAdmin();
-  },quiet));
+    try{ renderStuBoard(); }catch(e){}   // 성찰이 들어오면 학생별 종합현황도 바로 새로 그린다
+  },fail));
 }
 function attachFbListeners(){
   const {ref,onChildAdded,onChildChanged,onChildRemoved,onValue}=fmod;
@@ -10769,7 +10922,7 @@ function attachFbListeners(){
     // 방금 들어온 기록일 때만, 그리고 너무 잦지 않게 알린다
     const fresh=Date.now()-Date.parse(String(rec.date||"").replace(" ","T"))<5*60*1000;
     const now=Date.now();
-    if(feedReady&&fresh&&now-lastFeedBeep>1500){ lastFeedBeep=now; beep(1200,.1,.12); }
+    if(LIVE_FEED_BEEP&&feedReady&&fresh&&now-lastFeedBeep>1500){ lastFeedBeep=now; beep(1200,.1,.12); }
   });
   onChildChanged(ref(fdb,"records"),snap=>{
     const r=snap.val(); if(!r||!r.id)return;
