@@ -1580,6 +1580,19 @@ var NAV_BOTTOM=true, SETUP_TIDY=true, MOTION_UI=true, MOTION_PET=true, MOTION_BO
     </details>
 
     <details class="collapsible">
+      <summary>📝 채점용 시트 자동 연동 (운동계획서·단원 돌아보기)</summary>
+      <div class="hint" style="margin:10px 0 8px">운동계획서와 단원 돌아보기 <b>글 내용만</b> 모은 채점용 구글 시트로, 새 글·고쳐 쓴 글이 생기면 저절로 보냅니다.
+        시트에서 새 글은 <b>파란색</b>, 채점 뒤에 고쳐 쓴 글은 <b>주황색</b>으로 보이고 점수를 적으면 흰색으로 돌아옵니다. 웹 앱 주소는 성적 시트와는 <b>다른 주소</b>예요(채점용 시트에서 따로 배포).</div>
+      <div class="field"><label>웹 앱 주소 (채점용)</label><input type="text" id="evalUrl" placeholder="https://script.google.com/macros/s/…/exec" style="width:100%" autocomplete="off"></div>
+      <div class="row" style="margin:10px 0 0;flex-wrap:wrap">
+        <button class="btn btn-go btn-sm" id="evalSave">저장하고 지금 보내기</button>
+        <button class="btn btn-stop btn-sm" id="evalNow">지금 다시 보내기</button>
+      </div>
+      <div class="hint" id="evalState" style="margin-top:8px"></div>
+      <div class="hint" id="evalMsg" style="margin-top:4px"></div>
+    </details>
+
+    <details class="collapsible">
       <summary>🖨 운동 포트폴리오 인쇄</summary>
       <div class="hint" style="margin:10px 0 8px">학생 한 명을 <b>한 부</b>로 묶어 인쇄합니다 —
         <b>운동 계획서 → 날짜순 운동 기록과 그날의 성찰 → 단원 돌아보기</b> 순서로 쌓입니다.
@@ -6638,6 +6651,69 @@ function buildGradeSheets(){
   }));
   return sheets;
 }
+/* =================== 📝 채점용 시트 — 운동계획서·단원 돌아보기 글 내용만 (2026-11-10) ===================
+   선생님: "운동계획서와 단원돌아보기 내용만 채점하기 위한 스프레드시트 … 새로 추가된 내용은 색을 다르게, 채점하면 흰색으로,
+   채점이 됐는데 내용이 바뀌면 색만 다르게 해서 다시 채점하라는 신호로".
+   앱은 글 내용과 그 글의 '지문'(내용이 같으면 같은 값)만 보낸다. 상태(새 글·수정됨·채점됨)와 색은 시트 스크립트가 지문으로 정한다.
+   점수 칸은 비워서 보내고, 선생님이 적은 점수는 시트 스크립트가 번호별로 지킨다. 끄려면 EVAL_SYNC=false. */
+const EVAL_SYNC=true;
+const EVAL_URL_KEY="tabataEvalUrl", EVAL_SENT_KEY="tabataEvalSentAt", EVAL_HASH_KEY="tabataEvalHash";
+function evalFp(t){ t=String(t); let h=5381; for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))|0; return "f"+h+"_"+t.length; }   // 글자로 시작해 시트가 숫자·날짜로 바꾸지 않게
+function buildEvalSheets(){
+  const cs=classNames();
+  if(!cs.length)return null;
+  const head=["번호","이름","㉮상태","㉮채점(10점)","운동 구성","목표","⓪ 체력이 떨어진 원인","① 왜 이 목표를 골랐나","② 왜 이 운동들을 골랐나","조심할 부위","③ 어떻게 고려했나","실천 시간·장소","④ 확인 방법",
+    "㉰상태","㉰채점(10점)","㉰① 체력 변화","㉰② 나아진 점","㉰③ 어려웠던 운동","㉰④ 계획 실천","㉰⑤ 앞으로의 계획",
+    "㉮지문","㉮채점시 지문","㉰지문","㉰채점시 지문"];
+  return cs.map(c=>({name:c,rows:[head].concat((rosters[c]||[]).map(s=>{
+    const p=bestPlan(plansOf(s.name,c)), rf=reflectOf(s.name,c), f=(rf&&rf.final)||{}, fin=hasFinal(rf);
+    const sq=p?String(p.seq||"").split(",").filter(Boolean):[];
+    const ptxt=p?[p.habitWhy,p.goalWhy,p.reason,p.careText,p.careWhy,p.when,p.check,p.seq,p.goal,p.aim].map(x=>x||"").join("\u0001"):"";
+    const ftxt=fin?[1,2,3,4,5].map(i=>f["q"+i]||"").join("\u0001"):"";
+    return [s.no==null?"":(isFinite(s.no)?Number(s.no):s.no), s.name, "", "",
+      p?sq.map(k=>EXNAME[k]||k).join("→"):"", p?((GOAL_LABEL[p.goal]||"")+(p.aim?" — "+p.aim:"")):"",
+      p?(p.habitWhy||""):"", p?(p.goalWhy||""):"", p?(p.reason||""):"", p?(p.careText||""):"", p?(p.careWhy||""):"", p?(p.when||""):"", p?(p.check||""):"",
+      "", "", f.q1||"", f.q2||"", f.q3||"", f.q4||"", f.q5||"",
+      p?evalFp(ptxt):"", "", fin?evalFp(ftxt):"", ""];
+  }))}));
+}
+function evalUrlGet(){ try{ return localStorage.getItem(EVAL_URL_KEY)||""; }catch(e){ return ""; } }
+function renderEvalLink(){
+  const url=evalUrlGet(), u=$("evalUrl"), st=$("evalState");
+  if(u&&document.activeElement!==u)u.value=url;
+  if(!st)return;
+  let sent=0; try{ sent=+localStorage.getItem(EVAL_SENT_KEY)||0; }catch(e){}
+  const w=sent?(d=>(d.getMonth()+1)+"/"+d.getDate()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"))(new Date(sent)):"";
+  st.innerHTML=url?'<b style="color:var(--good)">연결됨</b>'+(w?" · 마지막 전송 "+w:" · 아직 보낸 적 없음"):'<span style="color:var(--bad)">아직 연결 전</span>';
+}
+let evalSending=false;
+async function sendToEval(manual){
+  const url=evalUrlGet(), msg=$("evalMsg");
+  const say=(t,bad)=>{ if(manual&&msg)msg.innerHTML=bad?'<span class="err">'+t+'</span>':t; };
+  if(!EVAL_SYNC)return false;
+  if(!url){ say("채점용 웹 앱 주소를 넣고 [저장하고 지금 보내기]를 눌러 주세요.",true); return false; }
+  if(!sheetReady()){ say("교사로 로그인해 계획서·성찰 자료를 불러온 뒤에 보낼 수 있어요.",true); return false; }
+  if(evalSending)return false;
+  let sheets=null; try{ sheets=buildEvalSheets(); }catch(e){}
+  if(!sheets){ say("먼저 명렬표를 등록하세요.",true); return false; }
+  const hash=sheetHashOf(sheets);
+  let last=""; try{ last=localStorage.getItem(EVAL_HASH_KEY)||""; }catch(e){}
+  if(!manual&&hash===last)return false;
+  if(SHEET_NO_SHRINK&&sheetAmount()<sheetPeakGet()){          // 기록이 줄었으면 성적 시트와 마찬가지로 자동으로는 보내지 않는다
+    if(!manual)return false;
+    if(!confirm("기록이 지난번 시트에 보낸 때보다 줄었습니다.\n그래도 채점용 시트를 지금 내용으로 덮어쓸까요?")){ say("보내지 않았어요.",true); return false; }
+  }
+  evalSending=true;
+  try{
+    await fetch(url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({at:nowStamp(),sheets:sheets.map(x=>({name:x.name,rows:x.rows,head:1,freeze:2}))})});
+    try{ localStorage.setItem(EVAL_SENT_KEY,String(Date.now())); localStorage.setItem(EVAL_HASH_KEY,hash); }catch(e){}
+    renderEvalLink();
+    say("보냈습니다 — 잠시 뒤 채점용 시트를 새로 고침해 보세요.");
+    return true;
+  }catch(e){ say("보내지 못했어요 — 인터넷과 웹 앱 주소를 확인해 주세요.",true); return false; }
+  finally{ evalSending=false; }
+}
 $("gradeCsv").addEventListener("click",()=>{
   const sheets=buildGradeSheets();
   if(!sheets){alert("먼저 명렬표를 등록하세요.");return;}
@@ -6731,15 +6807,27 @@ function sheetTick(){
   if(Date.now()-sent<SHEET_MIN_GAP)return;
   sendToSheet(false);
 }
+function evalTick(){
+  if(!EVAL_SYNC||!evalUrlGet()||!sheetReady())return;
+  let sent=0; try{ sent=+localStorage.getItem(EVAL_SENT_KEY)||0; }catch(e){}
+  if(Date.now()-sent<SHEET_MIN_GAP)return;
+  sendToEval(false);
+}
 /* 여러 기기에서 쓰도록 주소를 서버에 한 번만 저장한다 (2026-11-09 선생님: "여러 기기에서 사용할 거야").
    저장 자리는 excused/_sheetLink — excused는 이미 교사만 읽고 쓰는 칸이라 서버 규칙을 새로 게시할 필요가 없고 학생은 읽지 못한다.
    (다른 코드는 excused 안을 반·과제·번호로만 찾으므로 이 키는 영향이 없다.) 교사 로그인 때 읽어 이 기기에 반영하고,
    서버에 없고 이 기기에만 있으면 올려 준다. */
-let sheetLinkOff=null, sheetPeakOff=null;
+let sheetLinkOff=null, sheetPeakOff=null, evalLinkOff=null;
 function watchSheetLink(){
   if(sheetLinkOff){ try{ sheetLinkOff(); }catch(e){} sheetLinkOff=null; }
   if(sheetPeakOff){ try{ sheetPeakOff(); }catch(e){} sheetPeakOff=null; }
+  if(evalLinkOff){ try{ evalLinkOff(); }catch(e){} evalLinkOff=null; }
   if(!fdb||!isTeacher())return;
+  evalLinkOff=fmod.onValue(fmod.ref(fdb,"excused/_evalLink"),snap=>{
+    const v=snap.val();
+    if(v&&v.url){ try{ localStorage.setItem(EVAL_URL_KEY,v.url); }catch(e){} renderEvalLink(); }
+    else{ const u=evalUrlGet(); if(u)fmod.set(fmod.ref(fdb,"excused/_evalLink"),{url:u}).catch(()=>{}); }
+  },()=>{});
   sheetPeakOff=fmod.onValue(fmod.ref(fdb,"excused/_sheetPeak"),snap=>{
     const v=snap.val();
     if(v&&isFinite(v.n)){ try{ localStorage.setItem(SHEET_PEAK_KEY,String(+v.n)); }catch(e){} }
@@ -6761,6 +6849,17 @@ if($("sheetSave"))$("sheetSave").addEventListener("click",()=>{
 if($("sheetNow"))$("sheetNow").addEventListener("click",()=>sendToSheet(true));
 renderSheetLink();
 setInterval(sheetTick,60000); setTimeout(sheetTick,15000);
+if($("evalSave"))$("evalSave").addEventListener("click",()=>{
+  const url=($("evalUrl").value||"").trim(), msg=$("evalMsg");
+  if(!/^https:\/\/script\.google\.com\/macros\/s\/\S+\/exec$/.test(url)){ msg.innerHTML='<span class="err">웹 앱 주소를 넣어 주세요 (https://script.google.com/macros/s/…/exec).</span>'; return; }
+  try{ localStorage.setItem(EVAL_URL_KEY,url); }catch(e){}
+  if(fdb&&isTeacher())fmod.set(fmod.ref(fdb,"excused/_evalLink"),{url}).catch(()=>{});
+  renderEvalLink();
+  sendToEval(true);
+});
+if($("evalNow"))$("evalNow").addEventListener("click",()=>sendToEval(true));
+renderEvalLink();
+setInterval(evalTick,60000); setTimeout(evalTick,25000);
 
 /* =================== 📝 운동 계획서 (평가계획서 ㉮) ===================
    앱은 계획의 옳고 그름을 판정하지 않는다. 목표가 다양하고, 한 부위만 집중하는 계획도,
