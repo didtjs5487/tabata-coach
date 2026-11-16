@@ -840,6 +840,18 @@
   html.tfix .task-empty{margin:14px 0 6px; padding:16px; border:1px dashed var(--line); border-radius:14px; background:var(--panel3); text-align:center;}
   html.tfix .task-empty b{display:block; font-size:16px; color:var(--ink); margin-bottom:4px;}
   html.tfix .task-empty .btn{margin-top:10px;}
+  /* ═════ SETUP_STEPS (2026-11-17) — 운동 설계 단계 접기 ═════ */
+  .setup-step{border:1px solid var(--line); border-radius:14px; background:var(--panel); margin:0 0 10px; overflow:hidden;}
+  .setup-step>summary{list-style:none; cursor:pointer; display:flex; align-items:center; gap:10px; min-height:52px; padding:6px 12px; font-weight:800; font-size:16px; color:var(--ink);}
+  .setup-step>summary::-webkit-details-marker{display:none;}
+  .setup-step .ss-n{flex:none; width:26px; height:26px; border-radius:50%; background:var(--primary); color:#fff; font-size:14px; display:flex; align-items:center; justify-content:center;}
+  .setup-step .ss-t{flex:none;}
+  .setup-step .ss-sum{flex:1; min-width:0; font-weight:600; font-size:13px; color:var(--muted); text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .setup-step[open] .ss-sum{visibility:hidden;}
+  .setup-step .ss-arw{flex:none; color:var(--muted); transition:transform .15s;}
+  .setup-step[open] .ss-arw{transform:rotate(180deg);}
+  .setup-step .ss-body{padding:2px 12px 14px;}
+  .setup-step .ss-next{margin-top:12px; width:100%;}
   .adm-hdr{display:none;}
   .fr-tip{font-size:14px; line-height:1.55; padding:10px 12px; margin:0 0 12px; border-radius:10px; background:rgba(255,159,28,.14); border:1px solid rgba(255,159,28,.5); color:var(--ink);}
   .fr-tip .fr-eg{display:block; margin-top:4px; font-size:13px; color:var(--muted);}
@@ -953,6 +965,10 @@ var NAV_BOTTOM=true, SETUP_TIDY=true, MOTION_UI=true, MOTION_PET=true, MOTION_BO
 /* 누르는 곳 키우기 (2026-11-17 디자인 점검) — 자가체크 체크칸·입력칸·▲▼✕·접는 제목을 44px로, 레벨 글씨 12px, 내 과제가 비었을 때 다음 할 일 단추.
    문제가 생기면 TOUCH_FIX=false (html 클래스 tfix가 안 붙어 예전 모습으로 돌아간다) */
 var TOUCH_FIX=true;
+/* 운동 설계를 단계별로 접기 (2026-11-17 선생님: "운동 설계 화면도 단계별로 접어줘")
+   ② 안을 '1 운동 고르기' → '2 시간·횟수 정하기' 두 단계로 묶는다. 폰에서는 한 번에 한 단계만 펼치고, 접힌 단계는 고른 내용을 한 줄로 보여 준다.
+   칸의 id·동작은 그대로 두고 화면에서 자리만 옮긴다. 문제가 생기면 SETUP_STEPS=false (예전처럼 한 줄기로 펼쳐진다) */
+var SETUP_STEPS=true;
 if(TOUCH_FIX)document.documentElement.classList.add("tfix");
 (function(){ var c=document.documentElement.classList;
   if(NAV_BOTTOM)c.add("navb"); if(SETUP_TIDY)c.add("stidy"); if(MOTION_UI)c.add("mui"); if(MOTION_PET)c.add("mpet"); if(MOTION_BOARD)c.add("mbrd"); })();
@@ -6932,6 +6948,34 @@ function setRepeat(x){ setRepeatFor(seq,"rounds","repeatPick",x); }
 function syncRepeatChips(){ syncRepeatChipsFor(seq,"rounds","repeatPick"); }
 function clampRounds(){ setRepeat(repeatX()); }   // 동작 수가 바뀌면 라운드 수도 따라 바뀐다
 
+/* 운동 설계 단계 접기 — 처음 한 번, 이미 있는 칸들을 두 묶음으로 옮긴다(id·이벤트는 그대로 따라온다) */
+function setupStepSummary(){
+  const a=document.querySelector("#setupStep1 .ss-sum"), b=document.querySelector("#setupStep2 .ss-sum");
+  if(a){ const k=$("seqList")?$("seqList").children.length:0; a.textContent=k?("동작 "+k+"개"):"아직 고르지 않음"; }
+  if(b){ const on=document.querySelector("#repeatPick button.on"); b.textContent=($("workSec").value||20)+"초 운동 · "+($("restSec").value||10)+"초 휴식"+(on?" · "+on.textContent.trim():""); }
+}
+function stepSetup(){
+  if(!SETUP_STEPS)return;
+  const list=$("seqList"), box=list&&list.closest(".step-box");
+  if(!box||box.querySelector(".setup-step"))return;
+  const mk=(id,num,title)=>{ const d=document.createElement("details"); d.className="setup-step"; d.id=id;
+    d.innerHTML='<summary><span class="ss-n">'+num+'</span><span class="ss-t">'+title+'</span><span class="ss-sum"></span><span class="ss-arw">▾</span></summary><div class="ss-body"></div>'; return d; };
+  const s1=mk("setupStep1",1,"운동 고르기"), s2=mk("setupStep2",2,"시간·횟수 정하기");
+  const kids=[...box.children], cut=kids.indexOf(list);
+  kids.forEach((k,i)=>(i<=cut?s1:s2).querySelector(".ss-body").appendChild(k));
+  const next=document.createElement("button"); next.type="button"; next.className="btn btn-teal btn-sm ss-next"; next.textContent="다음 · 시간·횟수 정하기 ›";
+  s1.querySelector(".ss-body").appendChild(next);
+  box.append(s1,s2);
+  const phone=()=>{ try{ return matchMedia("(max-width:640px)").matches; }catch(e){ return false; } };
+  s1.open=true; s2.open=!phone();          // 넓은 화면에서는 둘 다 펼쳐 둔다
+  const only=(me,other)=>me.addEventListener("toggle",()=>{ if(me.open&&phone())other.open=false; setupStepSummary(); });
+  only(s1,s2); only(s2,s1);
+  next.addEventListener("click",()=>{ s2.open=true; if(phone())s1.open=false; try{ s2.scrollIntoView({block:"start",behavior:"smooth"}); }catch(e){} });
+  try{ new MutationObserver(setupStepSummary).observe(list,{childList:true}); }catch(e){}
+  box.addEventListener("input",setupStepSummary); box.addEventListener("click",()=>setTimeout(setupStepSummary,0));
+  setupStepSummary();
+}
+try{ stepSetup(); }catch(e){}
 // 폰 첫 화면 정리를 끄면(SETUP_TIDY=false) 채점 난이도를 예전처럼 펼쳐 둔다
 try{ if(typeof SETUP_TIDY!=="undefined"&&!SETUP_TIDY&&$("spiceFold"))$("spiceFold").open=true; }catch(e){}
 /* 채점 난이도(맛) 고르기 — 자율 실천·결투에만 적용된다 */
