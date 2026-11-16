@@ -827,6 +827,19 @@
   /* ===== 화면 정리 v2 (2026-10-29) — 폰 아래 탭 막대 · 첫 화면 정리 · 화면 전환 · 캐릭터·현황판 움직임 =====
      스위치는 위쪽 head의 NAV_BOTTOM·SETUP_TIDY·MOTION_UI·MOTION_PET·MOTION_BOARD (html 클래스 navb·stidy·mui·mpet·mbrd). */
   /* 채점 난이도 접기 — 접어 둔 줄에도 지금 고른 맛이 보인다 */
+  /* ═════ TOUCH_FIX (2026-11-17) — html.tfix 일 때만 ═════ */
+  html.tfix .parq-row{display:flex; align-items:center; gap:12px; min-height:44px; padding:4px 6px; margin:2px 0; border-radius:10px; font-size:15px; color:var(--ink); cursor:pointer; word-break:keep-all;}
+  html.tfix .parq-row:active{background:rgba(201,52,69,.08);}
+  html.tfix .parq-row .parq-chk{flex:none; width:24px; height:24px; margin:0; accent-color:var(--bad);}
+  html.tfix .field input:not([type=checkbox]):not([type=radio]), html.tfix .field select, html.tfix .field textarea{min-height:44px;}
+  html.tfix .chip button{min-width:44px; min-height:44px;}
+  html.tfix .mine-sec{min-height:44px;}
+  html.tfix .pc-opts button, html.tfix .pick-chip{min-width:44px;}
+  html.tfix .btn{min-height:44px;}
+  html.tfix .profile .pl{font-size:12px;}
+  html.tfix .task-empty{margin:14px 0 6px; padding:16px; border:1px dashed var(--line); border-radius:14px; background:var(--panel3); text-align:center;}
+  html.tfix .task-empty b{display:block; font-size:16px; color:var(--ink); margin-bottom:4px;}
+  html.tfix .task-empty .btn{margin-top:10px;}
   .adm-hdr{display:none;}
   .fr-tip{font-size:14px; line-height:1.55; padding:10px 12px; margin:0 0 12px; border-radius:10px; background:rgba(255,159,28,.14); border:1px solid rgba(255,159,28,.5); color:var(--ink);}
   .fr-tip .fr-eg{display:block; margin-top:4px; font-size:13px; color:var(--muted);}
@@ -858,7 +871,7 @@
     html.navb nav .lk{display:none;}
     /* 학습센터는 아래 막대에서 빼고(4개만) 머리글 오른쪽 위 🔒로 — 탭 자체는 남겨 두어 기존 동작(goPage·잠금)이 그대로 돈다 */
     html.navb nav button[data-page="pgAdmin"]{display:none;}
-    html.navb .adm-hdr{display:flex; align-items:center; justify-content:center; flex:none; width:40px; height:40px; border-radius:50%; font-size:18px; line-height:1;
+    html.navb .adm-hdr{display:flex; align-items:center; justify-content:center; flex:none; width:44px; height:44px; border-radius:50%; font-size:18px; line-height:1;
       background:var(--panel); border:1px solid var(--line); color:var(--muted); cursor:pointer; padding:0;}
     html.navb:has(nav button[data-page="pgAdmin"].on) .adm-hdr{background:var(--primary); border-color:var(--primary); color:#fff;}
     html.navb .wrap{padding:0 14px calc(92px + env(safe-area-inset-bottom,0px));}
@@ -937,6 +950,10 @@ if(DESIGN_FIX)document.documentElement.classList.add("dfix");
    NAV_BOTTOM 폰에서 탭을 아래 막대로 · SETUP_TIDY 폰 첫 화면 정리(채점 난이도 접기·그림 줄임)
    MOTION_UI 화면 전환·펼침 · MOTION_PET 캐릭터 · MOTION_BOARD 현황판 */
 var NAV_BOTTOM=true, SETUP_TIDY=true, MOTION_UI=true, MOTION_PET=true, MOTION_BOARD=true;
+/* 누르는 곳 키우기 (2026-11-17 디자인 점검) — 자가체크 체크칸·입력칸·▲▼✕·접는 제목을 44px로, 레벨 글씨 12px, 내 과제가 비었을 때 다음 할 일 단추.
+   문제가 생기면 TOUCH_FIX=false (html 클래스 tfix가 안 붙어 예전 모습으로 돌아간다) */
+var TOUCH_FIX=true;
+if(TOUCH_FIX)document.documentElement.classList.add("tfix");
 (function(){ var c=document.documentElement.classList;
   if(NAV_BOTTOM)c.add("navb"); if(SETUP_TIDY)c.add("stidy"); if(MOTION_UI)c.add("mui"); if(MOTION_PET)c.add("mpet"); if(MOTION_BOARD)c.add("mbrd"); })();
 </script>
@@ -2209,7 +2226,7 @@ function initParq(){
   const box=$("parqList"); box.innerHTML="";
   PARQ.forEach((q,i)=>{
     const lab=document.createElement("label");
-    lab.style.cssText="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);margin:4px 0;cursor:pointer";
+    if(TOUCH_FIX)lab.className="parq-row"; else lab.style.cssText="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);margin:4px 0;cursor:pointer";
     lab.innerHTML=`<input type="checkbox" class="parq-chk"> ${q}`;
     box.appendChild(lab);
   });
@@ -3239,6 +3256,13 @@ function renderTasks(){
     const none=document.createElement("div"); none.className="hint"; none.style.margin="0 0 4px 2px";
     none.innerHTML="아직 만든 운동이 없습니다. <b>운동 설계</b> 탭에서 구성을 만들고 <b>[＋ 운동 추가]</b>를 누르세요.";
     tc.appendChild(none);
+    if(TOUCH_FIX){
+      const e=document.createElement("div"); e.className="task-empty";
+      e.innerHTML='<b>🌱 내 운동을 먼저 만들어 볼까요?</b><span class="hint">내가 만든 운동으로 실천하면 자율 실천과제로 기록돼요</span><br>';
+      const b=document.createElement("button"); b.type="button"; b.className="btn btn-go btn-sm"; b.textContent="✏️ 운동 설계로 가기";
+      b.addEventListener("click",()=>goPage("pgSetup"));
+      e.appendChild(b); tc.appendChild(e);
+    }
   }
   myPlans.forEach(p=>{
     const meta=`<b style="color:${p.n?"var(--good)":"var(--muted)"}">${p.n?`${p.n}회 실천 · 다음 ${p.n+1}회차`:"아직 안 함 · 1회차"}</b>`
