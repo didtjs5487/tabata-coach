@@ -840,6 +840,17 @@
   html.tfix .task-empty{margin:14px 0 6px; padding:16px; border:1px dashed var(--line); border-radius:14px; background:var(--panel3); text-align:center;}
   html.tfix .task-empty b{display:block; font-size:16px; color:var(--ink); margin-bottom:4px;}
   html.tfix .task-empty .btn{margin-top:10px;}
+  /* ═════ ADMIN_TIDY (2026-11-17) — html.atidy 일 때만 ═════ */
+  html.atidy .mk.ok{background:color-mix(in srgb, var(--c) 82%, #000); border-color:color-mix(in srgb, var(--c) 82%, #000);}
+  html.atidy .mk.half{color:var(--ink); background:color-mix(in srgb, var(--c) 18%, #fff); border-color:color-mix(in srgb, var(--c) 82%, #000); border-width:2px;}
+  html.atidy #pgAdmin .task-class-pick button{min-width:44px;}
+  html.atidy #pgAdmin label:has(> input[type=checkbox]){min-height:44px; gap:10px;}
+  html.atidy #pgAdmin input[type=checkbox]{width:22px; height:22px; flex:none; accent-color:var(--primary);}
+  html.atidy #stuBoard button{min-height:44px;}
+  html.atidy .adm-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%;}
+  html.atidy .adm-scroll table{min-width:520px;}
+  html.atidy .adm-gone{display:none !important;}
+  html.atidy .adm-moved{margin-top:18px; padding-top:14px; border-top:1px dashed var(--line);}
   /* ═════ SETUP_STEPS (2026-11-17) — 운동 설계 단계 접기 ═════ */
   .setup-step{border:1px solid var(--line); border-radius:14px; background:var(--panel); margin:0 0 10px; overflow:hidden;}
   .setup-step>summary{list-style:none; cursor:pointer; display:flex; align-items:center; gap:10px; min-height:52px; padding:6px 12px; font-weight:800; font-size:16px; color:var(--ink);}
@@ -969,6 +980,14 @@ var TOUCH_FIX=true;
    ② 안을 '1 운동 고르기' → '2 시간·횟수 정하기' 두 단계로 묶는다. 폰에서는 한 번에 한 단계만 펼치고, 접힌 단계는 고른 내용을 한 줄로 보여 준다.
    칸의 id·동작은 그대로 두고 화면에서 자리만 옮긴다. 문제가 생기면 SETUP_STEPS=false (예전처럼 한 줄기로 펼쳐진다) */
 var SETUP_STEPS=true;
+/* 학습센터(교사 화면) 정리 (2026-11-17 점검 → 선생님 "B로 해줘, 결투랑 프로젝터 화면은 남겨둬")
+   · 종합 현황 안에 끼어 있던 엑셀·구글 시트 연동 2개·포트폴리오 인쇄를 '📤 내보내기 · 시트 연동 · 인쇄' 묶음으로 따로 뺀다
+   · 엑셀은 '평가용 통합 엑셀' 하나만 보이게(성적·계획서·자기성찰 개별 단추는 숨김 — 단추 자체는 남아 있어 성적/갱신.js가 그대로 쓴다)
+   · '다른 기기 기록 합치기'는 설정 → 고급으로
+   · 과·자·계·성·돌 표시를 또렷하게, 진단 표가 폰에서 넘치지 않게, 누르는 곳 44px
+   칸의 id·동작은 그대로 두고 자리만 옮긴다. 문제가 생기면 ADMIN_TIDY=false (html 클래스 atidy가 안 붙고 예전 배치로 돌아간다) */
+var ADMIN_TIDY=true;
+if(ADMIN_TIDY)document.documentElement.classList.add("atidy");
 if(TOUCH_FIX)document.documentElement.classList.add("tfix");
 (function(){ var c=document.documentElement.classList;
   if(NAV_BOTTOM)c.add("navb"); if(SETUP_TIDY)c.add("stidy"); if(MOTION_UI)c.add("mui"); if(MOTION_PET)c.add("mpet"); if(MOTION_BOARD)c.add("mbrd"); })();
@@ -6976,6 +6995,35 @@ function stepSetup(){
   setupStepSummary();
 }
 try{ stepSetup(); }catch(e){}
+/* 학습센터 정리 — 처음 한 번, 이미 있는 묶음들을 옮긴다(id·이벤트는 그대로 따라온다) */
+function tidyAdmin(){
+  if(!ADMIN_TIDY)return;
+  const pg=$("pgAdmin"), board=$("stuBoard"); if(!pg||!board||$("admExportBox"))return;
+  const boardBox=board.closest("details"); if(!boardBox)return;
+  const boxOf=id=>{ const e=$(id); return e?e.closest("details"):null; };
+  // 1) 내보내기·연동·인쇄 묶음
+  const out=document.createElement("details"); out.className="collapsible"; out.id="admExportBox";
+  out.innerHTML='<summary>📤 내보내기 · 시트 연동 · 인쇄</summary>';
+  [boxOf("allExport"),boxOf("sheetUrl"),boxOf("evalUrl"),boxOf("pfClassBtn")].forEach(d=>{ if(d&&d!==boardBox&&boardBox.contains(d))out.appendChild(d); });
+  if(out.children.length>1)boardBox.after(out);
+  // 2) 엑셀은 통합 하나만 보이게, 기록 합치기는 고급으로
+  const g=$("gradeCsv"), imp=$("recImport");
+  if(g&&g.parentElement){
+    const row=g.parentElement, lab=imp?imp.closest("label"):null;
+    const adv=[...pg.querySelectorAll("details")].find(d=>{ const sm=d.querySelector(":scope > summary"); return sm&&sm.textContent.indexOf("고급")>=0; });
+    if(lab&&adv){
+      const w=document.createElement("div"); w.className="adm-moved";
+      w.innerHTML='<h3 style="margin:0 0 4px">📂 다른 기기 기록 합치기</h3><div class="hint" style="margin-bottom:8px">서버에 올라가지 않은 기기의 백업 CSV를 합칠 때만 씁니다.</div>';
+      w.appendChild(lab); adv.appendChild(w);
+    }
+    row.classList.add("adm-gone");
+    const hint=row.previousElementSibling; if(hint&&hint.classList.contains("hint")&&hint.textContent.indexOf("따로 받고")>=0)hint.classList.add("adm-gone");
+  }
+  // 3) 진단 표가 폰에서 넘치지 않게 가로로 밀어 보게 한다
+  const tb=$("taskRows"), table=tb?tb.closest("table"):null;
+  if(table&&!table.parentElement.classList.contains("adm-scroll")){ const w=document.createElement("div"); w.className="adm-scroll"; table.before(w); w.appendChild(table); }
+}
+try{ tidyAdmin(); }catch(e){}
 // 폰 첫 화면 정리를 끄면(SETUP_TIDY=false) 채점 난이도를 예전처럼 펼쳐 둔다
 try{ if(typeof SETUP_TIDY!=="undefined"&&!SETUP_TIDY&&$("spiceFold"))$("spiceFold").open=true; }catch(e){}
 /* 채점 난이도(맛) 고르기 — 자율 실천·결투에만 적용된다 */
